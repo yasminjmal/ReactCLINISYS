@@ -406,6 +406,23 @@ const authService = {
     });
     return data;
   },
+  getUtilisateurbyemail: async (email) => {
+  const token = localStorage.getItem('token');
+  // 1) on envoie { email } en body
+  // 2) on passe les headers en 3ᵉ argument, pas dans le body
+  const response = await axios.post(
+    `${API_URL}/utilisateurinfo`,
+    { email },                  // ← le body
+    {                            // ← la config axios
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    }
+  );
+  return response.data;
+},
+
   getUtilisateur: async (id) => {
     const token = localStorage.getItem('token');
     const { data } = await axios.get(`${API_URL}/utilisateurs/${id}`, {

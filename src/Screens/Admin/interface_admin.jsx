@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   FaTh, 
   FaChartLine, 
@@ -23,17 +23,30 @@ import TicketsEnCours from './Tickets/TicketsEnCours';
 import TicketsTermines from './Tickets/TicketsTermines';
 import TicketsValides from './Tickets/TicketsValides';
 import DetailTicket from './Tickets/DetailTicket';
+import util from '../../Service/util';
+import authService from '../../Service/authService';
 
 
 
 const Admin_Interface = () => {
   const [activeMenu, setActiveMenu] = useState('HOME');
   const [language, setLanguage] = useState('English');
-  const [userName, setUserName] = useState('Ahmed Ellouze');
+  const [user,setUser]=useState({});
+  const [userName, setUserName] = useState(localStorage.getItem('username'));
   const [notifications, setNotifications] = useState([
     'Yasmin ajouté avec succés','Ticket #1234 créé','Ahmed a posté un nouvel avancement'
   ]);
   const [dashboardView, setDashboardView] = useState('ANALYTICS'); // Nouveau state
+
+  useEffect(()=>{
+    try {
+      email=localStorage.getItem("email")
+      const data=  authService.getUtilisateurbyemail(email)
+      console.log(email)
+    } catch (error) {
+      console.error("erreur  while fethcing data")
+    }
+  },[])
   
 
   return (
@@ -271,10 +284,10 @@ const Admin_Interface = () => {
           <div className="navbar-right">
             <div className="user-info">
               <span className="username">{userName}</span>
-              <span className="user-role">admin</span>
+              <span className="user-role">{util.extractRole( localStorage.getItem("role"))}</span>
             </div>
             <div className='image'>
-                <img src={TEST} alt="test" />
+                {/* <img src={} alt="test" /> */}
             </div>
           </div>
         </div>

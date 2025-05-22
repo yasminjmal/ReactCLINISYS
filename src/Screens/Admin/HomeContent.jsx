@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, use } from 'react';
 import './HomeContent.css';
 import Ibtissem from '../../assets/Ibtissem.jpg';
 import Feryel from '../../assets/Feryel.png';
@@ -7,17 +7,32 @@ import Mohamed from '../../assets/Mohamed.png';
 import Adel from '../../assets/Adel.png';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import TeamCard from './TeamCard';
+import decodeToken from '../../Service/decodeToken';
+import util from '../../Service/util';
+import { useNavigate } from 'react-router-dom';
+
 
 const HomeContent = () => {
   const [period, setPeriod] = useState('7jours');
-
   const teamsContainerRef = useRef(null);
+  const navigate = useNavigate();
   const [scrollState, setScrollState] = useState({
     position: 0,
     canScrollLeft: false,
     canScrollRight: true,
   });
 
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    navigate("/");
+  }
+  const data = decodeToken(token);
+  console.log("Decoded token:", data);
+  localStorage.setItem("email",data.sub);
+  localStorage.setItem("username",util.extractNameFromEmail(data.sub));
+  localStorage.setItem("role",data.roles[0].authority);
+}, []);
   // Vérifie l'état du scroll horizontal (gauche/droite possible)
   const checkScroll = () => {
     const container = teamsContainerRef.current;
