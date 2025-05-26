@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+
+
+
+@layer components {
+  .form-label {
+    @apply block font-medium text-slate-700 dark:text-slate-300 mb-0.5; /* mb réduit */
+    /* text-xs est appliqué directement dans le JSX pour ce formulaire compact */
+  }
+  .form-input, .form-select {
+    @apply block w-full px-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm
+           focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500 
+           /* text-sm est appliqué directement dans le JSX pour ce formulaire compact */
+           placeholder-slate-400 dark:placeholder-slate-500 transition-colors duration-150;
+           /* py-1.5 est appliqué directement dans le JSX pour ce formulaire compact */
+  }
+  .form-input-icon { 
+    @apply pl-9; @apply form-input; /* pl ajusté pour icônes plus petites */
+  }
+   .form-select-icon { 
+    @apply pl-9; @apply form-select; /* pl ajusté pour icônes plus petites */
+  }
+  .form-checkbox {
+    @apply rounded border-slate-400 dark:border-slate-500 text-sky-600 shadow-sm focus:border-sky-300 focus:ring focus:ring-sky-200 focus:ring-opacity-50 dark:bg-slate-700 dark:checked:bg-sky-500;
+  }
+  .form-icon-wrapper {
+    @apply relative;
+  }
+  .form-icon { 
+    /* pl-2.5 pour icônes size={16} */
+    @apply absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500;
+  }
+  .form-error-text {
+    @apply text-xs text-red-500 dark:text-red-400 mt-0.5;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center border border-transparent text-xs font-semibold rounded-md shadow-sm /* text-xs pour boutons plus petits */
+           focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900 
+           transition-all duration-200 ease-in-out;
+           /* py-2 px-3 pour boutons plus petits */
+  }
+  .btn-primary {
+    @apply text-white bg-sky-600 hover:bg-sky-700 focus:ring-sky-500 disabled:opacity-60;
+  }
+  .btn-secondary {
+    @apply text-slate-700 dark:text-slate-200 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 focus:ring-slate-500 border-slate-300 dark:border-slate-500;
+  }
+   .btn-secondary-outline { 
+    @apply text-slate-600 dark:text-slate-300 bg-transparent border border-slate-400 dark:border-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 focus:ring-slate-500;
+  }
+}
+
+
+
+/* styles.css ou votre fichier CSS global */
+.tickets-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tickets-table th, .tickets-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.tickets-table th {
+  background-color: #f2f2f2;
+}
+
+.ticket-row.sub-ticket-row td {
+  background-color: #f9f9f9; /* Légère couleur de fond pour distinguer */
+}
+
+.ticket-row.sub-ticket-row td:first-child {
+  padding-left: 30px; /* Indentation pour les sous-tickets */
+}
+
+.expand-column {
+  width: 40px; /* Ajustez selon la taille de l'icône */
+  text-align: center;
+}
+
+.actions-column {
+  width: 120px; /* Ajustez pour contenir les icônes/boutons */
+  text-align: center;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  font-size: 1.2em; /* Ajuster la taille de l'icône */
+}
+
+.icon-button:hover {
+  color: #007bff; /* Couleur au survol */
+}
+
+.button-primary {
+  /* Vos styles pour les boutons primaires */
+  padding: 6px 12px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.button-primary:hover {
+  background-color: #0056b3;
+}
