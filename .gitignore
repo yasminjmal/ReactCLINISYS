@@ -33,3 +33,5 @@ coverage/
 # Optional: lock files
 package-lock.json
 yarn.lock
+node_modules/@esbuild/win32-x64/esbuild.exe
+/node_modules
