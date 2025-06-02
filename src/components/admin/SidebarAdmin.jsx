@@ -1,23 +1,24 @@
-import React, { useState } from 'react';
+// src/components/admin/SidebarAdmin.jsx
+import React, { useState, useEffect } from 'react'; // Ajout de useEffect ici
 import {
   Home as HomeIcon,
   LayoutDashboard,
-  Ticket as TicketIcon, // Assurez-vous que TicketIcon est bien importé
-  Users2 as Users2IconFE, // Gardé si utilisé ailleurs, sinon peut être nettoyé
+  Ticket as TicketIcon,
   UserCircle as UserCircleIcon,
-  Package,
+  Users, 
+  Package as PackageIconModule,
   Briefcase as BriefcaseIcon,
-  Users, // Utilisé pour Equipes
-  Package as PackageIconModule, // Utilisé pour Modules
   X,
   ChevronDown,
   ChevronUp,
   Circle,
-  CheckCircle2
+  CheckCircle2,
+  FileText, // Pour "Demandes en attente"
+  ListChecks, // Pour "Tickets à Traiter"
+  ArchiveX // Pour "Tickets Refusés"
 } from 'lucide-react';
 
-// Assurez-vous que le chemin vers votre logo est correct
-import logoClinisysImage_Sidebar from '../../assets/images/logoTRANSPARENT.png'; // Ajustez le chemin si nécessaire
+import logoClinisysImage_Sidebar from '../../assets/images/logoTRANSPARENT.png';
 
 const SidebarAdmin = ({ activePage, setActivePage, isSidebarOpen, toggleSidebar }) => {
   const [openDropdownKey, setOpenDropdownKey] = useState(null);
@@ -26,23 +27,22 @@ const SidebarAdmin = ({ activePage, setActivePage, isSidebarOpen, toggleSidebar 
     { id: 'home', label: 'HOME', icon: HomeIcon, path: '#' },
     { id: 'dashboards', label: 'DASHBOARDS', icon: LayoutDashboard, path: '#' },
     {
-      id: 'tickets_main', // ID pour le menu principal des tickets
+      id: 'tickets_main', 
       label: 'TICKETS',
       icon: TicketIcon,
       subItems: [
-        { id: 'tickets_consulter_demandes', label: 'Consulter les demandes', path: '#' },
-        { id: 'tickets_affecter_acceptes', label: 'Affecter les tickets acceptés', path: '#' },
-        { id: 'tickets_consulter_affectes', label: 'Consulter les tickets affectés', path: '#' },
-        { id: 'tickets_voir_refuses', label: 'Voir les tickets refusés', path: '#' },
+        { id: 'tickets_consulter_demandes', label: 'Demandes en Attente', icon: FileText, path: '#' },
+        { id: 'tickets_gerer', label: 'Tickets à Traiter', icon: ListChecks, path: '#' }, // Page centralisée
+        { id: 'tickets_voir_refuses', label: 'Tickets Refusés', icon: ArchiveX, path: '#' },
       ],
     },
     {
       id: 'equipes_main',
       label: 'EQUIPES',
-      icon: Users, // Icône Users pour Equipes
+      icon: Users,
       subItems: [
         { id: 'equipes_consulter_equipes', label: 'Consulter les équipes', path: '#' },
-        { id: 'equipes_consulter_avancement', label: 'Avancement des équipes', path: '#' },
+        // { id: 'equipes_consulter_avancement', label: 'Avancement des équipes', path: '#' }, // Si besoin
       ],
     },
     {
@@ -51,13 +51,12 @@ const SidebarAdmin = ({ activePage, setActivePage, isSidebarOpen, toggleSidebar 
       icon: UserCircleIcon,
       subItems: [
         { id: 'utilisateurs_consulter_utilisateurs', label: 'Consulter les utilisateurs', path: '#' },
-        { id: 'utilisateurs_consulter_chefs_equipes', label: 'Consulter les chefs d\'équipes', path: '#' }, // Si vous gardez cette option
       ],
     },
     {
       id: 'modules_main',
       label: 'MODULES',
-      icon: PackageIconModule, // Icône Package pour Modules
+      icon: PackageIconModule,
       subItems: [
         { id: 'modules_consulter_modules', label: 'Consulter les modules', path: '#' },
       ],
@@ -75,13 +74,10 @@ const SidebarAdmin = ({ activePage, setActivePage, isSidebarOpen, toggleSidebar 
   const handleMainMenuClick = (item) => {
     if (item.subItems) {
       setOpenDropdownKey(openDropdownKey === item.id ? null : item.id);
-      // Optionnel: si un menu principal avec sous-menu est cliqué, ne pas changer activePage immédiatement
-      // ou alors, faire pointer vers le premier sous-élément par défaut si souhaité.
-      // Pour l'instant, cliquer sur un menu avec sous-menu ne fait qu'ouvrir/fermer le dropdown.
     } else {
       setActivePage(item.id);
-      setOpenDropdownKey(null); // Fermer tout dropdown ouvert si un item sans sous-menu est cliqué
-      if (isSidebarOpen) { // Fermer la sidebar sur mobile si un lien direct est cliqué
+      setOpenDropdownKey(null); 
+      if (isSidebarOpen && window.innerWidth < 768) { 
         toggleSidebar();
       }
     }
@@ -89,10 +85,22 @@ const SidebarAdmin = ({ activePage, setActivePage, isSidebarOpen, toggleSidebar 
 
   const handleSubMenuClick = (subItemId) => {
     setActivePage(subItemId);
-    if (isSidebarOpen) { // Fermer la sidebar sur mobile
+    if (isSidebarOpen && window.innerWidth < 768) { 
       toggleSidebar();
     }
   };
+  
+  // Auto-open dropdown if a sub-item is active on load or page change
+  useEffect(() => { // C'est la ligne 95 où l'erreur se produisait
+    const activeParent = menuItems.find(item => item.subItems?.some(sub => sub.id === activePage));
+    if (activeParent) {
+      setOpenDropdownKey(activeParent.id);
+    } else {
+      // Optionnel: fermer les dropdowns si aucun sous-menu n'est actif
+      // setOpenDropdownKey(null); 
+    }
+  }, [activePage]); // Correction: ajout de activePage comme dépendance
+
 
   return (
     <>
@@ -146,11 +154,11 @@ const SidebarAdmin = ({ activePage, setActivePage, isSidebarOpen, toggleSidebar 
               {item.subItems && openDropdownKey === item.id && (
                 <div className="ml-4 mt-1 space-y-1 pl-5 border-l-2 border-slate-700 dark:border-slate-600">
                   {item.subItems.map((subItem) => (
-                    <a // Changé en 'a' pour la sémantique, mais le comportement est géré par onClick
+                    <a 
                       key={subItem.id}
-                      href={subItem.path} // href="#" pour l'instant
+                      href={subItem.path} 
                       onClick={(e) => {
-                        e.preventDefault(); // Empêche le comportement par défaut du lien
+                        e.preventDefault(); 
                         handleSubMenuClick(subItem.id);
                       }}
                       className={`group flex items-center space-x-2.5 py-2 px-2 rounded-md text-xs font-medium transition-all duration-150 ease-in-out hover:translate-x-0.5
@@ -160,7 +168,7 @@ const SidebarAdmin = ({ activePage, setActivePage, isSidebarOpen, toggleSidebar 
                             : 'text-slate-400 dark:text-slate-500 hover:text-slate-200 dark:hover:text-slate-300'
                         }`}
                     >
-                      {activePage === subItem.id ? <CheckCircle2 size={14} className="text-sky-500" /> : <Circle size={14} className="text-slate-500 group-hover:text-slate-400" />}
+                      {subItem.icon ? <subItem.icon size={14} className={activePage === subItem.id ? "text-sky-500" : "text-slate-500 group-hover:text-slate-400"} /> : (activePage === subItem.id ? <CheckCircle2 size={14} className="text-sky-500" /> : <Circle size={14} className="text-slate-500 group-hover:text-slate-400" />)}
                       <span>{subItem.label}</span>
                     </a>
                   ))}

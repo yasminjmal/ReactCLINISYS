@@ -1,60 +1,83 @@
-import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Lock, User as UserIcon, LogOut, Shield, Users, Briefcase } from 'lucide-react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, Lock, User as UserIcon } from 'lucide-react';
+import { useAuth } from '../context/AuthContext'; // Vous utilisez AuthContext ici
 
-// Importation correcte des images depuis src/assets/images/
-// Le chemin est relatif à l'emplacement de LoginPage.jsx (src/components/LoginPage.jsx)
-import logoClinisysTransparent from '../assets/images/logoTRANSPARENT.png'; //
-import fondEcranFlou from '../assets/images/fond.png'; //
+import logoClinisysTransparent from '../assets/images/logoTRANSPARENT.png';
+import fondEcranFlou from '../assets/images/fond.png';
 
-
-// --- Données Statiques des Utilisateurs ---
-const mockUsers = [
-  { username: 'admin', password: 'admin', role: 'admin', name: 'Administrateur Principal' },
-  { username: 'chef', password: 'chef', role: 'chef_equipe', name: 'Chef Michel' },
-  { username: 'employe', password: 'employe', role: 'employe', name: 'Employé Jean' },
-];
-
-// --- Composant LoginPage ---
-const LoginPage = ({ onLoginSuccess }) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+const LoginPage = () => {
+  const [loginState, setLoginState] = useState(''); 
+  const [motDePasse, setMotDePasse] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const { login: loginContextHook } = useAuth(); 
+  const navigate = useNavigate();
+
+  const normalizeRoleForSwitch = (roleFromServer) => {
+    if (!roleFromServer) return '';
+    let normalized = String(roleFromServer).toLowerCase();
+    if (normalized.startsWith('role_')) {
+      normalized = normalized.substring(5); // Enlève "role_"
+    }
+    return normalized;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
-    setTimeout(() => {
-      const user = mockUsers.find(
-        (u) => u.username === username && u.password === password
-      );
+    try {
+      // loginContextHook vient de useAuth et devrait retourner l'objet utilisateur
+      // contenant le rôle tel que fourni par authService (qui est "Admin" dans votre cas)
+      const { user: userData } = await loginContextHook({ login: loginState, motDePasse: motDePasse });
+      
+      console.log("LoginPage: userData reçu après loginContextHook:", userData);
 
-      if (user) {
-        onLoginSuccess(user);
+      if (userData && userData.role) {
+        const normalizedUserRole = normalizeRoleForSwitch(userData.role);
+        console.log(`LoginPage: Rôle original: "${userData.role}", Rôle normalisé pour switch: "${normalizedUserRole}"`);
+
+        switch (normalizedUserRole) { 
+          case 'admin': // Comparaison avec la version normalisée (minuscules, sans préfixe)
+            console.log("LoginPage: Redirection vers /admin");
+            navigate('/admin'); // Assurez-vous que la route est /admin et non /admin/* ici
+            break;
+          case 'chef_equipe': 
+            console.log("LoginPage: Redirection vers /chef");
+            navigate('/chef');
+            break;
+          case 'employe': 
+            console.log("LoginPage: Redirection vers /employe");
+            navigate('/employe');
+            break;
+          default:
+            console.warn('LoginPage: Rôle utilisateur non reconnu après normalisation. Rôle original:', userData.role, 'Normalisé:', normalizedUserRole);
+            setError(`Rôle utilisateur "${userData.role}" non supporté pour la redirection.`);
+            break;
+        }
       } else {
-        setError("Nom d'utilisateur ou mot de passe incorrect.");
+        setError("Connexion réussie, mais le rôle de l'utilisateur est manquant ou invalide.");
       }
+    } catch (err) {
+      setError(err.message || "Une erreur de connexion est survenue.");
+      console.error("LoginPage: Erreur lors du handleSubmit:", err);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
     <div
       className="min-h-screen flex flex-col justify-center items-center p-4 selection:bg-sky-500 selection:text-white"
-      style={{
-        backgroundImage: `url(${fondEcranFlou})`, // Utilisation de la variable importée
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      }}
+      style={{ backgroundImage: `url(${fondEcranFlou})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
     >
       <div className="w-full max-w-md">
         <div className="bg-slate-800 bg-opacity-50 backdrop-blur-xl shadow-2xl rounded-xl p-8 md:p-10">
           <div className="flex justify-center mb-10">
-            {/* Utilisation de la variable importée pour le logo */}
             <img src={logoClinisysTransparent} alt="Logo Clinisys" className="h-28 w-56 object-contain" />
           </div>
           <h2 className="text-3xl font-bold text-center text-slate-100 mb-2">
@@ -70,34 +93,28 @@ const LoginPage = ({ onLoginSuccess }) => {
           )}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label
-                htmlFor="username"
-                className="block text-sm font-medium text-slate-300 mb-1"
-              >
-                Nom d'utilisateur
+              <label htmlFor="login" className="block text-sm font-medium text-slate-300 mb-1">
+                Login
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <UserIcon className="h-5 w-5 text-slate-400" />
                 </div>
                 <input
-                  id="username"
-                  name="username"
+                  id="login"
+                  name="login"
                   type="text"
                   autoComplete="username"
                   required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Votre nom d'utilisateur"
-                  className="w-full pl-10 pr-3 py-2.5 bg-slate-700 bg-opacity-70 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition duration-150 ease-in-out"
+                  value={loginState}
+                  onChange={(e) => setLoginState(e.target.value)}
+                  placeholder="Votre login"
+                  className="w-full pl-10 pr-3 py-2.5 bg-slate-700 bg-opacity-70 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition"
                 />
               </div>
             </div>
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-slate-300 mb-1"
-              >
+              <label htmlFor="motDePasse" className="block text-sm font-medium text-slate-300 mb-1">
                 Mot de passe
               </label>
               <div className="relative">
@@ -105,20 +122,20 @@ const LoginPage = ({ onLoginSuccess }) => {
                   <Lock className="h-5 w-5 text-slate-400" />
                 </div>
                 <input
-                  id="password"
-                  name="password"
+                  id="motDePasse"
+                  name="motDePasse"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={motDePasse}
+                  onChange={(e) => setMotDePasse(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-10 py-2.5 bg-slate-700 bg-opacity-70 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition duration-150 ease-in-out"
+                  className="w-full pl-10 pr-10 py-2.5 bg-slate-700 bg-opacity-70 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200"
                   aria-label={showPassword ? "Cacher le mot de passe" : "Afficher le mot de passe"}
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -126,31 +143,19 @@ const LoginPage = ({ onLoginSuccess }) => {
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-sky-500 bg-slate-600 border-slate-500 rounded focus:ring-sky-500 focus:ring-offset-slate-800"
-                />
-                <label
-                  htmlFor="remember-me"
-                  className="ml-2 block text-sm text-slate-300"
-                >
-                  Se souvenir de moi
-                </label>
-              </div>
-              <div className="text-sm">
-                <a href="#" className="font-medium text-sky-400 hover:text-sky-300 transition-colors">
-                  Mot de passe oublié ?
-                </a>
-              </div>
+                <div className="flex items-center">
+                    <input id="remember-me" name="remember-me" type="checkbox" className="h-4 w-4 text-sky-500 bg-slate-600 border-slate-500 rounded focus:ring-sky-500 focus:ring-offset-slate-800" />
+                    <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-300">Se souvenir de moi</label>
+                </div>
+                <div className="text-sm">
+                    <a href="#" className="font-medium text-sky-400 hover:text-sky-300 transition-colors">Mot de passe oublié ?</a>
+                </div>
             </div>
             <div>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-sky-500 disabled:opacity-70 disabled:cursor-not-allowed transition duration-150 ease-in-out transform hover:scale-105 active:scale-100"
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-sky-500 disabled:opacity-70 disabled:cursor-not-allowed transition"
               >
                 {isLoading ? (
                   <>
@@ -175,39 +180,4 @@ const LoginPage = ({ onLoginSuccess }) => {
   );
 };
 
-// --- Composant Interface Admin ---
-const AdminInterface = ({ user, onLogout }) => {
-  return (
-    <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-8">
-      <Shield size={64} className="text-sky-400 mb-6" />
-      <h1 className="text-4xl font-bold mb-4">Interface Administrateur</h1>
-      <p className="text-2xl mb-8">Bienvenue, {user.name} !</p>
-      <button
-        onClick={onLogout}
-        className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg text-white font-semibold flex items-center space-x-2 transition-colors"
-      >
-        <LogOut size={20} />
-        <span>Se déconnecter</span>
-      </button>
-    </div>
-  );
-};
-
-// --- Composant Interface Chef d'Équipe ---
-const ChefEquipeInterface = ({ user, onLogout }) => {
-  return (
-    <div className="min-h-screen bg-slate-800 text-white flex flex-col items-center justify-center p-8">
-      <Users size={64} className="text-teal-400 mb-6" />
-      <h1 className="text-4xl font-bold mb-4">Interface Chef d'Équipe</h1>
-      <p className="text-2xl mb-8">Bienvenue, {user.name} !</p>
-      <button
-        onClick={onLogout}
-        className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg text-white font-semibold flex items-center space-x-2 transition-colors"
-      >
-        <LogOut size={20} />
-        <span>Se déconnecter</span>
-      </button>
-    </div>
-  );
-};
 export default LoginPage;

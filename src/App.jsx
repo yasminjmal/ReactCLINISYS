@@ -1,168 +1,145 @@
-import React, { useState, useEffect } from 'react';
-// Importations nécessaires depuis react-router-dom
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+// src/App.jsx
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useOutletContext } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext'; 
 
-import LoginPage from './components/LoginPage'; // Assurez-vous que le chemin est correct
-import AdminInterface from './components/admin/InterfaceAdmin'; // Assurez-vous que le chemin est correct
-// import ChefEquipeInterface from './components/chefEquipe/ChefEquipeInterface'; // Pour plus tard
-// import EmployeInterface from './components/employe/EmployeInterface'; // Pour plus tard
-import './index.css'; // Vos styles globaux
+import LoginPage from './components/LoginPage';
+import AdminInterface from './components/admin/InterfaceAdmin';
+import ChefEquipeInterface from './components/chefEquipe/InterfaceChefEquipe';
+import EmployeInterface from './components/employe/InterfaceEmploye';
+import './index.css';
 
-// --- Données Statiques des Utilisateurs (exemple) ---
-const mockUsers = [
-  {
-    username: 'admin',
-    password: 'admin',
-    role: 'admin',
-    name: 'Administrateur C.',
-    profileImage: '/assets/images/default-profile.png',
-    email: 'admin@clinisys.com'
-  },
-  {
-    username: 'chef',
-    password: 'chef',
-    role: 'chef_equipe',
-    name: 'Chef Michel',
-    profileImage: '/assets/images/default-profile.png',
-    email: 'chef@clinisys.com'
-  },
-  {
-    username: 'employe',
-    password: 'employe',
-    role: 'employe',
-    name: 'Employé Jean',
-    profileImage: '/assets/images/default-profile.png',
-    email: 'employe@clinisys.com'
-  },
-]; //
+// Fonction de normalisation des rôles (peut être placée ici ou dans un fichier utils)
+const normalizeRoleApp = (roleFromServer) => {
+  if (!roleFromServer) return '';
+  let normalized = String(roleFromServer).toLowerCase();
+  if (normalized.startsWith('role_')) {
+    normalized = normalized.substring(5); // Enlève "role_"
+  }
+  return normalized; // ex: "admin", "chef_equipe", "employe"
+};
 
-function App() {
-  const [currentUser, setCurrentUser] = useState(null); //
-  const [loading, setLoading] = useState(true); // Ajout d'un état de chargement
+const ProtectedRoute = ({ allowedRoles }) => {
+  const { currentUser, isAuthenticated, isLoading } = useAuth();
 
-  useEffect(() => {
-    // J'ai décommenté cette section pour restaurer la persistance de session.
-    // Adaptez selon vos besoins de test.
-    if (typeof window !== 'undefined') {
-      const storedUser = localStorage.getItem('currentUser');
-      if (storedUser) {
-        try {
-          setCurrentUser(JSON.parse(storedUser));
-        } catch (e) {
-          console.error("Erreur lors de la lecture de l'utilisateur depuis localStorage", e);
-          localStorage.removeItem('currentUser');
-        }
-      }
-    }
-    setLoading(false); // Fin du chargement initial
-  }, []); //
-
-  const handleLoginSuccess = (loggedInUserCredentials) => {
-    const fullUser = mockUsers.find(u => u.username === loggedInUserCredentials.username && u.password === loggedInUserCredentials.password); //
-
-    if (fullUser) {
-      setCurrentUser(fullUser); //
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('currentUser', JSON.stringify(fullUser)); //
-      }
-      // La redirection sera gérée par la logique des Routes ci-dessous après la mise à jour de currentUser
-    } else {
-      console.error("Identifiants incorrects ou utilisateur non trouvé."); //
-      // LoginPage devrait idéalement gérer l'affichage des erreurs
-    }
-  };
-
-  const handleLogout = () => {
-    setCurrentUser(null); //
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('currentUser'); //
-    }
-    // La redirection vers /login sera gérée par la logique des Routes ci-dessous
-  };
-
-  if (loading) {
-    return <div>Chargement...</div>; // Afficher un message pendant la vérification du localStorage
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-screen">Chargement de l'application...</div>;
   }
 
-  // Le BrowserRouter englobe toute la logique de routage
+  if (!isAuthenticated || !currentUser) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const userRoleNormalized = normalizeRoleApp(currentUser.role);
+  console.log(`ProtectedRoute: Role original: "${currentUser.role}", Normalisé: "${userRoleNormalized}", Rôles autorisés:`, allowedRoles);
+
+  // allowedRoles dans vos routes est déjà en minuscules (ex: ['admin'])
+  if (allowedRoles && !allowedRoles.includes(userRoleNormalized)) {
+    console.warn(`ProtectedRoute: Accès refusé pour le rôle "${userRoleNormalized}". Redirection.`);
+    let fallbackPath = '/login'; 
+    // Rediriger vers la page d'accueil spécifique au rôle si le rôle est connu mais non autorisé pour cette route
+    switch (userRoleNormalized) {
+      case 'admin': fallbackPath = '/admin'; break;
+      case 'chef_equipe': fallbackPath = '/chef'; break;
+      case 'employe': fallbackPath = '/employe'; break;
+      default: fallbackPath = '/login'; 
+    }
+    return <Navigate to={fallbackPath} replace />;
+  }
+  
+  // Passer currentUser et la fonction de déconnexion aux composants enfants
+  // Assurez-vous que vos composants AdminInterface, etc. utilisent useOutletContext
+  return <Outlet />; 
+  // Si vous passez des props directement, vous auriez besoin de {children} ici
+  // et de passer les props aux children. Avec Outlet, le contexte est plus simple.
+};
+
+const PublicRoute = ({ children }) => {
+  const { isAuthenticated, currentUser, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-screen">Chargement...</div>;
+  }
+
+  if (isAuthenticated && currentUser) {
+    const userRoleNormalized = normalizeRoleApp(currentUser.role);
+    let homePath = '/login'; 
+    switch (userRoleNormalized) {
+      case 'admin': homePath = '/admin'; break;
+      case 'chef_equipe': homePath = '/chef'; break;
+      case 'employe': homePath = '/employe'; break;
+      default: homePath = '/login'; 
+    }
+    return <Navigate to={homePath} replace />;
+  }
+  return children;
+};
+
+function AppContent() {
+  // Si AdminInterface, etc., utilisent useOutletContext, elles n'ont pas besoin de props ici.
+  // Sinon, vous récupéreriez currentUser et logout de useAuth() ici pour les passer.
+  // const { currentUser, logout } = useAuth(); 
+
+  return (
+      <Routes>
+        <Route 
+          path="/login" 
+          element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          } 
+        />
+
+        {/* Routes protégées */}
+        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+          {/* AdminInterface recevra user et onLogout via useOutletContext() */}
+          <Route path="/admin/*" element={<AdminInterface />} />
+        </Route>
+        <Route element={<ProtectedRoute allowedRoles={['chef_equipe']} />}>
+          <Route path="/chef/*" element={<ChefEquipeInterface />} />
+        </Route>
+        <Route element={<ProtectedRoute allowedRoles={['employe']} />}>
+          <Route path="/employe/*" element={<EmployeInterface />} />
+        </Route>
+        
+        <Route 
+          path="*" 
+          element={<NavigateToCorrectRouteOnLoad />}
+        />
+      </Routes>
+  );
+}
+
+// Helper component pour la redirection par défaut si l'utilisateur est déjà loggué
+const NavigateToCorrectRouteOnLoad = () => {
+  const { isAuthenticated, currentUser, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-screen">Chargement...</div>;
+  }
+
+  if (!isAuthenticated || !currentUser) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const userRoleNormalized = normalizeRoleApp(currentUser.role);
+  let homePath = '/login';
+  switch (userRoleNormalized) {
+    case 'admin': homePath = '/admin'; break;
+    case 'chef_equipe': homePath = '/chef'; break;
+    case 'employe': homePath = '/employe'; break;
+    default: homePath = '/login';
+  }
+  return <Navigate to={homePath} replace />;
+};
+
+function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {!currentUser ? (
-          // --- Utilisateur NON authentifié ---
-          <>
-            <Route 
-              path="/login" 
-              element={<LoginPage onLoginSuccess={handleLoginSuccess} />} 
-            />
-            {/* Rediriger toutes les autres routes vers /login si non authentifié */}
-            {/* On utilise "/*" pour capturer toutes les routes non définies précédemment dans ce bloc */}
-            <Route path="/*" element={<Navigate to="/login" replace />} />
-          </>
-        ) : (
-          // --- Utilisateur AUTHENTIFIÉ ---
-          <>
-            {/* Route spécifique pour l'administrateur */}
-            {currentUser.role === 'admin' && (
-              <Route 
-                path="/admin/*" // Le '/*' permet à AdminInterface de gérer ses propres sous-routes
-                element={<AdminInterface user={currentUser} onLogout={handleLogout} />} 
-              />
-            )}
-            {/* Vous pouvez ajouter d'autres rôles ici de la même manière */}
-            {/* Exemple pour chef_equipe (à décommenter et adapter) :
-            {currentUser.role === 'chef_equipe' && (
-              <Route 
-                path="/chef/*" 
-                element={<ChefEquipeInterface user={currentUser} onLogout={handleLogout} />} 
-              />
-            )}
-            */}
-
-            {/* Redirection par défaut pour l'utilisateur connecté */}
-            {/* Si l'URL est / ou /login, rediriger vers la page principale de son rôle */}
-            <Route 
-              path="/" 
-              element={
-                <Navigate 
-                  to={currentUser.role === 'admin' ? '/admin' : 
-                     (currentUser.role === 'chef_equipe' ? '/chef' : /* Ajoutez d'autres rôles ici */
-                     (currentUser.role === 'employe' ? '/employe' : '/login'))} /* Fallback vers /login si rôle inconnu */
-                  replace 
-                />
-              } 
-            />
-            {/* Si un utilisateur connecté essaie d'aller explicitement sur /login */}
-            <Route 
-              path="/login"
-              element={
-                <Navigate 
-                  to={currentUser.role === 'admin' ? '/admin' :
-                     (currentUser.role === 'chef_equipe' ? '/chef' :
-                     (currentUser.role === 'employe' ? '/employe' : '/login'))}
-                  replace 
-                />
-              } 
-            />
-            
-            {/* Fallback pour les routes non trouvées pour un utilisateur connecté.
-                Redirige vers la page principale de son rôle ou /login si le rôle n'est pas géré ci-dessus.
-                S'assurer que cette route est la dernière dans ce bloc authentifié pour ne pas court-circuiter
-                les routes spécifiques comme /admin/* */}
-            <Route 
-              path="/*" 
-              element={
-                <Navigate 
-                  to={currentUser.role === 'admin' ? '/admin' :
-                     (currentUser.role === 'chef_equipe' ? '/chef' :
-                     (currentUser.role === 'employe' ? '/employe' : '/login'))}
-                  replace 
-                />
-              } 
-            />
-          </>
-        )}
-      </Routes>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </BrowserRouter>
   );
 }

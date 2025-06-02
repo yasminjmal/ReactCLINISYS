@@ -1,15 +1,17 @@
+// src/components/admin/Tickets/ConsulterDemandesPage.jsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, List, LayoutGrid, Filter as FilterIcon, ArrowUpDown, RefreshCw, CalendarDays, User, Tag, XCircle as AlertXCircle, CheckCircle2 as AlertCheckCircle, X as XIcon, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, List, LayoutGrid, Filter as FilterIcon, ArrowUpDown, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react'; // Supprimé les imports non utilisés directement ici si pageMessage est géré par InterfaceAdmin
 import TicketRow from './TicketRow';
 import TicketCard from './TicketCard';
 
 const ConsulterDemandesPage = ({
   tickets: initialTickets = [],
-  clients: initialClients = [],
   onNavigateToTicketDetails,
-  pageMessage,
-  newlyAddedItemId,
-  clearPageMessage
+  pageMessage, // Prop pour afficher les messages venant d'InterfaceAdmin
+  newlyAddedItemId, // Pour le highlight, si applicable
+  clearPageMessage, // Pour fermer le message
+  pageMainTitle = "Consulter les Demandes", // Titre principal par défaut
+  pageStatusDescriptor = "en attente" // Descripteur de statut par défaut
 }) => {
   const [viewMode, setViewMode] = useState('row');
   const [searchTerm, setSearchTerm] = useState('');
@@ -84,6 +86,7 @@ const ConsulterDemandesPage = ({
   const clearAllFilters = () => {
     setActiveFilters({ priorite: [], client: [] });
     setDateRange({ from: '', to: '' });
+    setSearchTerm(''); // Aussi réinitialiser le terme de recherche
     setIsFilterDropdownOpen(false);
   };
   
@@ -127,7 +130,7 @@ const ConsulterDemandesPage = ({
     }
     if (dateRange.to) {
         const toDate = new Date(dateRange.to);
-        toDate.setDate(toDate.getDate() + 1);
+        toDate.setDate(toDate.getDate() + 1); // Pour inclure le jour 'to'
         processedTickets = processedTickets.filter(ticket => 
             new Date(ticket.dateCreation) < toDate
         );
@@ -143,22 +146,28 @@ const ConsulterDemandesPage = ({
         return activeSort.order === 'asc' ? comparison : comparison * -1;
       });
     }
-    return processedTickets;
-  }, [initialTickets, searchTerm, activeFilters, dateRange, activeSort]);
+    return processedTickets.map(ticket => ({
+      ...ticket,
+      isHighlighted: ticket.id === newlyAddedItemId // Ajout pour le highlight
+    }));
+  }, [initialTickets, searchTerm, activeFilters, dateRange, activeSort, newlyAddedItemId]);
 
-  const totalTicketsEnAttente = initialTickets.length;
+  const totalTicketsAffiches = filteredAndSortedTickets.length;
 
   return (
     <div className="p-4 md:p-6 space-y-6 bg-slate-50 dark:bg-slate-900 min-h-full">
+      {/* Le message est maintenant géré par InterfaceAdmin, mais on garde les props au cas où */}
+      {/* {pageMessage && ( ... )} */}
+
       <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
           <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-200">
-            Consulter les Demandes ({totalTicketsEnAttente} en attente)
+            {pageMainTitle} ({totalTicketsAffiches} {pageStatusDescriptor})
           </h2>
           <div className="flex items-center space-x-2">
             <button 
                 onClick={handleRefresh} 
-                className="btn btn-secondary-icon" // Style plus concis pour icône seule
+                className="btn btn-secondary-icon"
                 title="Rafraîchir les données"
                 disabled={isLoading}
             >
@@ -175,26 +184,24 @@ const ConsulterDemandesPage = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
           <div className="relative lg:col-span-2">
-            <label htmlFor="search-tickets-acceptes" className="sr-only">Rechercher</label>
+            <label htmlFor="search-tickets" className="sr-only">Rechercher</label>
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-slate-400 dark:text-slate-500" />
             </div>
             <input
               type="text"
-              id="search-tickets-acceptes"
+              id="search-tickets"
               placeholder="Rechercher par réf, client, titre..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              // AJOUTEZ pl-10 (ou une valeur appropriée) ici
               className="form-input-icon w-full py-2 text-sm pl-10" 
             />
           </div>
 
-          {/* Bouton Filtrer amélioré */}
           <div className="relative" ref={filterDropdownRef}>
             <button
               onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-              className="btn btn-default w-full flex items-center justify-between group" // btn-default pour un style de base
+              className="btn btn-default w-full flex items-center justify-between group"
             >
               <div className="flex items-center">
                 <FilterIcon size={16} className="mr-2 text-slate-500 dark:text-slate-400 group-hover:text-sky-500 dark:group-hover:text-sky-400 transition-colors" />
@@ -207,7 +214,6 @@ const ConsulterDemandesPage = ({
             </button>
             {isFilterDropdownOpen && (
               <div className="absolute top-full left-0 mt-1 w-full md:w-80 bg-white dark:bg-slate-800 rounded-md shadow-xl border dark:border-slate-700 z-20 p-4 space-y-4">
-                {/* Contenu du dropdown de filtre (inchangé) */}
                 <div>
                   <h5 className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Priorité</h5>
                   {priorityOptions.map(opt => (
@@ -251,11 +257,10 @@ const ConsulterDemandesPage = ({
             )}
           </div>
 
-          {/* Bouton Trier par amélioré */}
           <div className="relative" ref={sortDropdownRef}>
             <button
               onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-              className="btn btn-default w-full flex items-center justify-between group" // btn-default pour un style de base
+              className="btn btn-default w-full flex items-center justify-between group"
             >
                <div className="flex items-center">
                 <ArrowUpDown size={16} className="mr-2 text-slate-500 dark:text-slate-400 group-hover:text-sky-500 dark:group-hover:text-sky-400 transition-colors" />
@@ -291,19 +296,29 @@ const ConsulterDemandesPage = ({
         viewMode === 'row' ? (
           <div className="space-y-3">
             {filteredAndSortedTickets.map(ticket => (
-              <TicketRow key={ticket.id} ticket={ticket} onNavigateToDetails={onNavigateToTicketDetails} />
+              <TicketRow 
+                key={ticket.id} 
+                ticket={ticket} 
+                onNavigateToDetails={onNavigateToTicketDetails} 
+                isHighlighted={ticket.isHighlighted} // Passer la prop de highlight
+              />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-5"> {/* Ajusté pour 3 cartes par ligne sur grand écran */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-5">
             {filteredAndSortedTickets.map(ticket => (
-              <TicketCard key={ticket.id} ticket={ticket} onNavigateToDetails={onNavigateToTicketDetails} />
+              <TicketCard 
+                key={ticket.id} 
+                ticket={ticket} 
+                onNavigateToDetails={onNavigateToTicketDetails} 
+                isHighlighted={ticket.isHighlighted} // Passer la prop de highlight
+              />
             ))}
           </div>
         )
       ) : (
         <p className="text-center text-slate-500 dark:text-slate-400 py-10">
-          Aucun ticket "en attente" ne correspond à vos critères.
+          Aucun ticket "{pageStatusDescriptor}" ne correspond à vos critères.
         </p>
       )}
     </div>
