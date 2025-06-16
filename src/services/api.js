@@ -1,49 +1,29 @@
-// src/services/api.js
 import axios from 'axios';
 
-// Configurez l'URL de base de votre API Spring Boot
-// Assurez-vous que le port correspond à celui de votre backend Spring Boot (par défaut 8080)
-// Vite expose les variables d'environnement via import.meta.env
-// Assurez-vous que votre variable d'environnement est préfixée par VITE_ dans votre fichier .env
-// Par exemple : VITE_API_URL=http://localhost:8080/api
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:9000/template-core/api';
-
-const apiClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+// Crée une instance axios pré-configurée.
+// Toutes les requêtes utiliseront cette base d'URL.
+const api = axios.create({
+  baseURL: 'http://localhost:9000/template-core/api',
 });
 
-// Intercepteur pour ajouter le token JWT à chaque requête si disponible
-apiClient.interceptors.request.use(
+// Ajoute un intercepteur qui s'exécute avant chaque envoi de requête.
+api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('authToken');
+    // Tente de récupérer le token d'authentification depuis le localStorage.
+    const token = localStorage.getItem('authToken'); // Assurez-vous que cette clé 'authToken' est bien celle que vous utilisez lors de la connexion.
+
+    // Si un token est trouvé, il est ajouté à l'en-tête 'Authorization'.
     if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // La configuration de la requête est retournée pour être exécutée.
     return config;
   },
   (error) => {
+    // Gère les erreurs lors de la configuration de la requête.
     return Promise.reject(error);
   }
 );
 
-// Intercepteur de réponse (optionnel, pour gérer les erreurs globales comme 401)
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response && error.response.status === 401) {
-      // Token invalide ou expiré
-      // Vous pourriez ici déclencher une déconnexion globale
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('currentUser');
-      // Rediriger vers la page de connexion, par exemple :
-      // window.location.href = '/login'; // Décommentez si vous voulez une redirection automatique
-      console.error('Unauthorized access - 401. Token might be invalid or expired.');
-    }
-    return Promise.reject(error);
-  }
-);
-
-export default apiClient;
+export default api;

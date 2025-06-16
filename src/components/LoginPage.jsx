@@ -1,50 +1,56 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Lock, User as UserIcon } from 'lucide-react';
-import { useAuth } from '../context/AuthContext'; // Vous utilisez AuthContext ici
+import { useAuth } from '../context/AuthContext'; // Importe le hook useAuth
+import authService from '../services/authService'; // Importe votre service d'authentification
 
 import logoClinisysTransparent from '../assets/images/logoTRANSPARENT.png';
 import fondEcranFlou from '../assets/images/fond.png';
 
 const LoginPage = () => {
-  const [loginState, setLoginState] = useState(''); 
-  const [motDePasse, setMotDePasse] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [loginState, setLoginState] = useState(''); // État pour le champ login
+  const [motDePasse, setMotDePasse] = useState(''); // État pour le champ mot de passe
+  const [showPassword, setShowPassword] = useState(false); // État pour afficher/masquer le mot de passe
+  const [isLoading, setIsLoading] = useState(false); // État pour le chargement (bouton désactivé)
+  const [error, setError] = useState(''); // Message d'erreur à afficher
 
-  const { login: loginContextHook } = useAuth(); 
-  const navigate = useNavigate();
+  // Récupère la fonction de login du contexte d'authentification.
+  // Renommée 'authContextLogin' pour éviter un conflit de nom avec l'état 'loginState'.
+  const { login: authContextLogin } = useAuth(); 
+  const navigate = useNavigate(); // Hook pour la navigation programmatique
 
+  // Fonction utilitaire pour normaliser les rôles (si nécessaire pour la redirection)
   const normalizeRoleForSwitch = (roleFromServer) => {
     if (!roleFromServer) return '';
     let normalized = String(roleFromServer).toLowerCase();
     if (normalized.startsWith('role_')) {
       normalized = normalized.substring(5); // Enlève "role_"
     }
-    return normalized;
+    return normalized; // Ex: "admin", "chef_equipe", "employe"
   };
 
+  // Gère la soumission du formulaire de connexion
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
+    e.preventDefault(); // Empêche le comportement par défaut du formulaire (rechargement de la page)
+    setIsLoading(true); // Active l'état de chargement
+    setError(''); // Réinitialise les messages d'erreur
 
     try {
-      // loginContextHook vient de useAuth et devrait retourner l'objet utilisateur
-      // contenant le rôle tel que fourni par authService (qui est "Admin" dans votre cas)
-      const { user: userData } = await loginContextHook({ login: loginState, motDePasse: motDePasse });
+      // Appelle la fonction de login du contexte, en lui passant les identifiants
+      // Cette fonction interagit avec authService.login() et met à jour l'état global.
+      const userData = await authContextLogin({ login: loginState, motDePasse: motDePasse });
       
-      console.log("LoginPage: userData reçu après loginContextHook:", userData);
+      console.log("LoginPage: userData reçu après authContextLogin:", userData);
 
+      // Logique de redirection basée sur le rôle de l'utilisateur
       if (userData && userData.role) {
         const normalizedUserRole = normalizeRoleForSwitch(userData.role);
         console.log(`LoginPage: Rôle original: "${userData.role}", Rôle normalisé pour switch: "${normalizedUserRole}"`);
-
+        
         switch (normalizedUserRole) { 
-          case 'admin': // Comparaison avec la version normalisée (minuscules, sans préfixe)
+          case 'admin':
             console.log("LoginPage: Redirection vers /admin");
-            navigate('/admin'); // Assurez-vous que la route est /admin et non /admin/* ici
+            navigate('/admin'); 
             break;
           case 'chef_equipe': 
             console.log("LoginPage: Redirection vers /chef");
@@ -57,16 +63,20 @@ const LoginPage = () => {
           default:
             console.warn('LoginPage: Rôle utilisateur non reconnu après normalisation. Rôle original:', userData.role, 'Normalisé:', normalizedUserRole);
             setError(`Rôle utilisateur "${userData.role}" non supporté pour la redirection.`);
+            // Si le rôle n'est pas géré, déconnectez pour des raisons de sécurité
+            authService.logout(); // Nettoie le localStorage et l'état
             break;
         }
       } else {
         setError("Connexion réussie, mais le rôle de l'utilisateur est manquant ou invalide.");
+        authService.logout(); // Déconnectez si les données de rôle sont invalides
       }
     } catch (err) {
-      setError(err.message || "Une erreur de connexion est survenue.");
+      // Gestion des erreurs de connexion (par exemple, "Nom d'utilisateur ou mot de passe incorrect")
+      setError(err.response?.data?.message || "Une erreur de connexion est survenue.");
       console.error("LoginPage: Erreur lors du handleSubmit:", err);
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Désactive l'état de chargement
     }
   };
 
@@ -163,7 +173,7 @@ const LoginPage = () => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Chargement...
+                    Connexion en cours...
                   </>
                 ) : (
                   'Se connecter'

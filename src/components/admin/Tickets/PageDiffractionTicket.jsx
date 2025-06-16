@@ -56,7 +56,7 @@ const SubTicketForm = ({ subTicketData, index, onSubTicketChange, onRemoveSubTic
 const PageDiffractionTicket = ({
     parentTicket,
     onConfirmDiffraction,
-    onCancel // Cette fonction sera maintenant appelée pour retourner à 'tickets_affecter_acceptes'
+    onCancel
 }) => {
   const [numberOfSubTicketsToDisplay, setNumberOfSubTicketsToDisplay] = useState(1);
   const [subTicketForms, setSubTicketForms] = useState([]);
@@ -70,13 +70,9 @@ const PageDiffractionTicket = ({
       setSubTicketForms([]);
     } else {
       setGlobalError('');
-      if (subTicketForms.length === 0 && numberOfSubTicketsToDisplay > 0) {
-        const initialForms = Array.from({ length: numberOfSubTicketsToDisplay }, () => ({
-          titre: '',
-          description: '',
-        }));
-        setSubTicketForms(initialForms);
-      } else if (subTicketForms.length !== numberOfSubTicketsToDisplay) {
+      // Correction: Ne pas recréer les formulaires si le parentTicket est le même
+      // Cette logique est suffisante car numberOfSubTicketsToDisplay est mis à jour séparément
+      if (subTicketForms.length !== numberOfSubTicketsToDisplay) {
           const currentFormsCount = subTicketForms.length;
           if (numberOfSubTicketsToDisplay > currentFormsCount) {
               const newFormsToAdd = Array.from({ length: numberOfSubTicketsToDisplay - currentFormsCount }, () => ({
@@ -86,10 +82,15 @@ const PageDiffractionTicket = ({
           } else if (numberOfSubTicketsToDisplay < currentFormsCount) {
               setSubTicketForms(prev => prev.slice(0, numberOfSubTicketsToDisplay));
           }
+      } else if (subTicketForms.length === 0 && numberOfSubTicketsToDisplay > 0) { // Initialisation si vide et nombre > 0
+          const initialForms = Array.from({ length: numberOfSubTicketsToDisplay }, () => ({
+            titre: '',
+            description: '',
+          }));
+          setSubTicketForms(initialForms);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parentTicket, numberOfSubTicketsToDisplay]);
+  }, [parentTicket, numberOfSubTicketsToDisplay]); // Dépend de parentTicket et du nombre de sous-tickets
 
   const handleNumberOfSubTicketsChange = (e) => {
     let count = parseInt(e.target.value, 10);
@@ -156,7 +157,6 @@ const PageDiffractionTicket = ({
       <div className="p-6 text-center text-red-600 dark:text-red-400 bg-white dark:bg-slate-800 rounded-lg shadow-md">
         <AlertTriangle size={48} className="mx-auto mb-4 text-red-500" />
         <p className="text-xl font-semibold">{globalError}</p>
-        {/* Le bouton Annuler ici utilisera la prop onCancel fournie par InterfaceAdmin */}
         {onCancel && ( <button onClick={onCancel} className="btn btn-secondary mt-6"> Retour </button> )}
       </div>
     );
@@ -225,7 +225,6 @@ const PageDiffractionTicket = ({
         </div>
 
         <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-6 border-t border-slate-200 dark:border-slate-700">
-          {/* Le bouton Annuler ici utilisera la prop onCancel fournie par InterfaceAdmin, qui a été mise à jour */}
           {onCancel && (
             <button type="button" onClick={onCancel} className="btn btn-secondary-outline group w-full sm:w-auto">
               <XCircle size={18} className="mr-2" /> Annuler

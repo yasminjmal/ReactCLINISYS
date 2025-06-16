@@ -1,46 +1,39 @@
+// src/services/posteService.js
 import api from './api';
 
-/**
- * Retrieves all postes.
- * @returns {Promise<Array<object>>} A list of postes.
- */
-const getAllPostes = () => {
-    return api.get('/postes');
-};
+// LA LIGNE SUIVANTE A ÉTÉ SUPPRIMÉE CAR ELLE EST INUTILE ET CAUSE L'ERREUR DANS UN NAVIGATEUR
+//import { URLSearchParams } from 'url'; 
 
 /**
- * Retrieves a single poste by its ID.
- * @param {number} id - The ID of the poste.
- * @returns {Promise<object>} The poste object.
+ * Retrieves all postes, with an optional filter for 'actif' status.
+ * @param {string} [filterStatus] - Optional. Can be 'actif', 'inactif', or 'tous'.
+ * @returns {Promise<Array<object>>} A list of postes.
  */
+const getAllPostes = (filterStatus) => {
+    // On utilise directement URLSearchParams, qui est disponible globalement dans le navigateur.
+    const params = new URLSearchParams();
+    if (filterStatus === 'actif') {
+        params.append('actifs', 'true');
+    } else if (filterStatus === 'inactif') {
+        params.append('actifs', 'false');
+    }
+    
+    return api.get('/postes', { params });
+};
+
+// ... le reste du fichier est identique ...
 const getPosteById = (id) => {
     return api.get(`/postes/${id}`);
 };
 
-/**
- * Creates a new poste.
- * @param {object} posteData - The data for the new poste.
- * @returns {Promise<object>} The newly created poste.
- */
 const createPoste = (posteData) => {
     return api.post('/postes', posteData);
 };
 
-/**
- * Updates an existing poste.
- * @param {number} id - The ID of the poste to update.
- * @param {object} posteData - The updated data for the poste.
- * @returns {Promise<object>} The updated poste.
- */
 const updatePoste = (id, posteData) => {
     return api.put(`/postes/${id}`, posteData);
 };
 
-/**
- * Deletes a poste by its ID.
- * @param {number} id - The ID of the poste to delete.
- * @returns {Promise<void>}
- */
 const deletePoste = (id) => {
     return api.delete(`/postes/${id}`);
 };

@@ -1,201 +1,259 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, List, LayoutGrid, Filter, ArrowUpDown, ChevronDown, ChevronUp, PackagePlus, XCircle as AlertXCircle, CheckCircle2 as AlertCheckCircle, X as XIcon } from 'lucide-react';
+// src/components/admin/Modules/ConsulterModulesPage.jsx
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Search, List, LayoutGrid, Rows3, PackagePlus, Filter, AlertTriangle, Save, XCircle, Edit, Trash2, ChevronDown, X as XIcon } from 'lucide-react';
+
+import moduleService from '../../../services/moduleService';
+import equipeService from '../../../services/equipeService';
+import { formatDateFromArray } from '../../../utils/dateFormatter';
+
+import AjouterModulePage from './AjouterModulePage';
 import ModuleCard from './ModuleCard';
 import ModuleRow from './ModuleRow';
+import ModuleTableRow from './ModuleTableRow';
 
-const ConsulterModulesPage = ({ 
-    modules = [], 
-    equipes = [], 
-    onNavigateToAjouterModule, 
-    onNavigateToModuleDetails,
-    onDeleteModuleRequest,
-    pageMessage, 
-    newlyAddedModuleId, 
-    clearPageMessage 
-}) => {
-  
-  const [viewMode, setViewMode] = useState('list'); // Vue liste par défaut
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
-  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
-  const [activeFilters, setActiveFilters] = useState({ equipeId: null });
-  const [activeSort, setActiveSort] = useState({ field: 'dateCreation', order: 'desc' });
-  const [highlightedModuleId, setHighlightedModuleId] = useState(null);
-
-  const filterDropdownRef = useRef(null);
-  const sortDropdownRef = useRef(null);
-  const newlyAddedModuleRef = useRef(null);
-
-  const safeEquipes = Array.isArray(equipes) ? equipes : [];
-  const sortOptionsModules = [
-    { value: 'dateCreation', label: 'Date Création' },
-    { value: 'nom', label: 'Nom (A-Z)' },
-    { value: 'id', label: 'ID' },
-    { value: 'nbTicketsAssignes', label: 'Nb Tickets Assignés' }
-  ];
-
-  useEffect(() => { /* ... (gestion clic extérieur) ... */ 
-    function handleClickOutside(event) {
-      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) setIsFilterDropdownOpen(false);
-      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target)) setIsSortDropdownOpen(false);
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => { /* ... (gestion highlight) ... */
-    if (pageMessage && pageMessage.text && newlyAddedModuleId) {
-      setHighlightedModuleId(newlyAddedModuleId);
-      if (newlyAddedModuleRef.current) {
-        newlyAddedModuleRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      const timer = setTimeout(() => {
-        setHighlightedModuleId(null);
-        if(clearPageMessage) clearPageMessage();
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [pageMessage, newlyAddedModuleId, clearPageMessage]);
-
-  const handleFilterChange = (category, value) => {
-    setActiveFilters(prev => ({ ...prev, [category]: value === prev[category] ? null : value }));
-    setIsFilterDropdownOpen(false);
-  };
-  const handleSortChange = (field) => {
-    setActiveSort(prev => ({ field, order: prev.field === field && prev.order === 'asc' ? 'desc' : 'asc' }));
-    setIsSortDropdownOpen(false);
-  };
-  const clearFilters = () => {
-    setActiveFilters({ equipeId: null });
-    setIsFilterDropdownOpen(false);
-  };
-
-  const modulesToProcess = Array.isArray(modules) ? modules : [];
-  let processedModules = [...modulesToProcess]; 
-  
-  if (searchTerm) {
-    processedModules = processedModules.filter(module =>
-        module && module.nom && module.nom.toLowerCase().includes(searchTerm.toLowerCase())
+// --- Composants UI Internes ---
+const Spinner = () => <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto my-10"></div>;
+const PageMessage = ({ message, onDismiss }) => {
+    if (!message) return null;
+    const colors = {
+        success: 'bg-green-100 dark:bg-green-800/70 border-green-500 text-green-700 dark:text-green-100',
+        error: 'bg-red-100 dark:bg-red-800/70 border-red-500 text-red-700 dark:text-red-100',
+        info: 'bg-blue-100 dark:bg-blue-800/70 border-blue-500 text-blue-700 dark:text-blue-100',
+    };
+    return (
+        <div className={`fixed top-24 right-6 p-4 rounded-md shadow-lg z-[100] flex items-center space-x-3 animate-slide-in-right border-l-4 ${colors[message.type]}`} role="alert">
+            <span className="font-medium flex-grow">{message.text}</span>
+            <button onClick={onDismiss} className="ml-auto p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-full"> <XIcon size={18} /> </button>
+        </div>
     );
-  }
-  if (activeFilters.equipeId) {
-    processedModules = processedModules.filter(module => module && module.equipeId === activeFilters.equipeId);
-  }
-
-  if (activeSort.field) {
-    processedModules.sort((a, b) => { 
-        if (!a || !b || !a.hasOwnProperty(activeSort.field) || !b.hasOwnProperty(activeSort.field)) return 0;
-        let valA = a[activeSort.field]; 
-        let valB = b[activeSort.field];
-        if (typeof valA === 'string') valA = valA.toLowerCase();
-        if (typeof valB === 'string') valB = valB.toLowerCase();
-        if (valA < valB) return activeSort.order === 'asc' ? -1 : 1;
-        if (valA > valB) return activeSort.order === 'asc' ? 1 : -1;
-        return 0;
-    });
-  }
-
-  const countActiveFilters = () => activeFilters.equipeId ? 1 : 0;
-
-  return (
-    <div className="p-4 md:p-6 space-y-6 bg-slate-50 dark:bg-slate-900 min-h-full">
-      {pageMessage && pageMessage.text && ( <div className={`fixed top-20 right-6 p-4 rounded-md shadow-lg z-50 flex items-center space-x-3 animate-slide-in-right ${pageMessage.type === 'success' ? 'bg-green-100 dark:bg-green-700 border-green-500 dark:border-green-600 text-green-700 dark:text-green-100' : pageMessage.type === 'error' ? 'bg-red-100 dark:bg-red-700 border-red-500 dark:border-red-600 text-red-700 dark:text-red-100' : 'bg-blue-100 dark:bg-blue-700 border-blue-500 dark:border-blue-600 text-blue-700 dark:text-blue-100'}`}><button onClick={clearPageMessage} className="ml-auto p-1 hover:bg-black/10 rounded-full"><XIcon size={16}/></button><span>{pageMessage.text}</span></div>)}
-      <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow">
-         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-          <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-200">
-            Consulter les Modules ({processedModules.length} au total)
-          </h2>
-          <div className="flex items-center space-x-2">
-            <button onClick={onNavigateToAjouterModule} className="btn btn-primary-outline group">
-              <PackagePlus size={18} className="mr-2 transition-transform duration-200 group-hover:scale-110" />
-              Ajouter Module
-            </button>
-            <button onClick={() => setViewMode('list')} className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-sky-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'}`} title="Vue Liste">
-              <List size={20} />
-            </button>
-            <button onClick={() => setViewMode('grid')} className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-sky-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'}`} title="Vue Grille">
-              <LayoutGrid size={20} />
-            </button>
-          </div>
+};
+const DeleteConfirmationModal = ({ module, onConfirm, onCancel }) => (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl text-center max-w-md w-full">
+            <AlertTriangle size={40} className="text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Confirmer la suppression</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-300 my-2">Voulez-vous vraiment supprimer le module <strong className="font-semibold">"{module?.designation}"</strong> ?</p>
+            <div className="flex justify-center space-x-3 mt-6"><button onClick={onCancel} className="btn btn-secondary">Annuler</button><button onClick={onConfirm} className="btn btn-danger">Supprimer</button></div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Search className="h-5 w-5 text-slate-400" /></div>
-            <input type="text" placeholder="Rechercher un module..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500"
-            />
-          </div>
-          <div className="relative" ref={filterDropdownRef}>
-            <button onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)} className="w-full flex items-center justify-between px-4 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600">
-              <div className="flex items-center space-x-2"><Filter size={18} /><span>Filtrer par Équipe</span>{activeFilters.equipeId && (<span className="bg-sky-500 text-white text-xs font-semibold px-1.5 py-0.5 rounded-full">1</span>)}</div>
-              {isFilterDropdownOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </button>
-            {isFilterDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-full md:w-72 bg-white dark:bg-slate-800 rounded-md shadow-lg border dark:border-slate-700 z-10 p-4 space-y-2">
-                <h4 className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">Équipe</h4>
-                {safeEquipes.map(equipe => (
-                    <label key={equipe.id} className="flex items-center space-x-2 cursor-pointer text-sm text-slate-700 dark:text-slate-200">
-                        <input type="radio" name="equipeFilterModule" value={equipe.id} checked={activeFilters.equipeId === equipe.id} onChange={() => handleFilterChange('equipeId', equipe.id)}
-                        className="form-radio h-3.5 w-3.5 text-sky-600 border-slate-300 dark:border-slate-600 focus:ring-sky-500"/>
-                        <span>{equipe.nom}</span>
-                    </label>
-                ))}
-                {safeEquipes.length === 0 && <p className="text-xs text-slate-500">Aucune équipe disponible.</p>}
-                <div className="pt-2 border-t dark:border-slate-700 flex justify-end mt-2">
-                    <button onClick={clearFilters} className="text-xs text-sky-600 dark:text-sky-400 hover:underline">Réinitialiser</button>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="relative" ref={sortDropdownRef}>
-            <button onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)} className="w-full flex items-center justify-between px-4 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600">
-               <div className="flex items-center space-x-2"><ArrowUpDown size={18} /><span>Trier par: {sortOptionsModules.find(opt => opt.value === activeSort.field)?.label || 'Défaut'} ({activeSort.order === 'asc' ? '↑' : '↓'})</span></div>
-              {isSortDropdownOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </button>
-            {isSortDropdownOpen && ( /* Dropdown Tri */ <div className="absolute top-full left-0 mt-1 w-full bg-white dark:bg-slate-800 rounded-md shadow-lg border dark:border-slate-700 z-10 py-1">
-                {sortOptionsModules.map(option => (
-                  <button key={option.value} onClick={() => handleSortChange(option.value)}
-                    className={`w-full text-left px-4 py-2 text-sm flex justify-between items-center ${activeSort.field === option.value ? 'bg-sky-50 dark:bg-sky-700/30 text-sky-600 dark:text-sky-300 font-semibold' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
-                    {option.label}
-                    {activeSort.field === option.value && (activeSort.order === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
-                  </button>
-                ))}
-              </div>)}
-          </div>
-        </div>
-      </div>
-
-      {viewMode === 'list' ? ( // Vue liste par défaut
-        <div className="space-y-3">
-          {processedModules.map(moduleObj => (
-             <div key={moduleObj.id} ref={moduleObj.id === newlyAddedModuleId ? newlyAddedModuleRef : null}
-                  className={`${moduleObj.id === highlightedModuleId ? 'ring-2 ring-green-500 ring-offset-1 dark:ring-offset-slate-900 rounded-md bg-green-50 dark:bg-green-500/10' : ''} transition-all duration-500`}>
-              <ModuleRow 
-                module={moduleObj}
-                equipeNom={safeEquipes.find(eq => eq.id === moduleObj.equipeId)?.nom}
-                onNavigateToModuleDetails={onNavigateToModuleDetails}
-              />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {processedModules.map(moduleObj => (
-            <div key={moduleObj.id} ref={moduleObj.id === newlyAddedModuleId ? newlyAddedModuleRef : null} 
-                 className={`${moduleObj.id === highlightedModuleId ? 'ring-2 ring-green-500 ring-offset-2 dark:ring-offset-slate-900 rounded-lg bg-green-50 dark:bg-green-500/10' : ''} transition-all duration-500`}>
-              <ModuleCard 
-                module={moduleObj}
-                equipeNom={safeEquipes.find(eq => eq.id === moduleObj.equipeId)?.nom}
-                onNavigateToModuleDetails={onNavigateToModuleDetails}
-              />
-            </div>
-          ))}
-        </div>
-      )}
-      {processedModules.length === 0 && (
-        <p className="text-center text-slate-500 dark:text-slate-400 py-10">Aucun module trouvé.</p>
-      )}
     </div>
-  );
+);
+
+const EditModal = ({ module, equipes, onUpdate, onCancel }) => {
+    // On utilise un seul objet pour l'état du formulaire, c'est plus propre
+    const [formData, setFormData] = useState({
+        designation: '',
+        idEquipe: '',
+        actif: true,
+    });
+    const [errors, setErrors] = useState({});
+
+    // On utilise useEffect pour initialiser l'état du formulaire quand le modal s'ouvre.
+    // C'est plus robuste que de le faire directement dans useState.
+    useEffect(() => {
+        if (module) {
+            setFormData({
+                designation: module.designation || '',
+                idEquipe: module.equipe?.id || '',
+                actif: module.actif === true,
+            });
+        }
+    }, [module]);
+
+    const handleInputChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
+    };
+
+    const handleSubmit = () => {
+        const newErrors = {};
+        if (!formData.designation.trim()) newErrors.designation = "La désignation est requise.";
+        setErrors(newErrors);
+        if (Object.keys(newErrors).length > 0) return;
+
+        const payload = {
+            designation: formData.designation,
+            idEquipe: formData.idEquipe ? parseInt(formData.idEquipe, 10) : null,
+            actif: formData.actif,
+        };
+        
+        onUpdate(module.id, payload);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-full max-w-md">
+                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6">Modifier le Module</h2>
+                <div className="space-y-4">
+                    <div>
+                        <label htmlFor="designation" className="form-label">Nom du Module</label>
+                        <input type="text" id="designation" name="designation" value={formData.designation} onChange={handleInputChange} className={`form-input ${errors.designation ? 'border-red-500' : ''}`} />
+                        {errors.designation && <p className="form-error-text">{errors.designation}</p>}
+                    </div>
+                    <div>
+                        <label htmlFor="idEquipe" className="form-label">Équipe (Optionnel)</label>
+                        <select id="idEquipe" name="idEquipe" value={formData.idEquipe} onChange={handleInputChange} className="form-select">
+                            <option value="">-- Non assignée --</option>
+                            {equipes.map(eq => <option key={eq.id} value={eq.id}>{eq.designation}</option>)}
+                        </select>
+                    </div>
+                    <div className="flex items-center pt-2">
+                        <input type="checkbox" id="actif" name="actif" checked={formData.actif} onChange={handleInputChange} className="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500" />
+                        <label htmlFor="actif" className="ml-3 block text-sm font-medium text-slate-700 dark:text-slate-300">Actif</label>
+                    </div>
+                </div>
+                <div className="pt-8 flex justify-end space-x-2">
+                    <button type="button" onClick={onCancel} className="btn btn-secondary">Annuler</button>
+                    <button type="button" onClick={handleSubmit} className="btn btn-primary">Confirmer</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+const ConsulterModulesPage = () => {
+    const [view, setView] = useState('list');
+    const [modules, setModules] = useState([]);
+    const [equipes, setEquipes] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [pageMessage, setPageMessage] = useState(null);
+    const [moduleToEdit, setModuleToEdit] = useState(null);
+    const [moduleToDelete, setModuleToDelete] = useState(null);
+    const [viewMode, setViewMode] = useState('table');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterEquipeId, setFilterEquipeId] = useState('');
+
+    const showTemporaryMessage = (type, text) => {
+        setPageMessage({ type, text });
+        setTimeout(() => setPageMessage(null), 5000);
+    };
+
+    const fetchAllData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const filters = filterEquipeId ? { equipeId: filterEquipeId } : {};
+            const [modulesRes, equipesRes] = await Promise.all([
+                moduleService.getAllModules(filters),
+                equipeService.getAllEquipes()
+            ]);
+            setModules(modulesRes.data || []);
+            setEquipes(equipesRes.data || []);
+        } catch (err) {
+            showTemporaryMessage('error', 'Erreur de chargement des données.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [filterEquipeId]);
+
+    useEffect(() => {
+        if (view === 'list') {
+            fetchAllData();
+        }
+    }, [view, fetchAllData]);
+
+    const handleAddModule = async (moduleData) => {
+        try {
+            await moduleService.createModule(moduleData);
+            showTemporaryMessage('success', 'Module ajouté avec succès.');
+            setView('list');
+        } catch (err) {
+            const errorMsg = err.response?.data?.message || "Erreur lors de l'ajout du module.";
+            showTemporaryMessage('error', errorMsg);
+        }
+    };
+    const handleUpdateModule = async (id, moduleData) => {
+        try {
+            await moduleService.updateModule(id, moduleData);
+            showTemporaryMessage('success', 'Module mis à jour.');
+            setModuleToEdit(null);
+            fetchAllData();
+        } catch (err) {
+            const errorMsg = err.response?.data?.message || 'Erreur lors de la mise à jour.';
+            showTemporaryMessage('error', errorMsg);
+        }
+    };
+    const handleDeleteModule = async () => {
+        if (!moduleToDelete) return;
+        try {
+            await moduleService.deleteModule(moduleToDelete.id);
+            showTemporaryMessage('info', 'Module supprimé.');
+            setModuleToDelete(null);
+            fetchAllData();
+        } catch (err) {
+            const errorMsg = err.response?.data?.message || 'Impossible de supprimer, le module est peut-être utilisé.';
+            showTemporaryMessage('error', errorMsg);
+        }
+    };
+
+    const filteredModules = useMemo(() => {
+        if (!Array.isArray(modules)) return [];
+        return modules.filter(mod => mod.designation.toLowerCase().includes(searchTerm.toLowerCase()));
+    }, [modules, searchTerm]);
+
+    if (view === 'add') {
+        return <AjouterModulePage onAddModule={handleAddModule} onCancel={() => setView('list')} availableEquipes={equipes} />;
+    }
+    
+    return (
+        <div className="p-4 md:p-6 space-y-6 bg-slate-50 dark:bg-slate-900 min-h-full">
+            <PageMessage message={pageMessage} onDismiss={() => setPageMessage(null)} />
+            {moduleToDelete && <DeleteConfirmationModal module={moduleToDelete} onConfirm={handleDeleteModule} onCancel={() => setModuleToDelete(null)} />}
+            {moduleToEdit && <EditModal module={moduleToEdit} equipes={equipes} onUpdate={handleUpdateModule} onCancel={() => setModuleToEdit(null)} />}
+            
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm">
+                 <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                    <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-200">Gestion des Modules ({filteredModules.length})</h2>
+                    <div className="flex items-center space-x-2">
+                        <button onClick={() => setView('add')} className="btn btn-primary group"><PackagePlus size={18} className="mr-2"/> Ajouter Module</button>
+                        <button onClick={() => setViewMode('table')} className={`p-2 rounded-md ${viewMode === 'table' ? 'bg-indigo-500 text-white' : 'bg-slate-200 dark:bg-slate-700'}`} title="Tableau"><List size={20} /></button>
+                        <button onClick={() => setViewMode('grid')} className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-indigo-500 text-white' : 'bg-slate-200 dark:bg-slate-700'}`} title="Grille"><LayoutGrid size={20} /></button>
+                        <button onClick={() => setViewMode('list')} className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-indigo-500 text-white' : 'bg-slate-200 dark:bg-slate-700'}`} title="Lignes"><Rows3 size={20} /></button>
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                    <input type="text" placeholder="Rechercher par désignation..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="form-input" />
+                    <select value={filterEquipeId} onChange={e => setFilterEquipeId(e.target.value)} className="form-select">
+                        <option value="">Filtrer par équipe (Toutes)</option>
+                        {equipes.map(eq => <option key={eq.id} value={eq.id}>{eq.designation}</option>)}
+                    </select>
+                </div>
+            </div>
+
+            {isLoading ? <Spinner /> : (
+                <div className="mt-6">
+                    {filteredModules.length === 0 ? (<p className="text-center text-slate-500 py-10">Aucun module trouvé.</p>) : (
+                        <>
+                            {viewMode === 'table' && 
+                                <div className="overflow-x-auto bg-white dark:bg-slate-800 rounded-lg shadow">
+                                    <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+                                        <thead className="text-xs text-slate-700 uppercase bg-slate-100 dark:bg-slate-700 dark:text-slate-300">
+                                            {/* CHANGEMENT ICI : Suppression des classes "text-center" */}
+                                            <tr>
+                                                <th scope="col" className="px-6 py-3">Module</th>
+                                                <th scope="col" className="px-6 py-3">Statut</th>
+                                                <th scope="col" className="px-6 py-3">Équipe</th>
+                                                <th scope="col" className="px-6 py-3">Créé par</th>
+                                                <th scope="col" className="px-6 py-3">Date Création</th>
+                                                <th scope="col" className="px-6 py-3">Tickets</th>
+                                                <th scope="col" className="px-6 py-3">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredModules.map(mod => <ModuleTableRow key={mod.id} module={mod} onEdit={() => setModuleToEdit(mod)} onDelete={() => setModuleToDelete(mod)} />)}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            {viewMode === 'grid' && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">{filteredModules.map(mod => <ModuleCard key={mod.id} module={mod} onEdit={() => setModuleToEdit(mod)} onDelete={() => setModuleToDelete(mod)} />)}</div>}
+                            {viewMode === 'list' && <div className="space-y-3">{filteredModules.map(mod => <ModuleRow key={mod.id} module={mod} onEdit={() => setModuleToEdit(mod)} onDelete={() => setModuleToDelete(mod)} />)}</div>}
+                        </>
+                    )}
+                </div>
+            )}
+        </div>
+    );
 };
 export default ConsulterModulesPage;

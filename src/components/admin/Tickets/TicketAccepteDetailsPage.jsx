@@ -1,13 +1,13 @@
 // src/components/admin/Tickets/TicketAccepteDetailsPage.jsx
 import React from 'react';
-import { ArrowLeft, Paperclip, Tag, CalendarDays, UserCircle, Building, Send, GitFork, CheckCircle as CheckCircleIcon, Clock, Package as PackageIcon, Briefcase } from 'lucide-react'; // Ajout de Briefcase
+import { ArrowLeft, Paperclip, Tag, CalendarDays, UserCircle, Building, Send, GitFork, CheckCircle as CheckCircleIcon, Clock, Package as PackageIcon, Briefcase } from 'lucide-react';
 
 const TicketAccepteDetailsPage = ({
   ticket,
-  isSubTicket, // boolean: true si c'est un sous-ticket
-  onNavigateToAffectation, // (ticketId, isSubTicket) => void
-  onNavigateToDiffraction, // (ticketId) => void
-  onCancelToList, // () => void (pour retourner à la page principale des tickets)
+  isSubTicket,
+  onNavigateToAffectation,
+  onNavigateToDiffraction,
+  onCancelToList,
 }) => {
 
   if (!ticket) {
@@ -24,8 +24,8 @@ const TicketAccepteDetailsPage = ({
   };
 
   // Logique de statut d'affichage
-  const isTicketEnCours = ticket.employeAssigne && ticket.statut !== 'Résolu' && ticket.statut !== 'Fermé';
-  let displayStatus = ticket.statut;
+  const isTicketEnCours = ticket.idUtilisateur && ticket.statue !== 'RESOLU' && ticket.statue !== 'FERME'; // Changé employeAssigne à idUtilisateur, et majuscules
+  let displayStatus = ticket.statue;
   let statusIcon = <Tag size={14} className="mr-1.5 text-slate-500 dark:text-slate-400" />;
   let statusTextClass = "text-slate-600 dark:text-slate-300";
 
@@ -33,13 +33,22 @@ const TicketAccepteDetailsPage = ({
       displayStatus = 'En cours';
       statusIcon = <Clock size={14} className="mr-1.5 text-yellow-500 dark:text-yellow-400" />;
       statusTextClass = "text-yellow-600 dark:text-yellow-300";
-  } else if (ticket.statut === 'Accepté') {
+  } else if (ticket.statue === 'ACCEPTE') { // Changé 'Accepté' à majuscules
       statusIcon = <CheckCircleIcon size={14} className="mr-1.5 text-green-500 dark:text-green-400" />;
       statusTextClass = "text-green-600 dark:text-green-300";
+  } else if (ticket.statue === 'RESOLU') { // Nouveau statut
+      statusIcon = <CheckCircleIcon size={14} className="mr-1.5 text-teal-500 dark:text-teal-400" />;
+      statusTextClass = "text-teal-600 dark:text-teal-300";
+  } else if (ticket.statue === 'FERME') { // Nouveau statut
+      statusIcon = <XCircle size={14} className="mr-1.5 text-gray-500 dark:text-gray-400" />;
+      statusTextClass = "text-gray-600 dark:text-gray-300";
   }
-  // ... autres statuts si nécessaire
 
   const demandeurNom = ticket.demandeur ? `${ticket.demandeur.prenom || ''} ${ticket.demandeur.nom || ''}`.trim() : 'N/A';
+  const clientNom = ticket.idClient?.nom || ticket.client || 'N/A'; // Adapte le chemin du client
+  const moduleNom = ticket.idModule?.nom || ticket.moduleAssigne?.nom || 'N/A'; // Adapte le chemin du module
+  const employeAssigneNom = ticket.idUtilisateur ? `${ticket.idUtilisateur.prenom || ''} ${ticket.idUtilisateur.nom || ''}`.trim() : 'N/A'; // Adapte le chemin de l'employé
+
   const dateCreationFormatted = ticket.dateCreation ? new Date(ticket.dateCreation).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour:'2-digit', minute: '2-digit' }) : 'N/A';
   const dateAcceptationFormatted = ticket.dateAcceptation ? new Date(ticket.dateAcceptation).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour:'2-digit', minute: '2-digit' }) : 'N/A';
   const dateAffectationModuleFormatted = ticket.dateAffectationModule ? new Date(ticket.dateAffectationModule).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour:'2-digit', minute: '2-digit' }) : 'N/A';
@@ -47,19 +56,18 @@ const TicketAccepteDetailsPage = ({
   
   const parentRefDisplay = isSubTicket && ticket._parentInfo ? ticket._parentInfo.ref : null;
 
-  // Condition pour afficher les boutons d'action principaux
-  // Ils ne s'affichent que si le ticket n'est PAS "En cours"
-  const showActionButtons = !isTicketEnCours;
+  // Condition pour afficher les boutons d'action principaux (s'affichent si le ticket n'est PAS "En cours" ou "Résolu" ou "Fermé")
+  const showActionButtons = ticket.statue !== 'EN_COURS' && ticket.statue !== 'RESOLU' && ticket.statue !== 'FERME';
 
   // Un ticket parent peut être diffracté s'il n'est pas lui-même un sous-ticket ET si les boutons d'action sont visibles.
   const canDiffract = showActionButtons && !isSubTicket && onNavigateToDiffraction;
   // Un ticket peut être affecté à un module si:
   // 1. C'est un sous-ticket OU
-  // 2. C'est un ticket parent SANS sous-tickets.
+  // 2. C'est un ticket parent SANS childTickets.
   // ET si les boutons d'action sont visibles.
-  const canAffectModule = showActionButtons && onNavigateToAffectation && (isSubTicket || (!ticket.sousTickets || ticket.sousTickets.length === 0));
+  const canAffectModule = showActionButtons && onNavigateToAffectation && (isSubTicket || (!ticket.childTickets || ticket.childTickets.length === 0)); // Changé sousTickets à childTickets
   
-  const affectButtonText = ticket.moduleAssigne ? "Modifier Module" : "Affecter à Module";
+  const affectButtonText = moduleNom !== 'N/A' ? "Modifier Module" : "Affecter à Module";
 
 
   return (
@@ -99,16 +107,16 @@ const TicketAccepteDetailsPage = ({
           </p>
         </div>
 
-        {ticket.documentsJoints && ticket.documentsJoints.length > 0 && (
+        {ticket.documentJointesList && ticket.documentJointesList.length > 0 && ( // Changé documentsJoints à documentJointesList
           <div className="mb-5 pb-5 border-b border-slate-200 dark:border-slate-700">
             <h3 className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-2">Documents Joints</h3>
             <div className="space-y-2">
-              {ticket.documentsJoints.map((doc, index) => (
+              {ticket.documentJointesList.map((doc, index) => ( // Changé documentsJoints à documentJointesList
                 <a key={index} href={doc.url || '#'} target="_blank" rel="noopener noreferrer"
                   className="flex items-center text-sm text-sky-600 dark:text-sky-400 hover:underline p-2 rounded-md bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700">
                   <Paperclip size={16} className="mr-2 flex-shrink-0" />
-                  <span className="truncate" title={doc.name}>{doc.name}</span>
-                  {doc.type && <span className="ml-auto text-xs text-slate-400 dark:text-slate-500 uppercase">.{doc.name?.split('.').pop() || doc.type.split('/')[1] || doc.type}</span>}
+                  <span className="truncate" title={doc.nom}>{doc.nom}</span>
+                  {doc.type && <span className="ml-auto text-xs text-slate-400 dark:text-slate-500 uppercase">.{doc.type}</span>}
                 </a>
               ))}
             </div>
@@ -125,7 +133,7 @@ const TicketAccepteDetailsPage = ({
           <div>
             <span className="block text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider">Client</span>
             <span className="font-medium text-slate-700 dark:text-slate-200 flex items-center mt-0.5">
-                <Building size={14} className="mr-1.5 text-slate-400 dark:text-slate-500" />{ticket.client || 'N/A'}
+                <Building size={14} className="mr-1.5 text-slate-400 dark:text-slate-500" />{clientNom} {/* Utilise clientNom */}
             </span>
           </div>
           <div>
@@ -148,12 +156,12 @@ const TicketAccepteDetailsPage = ({
                 </span>
             </div>
           )}
-           {ticket.moduleAssigne && (
+           {moduleNom !== 'N/A' && ( // Utilise moduleNom
             <div className="sm:col-span-1">
                 <span className="block text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider">Module Assigné</span>
                 <span className="font-medium text-slate-700 dark:text-slate-200 flex items-center mt-0.5">
                     <PackageIcon size={14} className="mr-1.5 text-indigo-500 dark:text-indigo-400" />
-                    {ticket.moduleAssigne.nom || 'N/A'}
+                    {moduleNom}
                 </span>
             </div>
           )}
@@ -165,12 +173,12 @@ const TicketAccepteDetailsPage = ({
                 </span>
             </div>
           )}
-          {ticket.employeAssigne && (
-            <div className="sm:col-span-1"> {/* Changé md:col-span-1 à sm:col-span-1 pour potentiellement mieux s'aligner */}
+          {employeAssigneNom !== 'N/A' && ( // Utilise employeAssigneNom
+            <div className="sm:col-span-1">
                 <span className="block text-slate-500 dark:text-slate-400 text-[11px] uppercase tracking-wider">Assigné à l'employé</span>
                 <span className="font-medium text-slate-700 dark:text-slate-200 flex items-center mt-0.5">
-                    <Briefcase size={14} className="mr-1.5 text-teal-500 dark:text-teal-400" /> {/* Ajout de Briefcase */}
-                    {ticket.employeAssigne.nom || 'N/A'}
+                    <Briefcase size={14} className="mr-1.5 text-teal-500 dark:text-teal-400" />
+                    {employeAssigneNom}
                 </span>
             </div>
           )}

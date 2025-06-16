@@ -1,44 +1,32 @@
-import api from './api'; // Assuming 'api.js' (the configured axios instance) is in the same directory
+// Dans src/services/equipeService.js
+import api from './api';
 
-/**
- * Retrieves all equipes.
- * @returns {Promise<Array<object>>} A list of equipes.
- */
 const getAllEquipes = () => {
     return api.get('/equipes');
 };
 
 /**
- * Retrieves a single equipe by its ID.
- * @param {number} id - The ID of the equipe.
- * @returns {Promise<object>} The equipe object.
- */
-const getEquipeById = (id) => {
-    return api.get(`/equipes/${id}`);
-};
-
-/**
- * Creates a new equipe.
- * @param {object} equipeData - The data for the new equipe.
- * @returns {Promise<object>} The newly created equipe.
+ * Crée une nouvelle équipe (sans les membres).
+ * @param {object} equipeData - Doit contenir { designation, idChefEquipe, actif }
+ * @returns {Promise<object>} L'équipe créée.
  */
 const createEquipe = (equipeData) => {
     return api.post('/equipes', equipeData);
 };
 
 /**
- * Updates an existing equipe.
- * @param {number} id - The ID of the equipe to update.
- * @param {object} equipeData - The updated data for the equipe.
- * @returns {Promise<object>} The updated equipe.
+ * Met à jour les informations de base d'une équipe.
+ * @param {number} id - L'ID de l'équipe.
+ * @param {object} equipeData - Doit contenir { designation, idChefEquipe, actif }
+ * @returns {Promise<object>} L'équipe mise à jour.
  */
 const updateEquipe = (id, equipeData) => {
     return api.put(`/equipes/${id}`, equipeData);
 };
 
 /**
- * Deletes an equipe by its ID.
- * @param {number} id - The ID of the equipe to delete.
+ * Supprime une équipe par son ID.
+ * @param {number} id - L'ID de l'équipe à supprimer.
  * @returns {Promise<void>}
  */
 const deleteEquipe = (id) => {
@@ -47,7 +35,6 @@ const deleteEquipe = (id) => {
 
 const equipeService = {
     getAllEquipes,
-    getEquipeById,
     createEquipe,
     updateEquipe,
     deleteEquipe,

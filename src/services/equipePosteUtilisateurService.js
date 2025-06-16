@@ -1,59 +1,52 @@
-import api from './api'; // Assuming 'api.js' is in the same directory or adjust path
+// src/services/equipePosteUtilisateurService.js
+import api from './api';
 
-const BASE_URL = '/equipeposteutilisateurs';
+const BASE_URL = '/equipe-poste-utilisateurs'; // L'URL de votre contrôleur backend
 
 /**
- * Creates a new EquipePosteUtilisateur assignment.
- * @param {object} assignmentData - Expected to have { idPoste, idUtilisateur, idEquipe }
- * @returns {Promise<object>} The created assignment DTO.
- */
+ * Crée une nouvelle assignation d'un utilisateur à une équipe avec un poste.
+ * @param {object} assignmentData - Doit contenir { idEquipe, idUtilisateur, idPoste }
+ * @returns {Promise<object>} La nouvelle assignation créée.
+*/
 const createAssignment = (assignmentData) => {
     return api.post(BASE_URL, assignmentData);
 };
 
 /**
- * Retrieves all EquipePosteUtilisateur assignments.
- * @returns {Promise<Array<object>>} A list of all assignments.
- */
+ * Supprime une assignation par sa clé composite.
+ * @param {number} idEquipe - ID de l'équipe
+ * @param {number} idUtilisateur - ID de l'utilisateur
+ * @param {number} idPoste - ID du poste
+ * @returns {Promise<void>}
+*/
+const deleteAssignment = (idEquipe, idUtilisateur, idPoste) => {
+    // L'URL doit correspondre exactement à celle définie dans votre EquipePosteutilisateurResource
+    return api.delete(`${BASE_URL}/${idPoste}/${idUtilisateur}/${idEquipe}`);
+};
+
+/**
+ * Récupère toutes les assignations. Utile pour le débogage.
+ * @returns {Promise<Array<object>>} Une liste de toutes les assignations.
+*/
 const getAllAssignments = () => {
     return api.get(BASE_URL);
 };
 
 /**
- * Retrieves a specific EquipePosteUtilisateur assignment by its composite key.
- * @param {number} idPoste
- * @param {number} idUtilisateur
- * @param {number} idEquipe
- * @returns {Promise<object>} The assignment DTO.
- */
-const getAssignmentByIds = (idPoste, idUtilisateur, idEquipe) => {
-    return api.get(`${BASE_URL}/${idPoste}/${idUtilisateur}/${idEquipe}`);
+ * Récupère toutes les assignations pour une équipe spécifique.
+ * @param {number} idEquipe - L'ID de l'équipe.
+ * @returns {Promise<Array<object>>} Une liste des assignations pour l'équipe donnée.
+*/
+const getAllAssignmentsForEquipe = (idEquipe) => {
+    return api.get(`${BASE_URL}/equipe/${idEquipe}`);
 };
 
-/**
- * Deletes an EquipePosteUtilisateur assignment by its composite key.
- * @param {number} idPoste
- * @param {number} idUtilisateur
- * @param {number} idEquipe
- * @returns {Promise<void>}
- */
-const deleteAssignment = (idPoste, idUtilisateur, idEquipe) => {
-    return api.delete(`${BASE_URL}/${idPoste}/${idUtilisateur}/${idEquipe}`);
-};
-
-// The PUT endpoint for update exists in your resource, but often for linking tables,
-// it's more common to delete and re-create if changes are needed beyond non-key attributes.
-// If your EquipePosteUtilisateur has other attributes to update, an update function would be similar to create.
-// const updateAssignment = (idPoste, idUtilisateur, idEquipe, assignmentData) => {
-//     return api.put(`${BASE_URL}/${idPoste}/${idUtilisateur}/${idEquipe}`, assignmentData);
-// };
 
 const equipePosteUtilisateurService = {
     createAssignment,
-    getAllAssignments,
-    getAssignmentByIds,
     deleteAssignment,
-    // updateAssignment, // Add if needed
+    getAllAssignments,
+    getAllAssignmentsForEquipe, // Add this new method
 };
 
 export default equipePosteUtilisateurService;

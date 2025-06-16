@@ -1,44 +1,40 @@
-import api from './api'; // Assuming 'api.js' (the configured axios instance) is in the same directory
+import api from './api';
 
 /**
- * Retrieves all modules.
- * @returns {Promise<Array<object>>} A list of modules.
+ * Récupère tous les modules, avec un filtre optionnel par ID d'équipe.
+ * @param {object} [filters] - Objet de filtres, ex: { equipeId: 1 }.
+ * @returns {Promise<Array<object>>} Une liste de modules.
  */
-const getAllModules = () => {
-    return api.get('/modules');
+const getAllModules = (filters = {}) => {
+    const params = new URLSearchParams();
+    if (filters.equipeId) {
+        params.append('equipes', filters.equipeId);
+    }
+    return api.get('/modules', { params });
 };
 
 /**
- * Retrieves a single module by its ID.
- * @param {number} id - The ID of the module.
- * @returns {Promise<object>} The module object.
- */
-const getModuleById = (id) => {
-    return api.get(`/modules/${id}`);
-};
-
-/**
- * Creates a new module.
- * @param {object} moduleData - The data for the new module.
- * @returns {Promise<object>} The newly created module.
+ * Crée un nouveau module.
+ * @param {object} moduleData - Données du module : { designation: string, idEquipe?: number, actif: boolean }.
+ * @returns {Promise<object>} Le module nouvellement créé.
  */
 const createModule = (moduleData) => {
     return api.post('/modules', moduleData);
 };
 
 /**
- * Updates an existing module.
- * @param {number} id - The ID of the module to update.
- * @param {object} moduleData - The updated data for the module.
- * @returns {Promise<object>} The updated module.
+ * Met à jour un module existant.
+ * @param {number} id - L'ID du module à mettre à jour.
+ * @param {object} moduleData - Données mises à jour : { designation: string, idEquipe?: number, actif: boolean }.
+ * @returns {Promise<object>} Le module mis à jour.
  */
 const updateModule = (id, moduleData) => {
     return api.put(`/modules/${id}`, moduleData);
 };
 
 /**
- * Deletes a module by its ID.
- * @param {number} id - The ID of the module to delete.
+ * Supprime un module par son ID.
+ * @param {number} id - L'ID du module à supprimer.
  * @returns {Promise<void>}
  */
 const deleteModule = (id) => {
@@ -47,7 +43,6 @@ const deleteModule = (id) => {
 
 const moduleService = {
     getAllModules,
-    getModuleById,
     createModule,
     updateModule,
     deleteModule,

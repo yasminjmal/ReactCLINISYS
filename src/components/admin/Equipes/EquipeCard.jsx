@@ -1,89 +1,44 @@
 import React from 'react';
-import { Info, Users as UsersIcon, UserCheck } from 'lucide-react'; // Edit3 et Trash2 enlevées d'ici, seront sur la page de détails
-import defaultProfilePicImport_EquipeCard from '../../../assets/images/default-profile.png';
+import { Edit, Trash2, Users as UsersIcon, UserCheck } from 'lucide-react';
+import defaultProfilePic from '../../../assets/images/default-profile.png';
 
-const EquipeCard = ({ equipe, onNavigateToEquipeDetails, onShowMoreMembers, isMembersExpanded }) => {
-  const MAX_MEMBERS_TO_SHOW_NAMES = 3;
-  const members = Array.isArray(equipe.membres) ? equipe.membres : [];
+const EquipeCard = ({ equipe, onEditRequest, onDeleteRequest }) => {
+    const members = Array.isArray(equipe.utilisateurs) ? equipe.utilisateurs : [];
 
-  return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-5 flex flex-col relative transition-all duration-300 hover:shadow-2xl min-h-[240px]">
-      <div className="absolute top-4 right-4">
-        <button 
-          onClick={() => onNavigateToEquipeDetails(equipe.id)}
-          className="text-slate-500 hover:text-sky-600 dark:text-slate-400 dark:hover:text-sky-400 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-          title="Voir détails de l'équipe"
-        >
-          <Info size={18} /> {/* Icône Info pour "détails" */}
-        </button>
-      </div>
-      
-      <div className="mb-3 pr-10"> {/* Espace pour l'icône détails */}
-        <div className="flex items-center mb-1">
-            <div className="p-2 bg-sky-100 dark:bg-sky-700/30 rounded-lg mr-3">
-                <UsersIcon className="text-sky-600 dark:text-sky-400" size={20} />
+    return (
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-5 flex flex-col relative transition-all duration-300 hover:shadow-2xl min-h-[250px]">
+            {/* Display active/inactive status */}
+            <div className={`absolute top-4 left-4 px-2 py-1 text-xs font-semibold rounded-full flex items-center ${equipe.actif ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'}`}>
+                <span className={`h-2 w-2 mr-2 rounded-full ${equipe.actif ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                {equipe.actif ? 'Actif' : 'Inactif'}
             </div>
-            <h3 
-                className="text-xl font-semibold text-slate-700 dark:text-slate-100 truncate"
-                title={equipe.nom}
-            >
-                {equipe.nom}
-            </h3>
-        </div>
-      </div>
 
-      <div className="mb-3 pl-1">
-        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center">
-            <UserCheck size={14} className="mr-1.5 text-slate-400 dark:text-slate-500"/> Chef d'équipe :
-        </p>
-        <div className="flex items-center space-x-2 pl-1">
-            <img 
-                src={equipe.chefEquipe?.profileImage || defaultProfilePicImport_EquipeCard} 
-                alt={equipe.chefEquipe?.nom || "Chef"} 
-                className="h-7 w-7 rounded-full object-cover"
-                onError={(e) => { e.currentTarget.src = defaultProfilePicImport_EquipeCard; }}
-            />
-            <span className="text-sm text-slate-700 dark:text-slate-200">
-                {equipe.chefEquipe ? `${equipe.chefEquipe.prenom} ${equipe.chefEquipe.nom}` : 'Non assigné'}
-            </span>
-        </div>
-      </div>
-
-      <div className="flex-grow mb-2 pl-1">
-        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-            Membres ({members.length}) :
-        </p>
-        {members.length > 0 ? (
-            <div className="space-y-1.5 max-h-[70px] overflow-y-auto pr-1">
-            {members.slice(0, MAX_MEMBERS_TO_SHOW_NAMES).map(membre => (
-                <div key={membre.id} className="flex items-center space-x-1.5">
-                <img
-                    src={membre.profileImage || defaultProfilePicImport_EquipeCard}
-                    alt={membre.nom}
-                    className="h-5 w-5 rounded-full object-cover"
-                    onError={(e) => { e.currentTarget.src = defaultProfilePicImport_EquipeCard; }}
-                />
-                <span className="text-xs text-slate-600 dark:text-slate-300">
-                    {membre.prenom} {membre.nom} 
-                    <span className="text-slate-500 dark:text-slate-400"> ({membre.poste || 'N/A'})</span>
-                </span>
-                </div>
-            ))}
-            {members.length > MAX_MEMBERS_TO_SHOW_NAMES && (
-                 <button
-                    onClick={(e) => { e.stopPropagation(); onShowMoreMembers(equipe.id);}} // Ajout de stopPropagation
-                    className="text-xs text-sky-500 dark:text-sky-400 mt-1 hover:underline"
-                >
-                    + {members.length - MAX_MEMBERS_TO_SHOW_NAMES} autre(s) membre(s)
+            <div className="absolute top-4 right-4 flex space-x-1">
+                <button onClick={() => onEditRequest(equipe)} className="p-1.5 rounded-full text-slate-500 hover:text-sky-600 hover:bg-slate-100 dark:hover:bg-slate-700" title="Modifier">
+                    <Edit size={16} />
                 </button>
-            )}
+                <button onClick={() => onDeleteRequest(equipe)} className="p-1.5 rounded-full text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-700" title="Supprimer">
+                    <Trash2 size={16} />
+                </button>
             </div>
-        ) : (
-            <p className="text-xs text-slate-400 dark:text-slate-500 italic">Aucun membre assigné</p>
-        )}
-      </div>
-      {/* Statut actif/inactif enlevé */}
-    </div>
-  );
+
+            <div className="mb-3 pt-8">
+                <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-100 truncate" title={equipe.designation}>{equipe.designation}</h3>
+            </div>
+
+            <div className="mb-3 pl-1">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center"><UserCheck size={14} className="mr-1.5"/> Chef :</p>
+                <div className="flex items-center space-x-2 pl-1">
+                    <img src={equipe.chefEquipe?.photoUrl || defaultProfilePic} alt={equipe.chefEquipe?.nom || "Chef"} className="h-7 w-7 rounded-full object-cover"/>
+                    <span className="text-sm text-slate-700 dark:text-slate-200">{equipe.chefEquipe ? `${equipe.chefEquipe.prenom} ${equipe.chefEquipe.nom}` : 'N/A'}</span>
+                </div>
+            </div>
+
+            <div className="flex-grow">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Membres ({members.length})</p>
+                {/* Display members here if needed */}
+            </div>
+        </div>
+    );
 };
 export default EquipeCard;

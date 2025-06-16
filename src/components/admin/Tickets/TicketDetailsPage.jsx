@@ -11,60 +11,53 @@ const TicketDetailsPage = ({ ticket, onAccepterTicket, onRefuserTicket, onCancel
 
   const getPriorityClasses = (priority) => {
     switch (priority?.toLowerCase()) {
-      case 'haute':
-        return 'bg-red-100 text-red-700 dark:bg-red-700/30 dark:text-red-300 border-red-500';
-      case 'moyenne':
-        return 'bg-sky-100 text-sky-700 dark:bg-sky-700/30 dark:text-sky-300 border-sky-500';
-      case 'faible':
-        return 'bg-green-100 text-green-700 dark:bg-green-700/30 dark:text-green-300 border-green-500';
-      default:
-        return 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border-slate-500';
+      case 'haute': return 'bg-red-100 text-red-700 dark:bg-red-700/30 dark:text-red-300 border-red-500';
+      case 'moyenne': return 'bg-sky-100 text-sky-700 dark:bg-sky-700/30 dark:text-sky-300 border-sky-500';
+      case 'faible': return 'bg-green-100 text-green-700 dark:bg-green-700/30 dark:text-green-300 border-green-500';
+      default: return 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border-slate-500';
     }
   };
-  
+
   const demandeurNom = ticket.demandeur ? `${ticket.demandeur.prenom || ''} ${ticket.demandeur.nom || ''}`.trim() : 'N/A';
+  const clientNom = ticket.idClient?.nom || ticket.client || 'N/A'; // Adapte le chemin du client
+  const dateCreationFormatted = ticket.dateCreation ? new Date(ticket.dateCreation).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour:'2-digit', minute: '2-digit' }) : 'N/A';
 
   const handleConfirmRefus = () => {
     if (motifRefus.trim() === '') {
-      // Optionnel: afficher une erreur si le motif est vide
-      alert("Veuillez entrer un motif de refus."); // Remplacer par un meilleur UI de message
+      alert("Veuillez entrer un motif de refus.");
       return;
     }
     onRefuserTicket(ticket.id, motifRefus);
     setShowRefusModal(false);
-    setMotifRefus(''); // Réinitialiser le motif
+    setMotifRefus('');
   };
 
   return (
     <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 min-h-full">
       <div className="max-w-4xl mx-auto bg-white dark:bg-slate-800 p-5 md:p-8 rounded-xl shadow-xl">
-        {/* Bouton Retour et Actions principales */}
         <div className="flex justify-between items-start mb-6">
           <button
-            onClick={onCancelToList} // Utilise la prop onCancelToList pour retourner
+            onClick={onCancelToList}
             className="flex items-center text-sm text-sky-600 dark:text-sky-400 hover:underline"
             title="Retour à la liste des demandes"
           >
             <ArrowLeft size={18} className="mr-1.5" />
             Retour
           </button>
-          {/* Priorité affichée en haut à droite */}
           <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getPriorityClasses(ticket.priorite)}`}>
             Priorité: {ticket.priorite ? ticket.priorite.charAt(0).toUpperCase() + ticket.priorite.slice(1) : 'N/A'}
           </span>
         </div>
 
-        {/* Titre et Référence */}
         <div className="mb-5">
           <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 mb-1">
             {ticket.titre || 'Détails du Ticket'}
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             # {ticket.ref || 'N/A'}
           </p>
         </div>
 
-        {/* Description */}
         <div className="mb-6 pb-6 border-b border-slate-200 dark:border-slate-700">
           <h2 className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Description</h2>
           <p className="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
@@ -72,15 +65,14 @@ const TicketDetailsPage = ({ ticket, onAccepterTicket, onRefuserTicket, onCancel
           </p>
         </div>
 
-        {/* Documents Joints */}
-        {ticket.documentsJoints && ticket.documentsJoints.length > 0 && (
+        {ticket.documentsJointesList && ticket.documentsJointesList.length > 0 && ( // Changé documentsJoints à documentsJointesList
           <div className="mb-6 pb-6 border-b border-slate-200 dark:border-slate-700">
             <h2 className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">Documents Joints</h2>
             <div className="space-y-2">
-              {ticket.documentsJoints.map((doc, index) => (
+              {ticket.documentsJointesList.map((doc, index) => ( // Changé documentsJoints à documentsJointesList
                 <a
                   key={index}
-                  href={doc.url}
+                  href={doc.url || '#'} // Utilise doc.url
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center text-sm text-sky-600 dark:text-sky-400 hover:underline p-2 rounded-md bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700"
@@ -100,7 +92,7 @@ const TicketDetailsPage = ({ ticket, onAccepterTicket, onRefuserTicket, onCancel
             <Building size={16} className="mr-2 text-slate-400 dark:text-slate-500 flex-shrink-0" />
             <div>
               <span className="block text-slate-500 dark:text-slate-400">Client :</span>
-              <span className="font-medium text-slate-700 dark:text-slate-200">{ticket.client || 'N/A'}</span>
+              <span className="font-medium text-slate-700 dark:text-slate-200">{clientNom}</span> {/* Utilise clientNom */}
             </div>
           </div>
           <div className="flex items-center">
@@ -115,14 +107,14 @@ const TicketDetailsPage = ({ ticket, onAccepterTicket, onRefuserTicket, onCancel
             <div>
               <span className="block text-slate-500 dark:text-slate-400">Date de création :</span>
               <span className="font-medium text-slate-700 dark:text-slate-200">
-                {ticket.dateCreation ? new Date(ticket.dateCreation).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour:'2-digit', minute: '2-digit' }) : 'N/A'}
+                {dateCreationFormatted}
               </span>
             </div>
           </div>
         </div>
 
         {/* Boutons d'action (Accepter/Refuser) - Uniquement si statut 'en attente' */}
-        {ticket.statut === 'en attente' && (
+        {ticket.statue === 'EN_ATTENTE' && ( // Changé 'en attente' à EN_ATTENTE
           <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-6 border-t border-slate-200 dark:border-slate-700">
             <button
               onClick={() => setShowRefusModal(true)}
@@ -167,8 +159,8 @@ const TicketDetailsPage = ({ ticket, onAccepterTicket, onRefuserTicket, onCancel
               <button onClick={() => setShowRefusModal(false)} className="btn btn-secondary px-4 py-2 text-sm">
                 Annuler
               </button>
-              <button 
-                onClick={handleConfirmRefus} 
+              <button
+                onClick={handleConfirmRefus}
                 className="btn btn-danger px-4 py-2 text-sm"
                 disabled={motifRefus.trim() === ''}
               >
@@ -182,4 +174,4 @@ const TicketDetailsPage = ({ ticket, onAccepterTicket, onRefuserTicket, onCancel
   );
 };
 
-export default TicketDetailsPage;
+export default TicketDetailsPage;   

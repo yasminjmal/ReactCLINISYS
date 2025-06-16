@@ -1,249 +1,196 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, List, LayoutGrid, Filter, ArrowUpDown, ChevronDown, ChevronUp, UserPlus, XCircle as AlertXCircle, CheckCircle2 as AlertCheckCircle, X as XIcon } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Search, List, LayoutGrid, Rows3, UserPlus, Filter, AlertTriangle, Save, XCircle, Edit, Trash2, ChevronDown, ChevronUp, X as XIcon } from 'lucide-react';
+
+import utilisateurService from '../../../services/utilisateurService';
+import AjouterUserPage from './AjouterUserPage';
 import UsersCard from './UsersCard';
 import UsersRow from './UsersRow';
+import UsersTableRow from './UsersTableRow';
+import EditUserModal from './EditUserModal'; // NEW: Import EditUserModal
 
-const ConsulterUsersPage = ({ 
-    users, 
-    onNavigateToAjouterUser, 
-    onNavigateToDetails,
-    pageMessage, 
-    newlyAddedUserId, 
-    clearPageMessage 
-}) => {
-  
-  useEffect(() => {
-    // console.log('[ConsulterUsersPage Effect] Props reçues -> users:', users, 'onNavigateToDetails type:', typeof onNavigateToDetails);
-  }, [users, onNavigateToDetails]);
+// --- INTERNAL COMPONENTS ---
 
-  const [viewMode, setViewMode] = useState('grid');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [expandedTeams, setExpandedTeams] = useState({});
-  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
-  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
-  const [activeFilters, setActiveFilters] = useState({ role: [], poste: [], activite: [] });
-  const [activeSort, setActiveSort] = useState({ field: 'dateCreation', order: 'desc' });
-  const [highlightedUserId, setHighlightedUserId] = useState(null);
+const Spinner = () => <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto my-10"></div>;
 
-  const filterDropdownRef = useRef(null);
-  const sortDropdownRef = useRef(null);
-  const newlyAddedUserRef = useRef(null);
-
-    const filterOptions = {
-        role: [ { value: 'chef_equipe', label: 'Chef d\'équipe' }, { value: 'utilisateur', label: 'Utilisateur' } ],
-        poste: [ { value: 'Développeur Back', label: 'Développeur Back' }, { value: 'Testeur', label: 'Testeur' }, { value: 'Développeur Front', label: 'Développeur Front' }, { value: "Chef d'équipe", label: "Chef d'équipe" } ],
-        activite: [ { value: true, label: 'Actif' }, { value: false, label: 'Non Actif' } ]
+const PageMessage = ({ message, onDismiss }) => {
+    if (!message) return null;
+    const colors = {
+        success: 'bg-green-100 dark:bg-green-800/70 border-green-500 text-green-700 dark:text-green-100',
+        error: 'bg-red-100 dark:bg-red-800/70 border-red-500 text-red-700 dark:text-red-100',
+        info: 'bg-blue-100 dark:bg-blue-800/70 border-blue-500 text-blue-700 dark:text-blue-100',
+        warning: 'bg-yellow-100 dark:bg-yellow-800/70 border-yellow-500 text-yellow-700 dark:text-yellow-100',
     };
-    const sortOptions = [
-        { value: 'dateCreation', label: 'Date Création' }, { value: 'nom', label: 'Nom (A-Z)' }, { value: 'id', label: 'ID' }, { value: 'nbTicketsAssignes', label: 'Nb Tickets Assignés' }
-    ];
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) setIsFilterDropdownOpen(false);
-      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target)) setIsSortDropdownOpen(false);
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    if (pageMessage && pageMessage.text && newlyAddedUserId) {
-      setHighlightedUserId(newlyAddedUserId);
-      if (newlyAddedUserRef.current) {
-        newlyAddedUserRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      const timer = setTimeout(() => {
-        setHighlightedUserId(null);
-        if(clearPageMessage) clearPageMessage();
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [pageMessage, newlyAddedUserId, clearPageMessage]);
-
-
-  const handleFilterChange = (category, value) => {
-    setActiveFilters(prev => ({ ...prev, [category]: prev[category]?.includes(value) ? prev[category].filter(item => item !== value) : [...(prev[category] || []), value] }));
-  };
-  const handleSortChange = (field) => {
-    setActiveSort(prev => ({ field, order: prev.field === field && prev.order === 'asc' ? 'desc' : 'asc' }));
-    setIsSortDropdownOpen(false);
-  };
-  const clearFilters = () => {
-    setActiveFilters({ role: [], poste: [], activite: [] });
-    setIsFilterDropdownOpen(false);
-  };
-
-  // Initialisation la plus robuste de processedUsers
-  const usersToProcess = Array.isArray(users) ? users : [];
-  let processedUsers = [...usersToProcess]; 
-  
-  if (searchTerm) {
-    processedUsers = processedUsers.filter(user =>
-        user && 
-        ((user.prenom && user.nom && `${user.prenom} ${user.nom}`.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (user.poste && user.poste.toLowerCase().includes(searchTerm.toLowerCase())))
+    return (
+        <div className={`fixed top-24 right-6 p-4 rounded-md shadow-lg z-[100] flex items-center space-x-3 animate-slide-in-right border-l-4 ${colors[message.type]}`} role="alert">
+            <span className="font-medium flex-grow">{message.text}</span>
+            <button onClick={onDismiss} className="ml-auto p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-full"><XIcon size={18} /></button>
+        </div>
     );
-  }
-  if (activeFilters.role.length > 0) {
-    processedUsers = processedUsers.filter(user => user && activeFilters.role.includes(user.role));
-  }
-  if (activeFilters.poste.length > 0) {
-    processedUsers = processedUsers.filter(user => user && activeFilters.poste.includes(user.poste));
-  }
-  if (activeFilters.activite.length > 0) {
-    processedUsers = processedUsers.filter(user => user && activeFilters.activite.includes(user.actif));
-  }
-
-  if (activeSort.field) {
-    processedUsers.sort((a, b) => {
-      if (!a || !b || !a.hasOwnProperty(activeSort.field) || !b.hasOwnProperty(activeSort.field)) return 0;
-      let valA = a[activeSort.field]; 
-      let valB = b[activeSort.field];
-      if (typeof valA === 'string') valA = valA.toLowerCase();
-      if (typeof valB === 'string') valB = valB.toLowerCase();
-      if (valA < valB) return activeSort.order === 'asc' ? -1 : 1;
-      if (valA > valB) return activeSort.order === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }
-
-  const handleShowMoreTeams = (userId) => setExpandedTeams(prev => ({ ...prev, [userId]: !prev[userId] }));
-  const countActiveFilters = () => Object.values(activeFilters).reduce((count, arr) => count + arr.length, 0);
-
-  return (
-    <div className="p-4 md:p-6 space-y-6 bg-slate-50 dark:bg-slate-900 min-h-full">
-      {pageMessage && pageMessage.text && (
-        <div className={`fixed top-20 right-6 p-4 rounded-md shadow-lg z-50 flex items-center space-x-3 animate-slide-in-right
-                        ${pageMessage.type === 'success' ? 'bg-green-100 dark:bg-green-700 border-green-500 dark:border-green-600 text-green-700 dark:text-green-100' 
-                                                        : pageMessage.type === 'error' ? 'bg-red-100 dark:bg-red-700 border-red-500 dark:border-red-600 text-red-700 dark:text-red-100'
-                                                        : 'bg-blue-100 dark:bg-blue-700 border-blue-500 dark:border-blue-600 text-blue-700 dark:text-blue-100'}`}>
-          {pageMessage.type === 'success' ? <AlertCheckCircle size={20} /> : <AlertXCircle size={20} />}
-          <span>{pageMessage.text}</span>
-          <button onClick={clearPageMessage} className="ml-auto p-1 hover:bg-black/10 rounded-full">
-            <XIcon size={16}/>
-          </button>
-        </div>
-      )}
-
-      <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow">
-         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-          <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-200">
-            Consulter les Utilisateurs ({processedUsers.length} au total)
-          </h2>
-          <div className="flex items-center space-x-2">
-            <button 
-              onClick={onNavigateToAjouterUser}
-              className="btn btn-primary-outline group"
-            >
-              <UserPlus size={18} className="mr-2 transition-transform duration-200 group-hover:scale-110" />
-              Ajouter Utilisateur
-            </button>
-            <button onClick={() => setViewMode('list')} className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-sky-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'}`} title="Vue Liste">
-              <List size={20} />
-            </button>
-            <button onClick={() => setViewMode('grid')} className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-sky-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'}`} title="Vue Grille">
-              <LayoutGrid size={20} />
-            </button>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-slate-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Rechercher un utilisateur..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500"
-            />
-          </div>
-          <div className="relative" ref={filterDropdownRef}>
-            <button
-              onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-              className="w-full flex items-center justify-between px-4 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600"
-            >
-              <div className="flex items-center space-x-2">
-                <Filter size={18} />
-                <span>Filtrer</span>
-                {countActiveFilters() > 0 && (
-                    <span className="bg-sky-500 text-white text-xs font-semibold px-1.5 py-0.5 rounded-full">{countActiveFilters()}</span>
-                )}
-              </div>
-              {isFilterDropdownOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </button>
-            {isFilterDropdownOpen && ( /* Dropdown Filtres */ <div className="absolute top-full left-0 mt-1 w-full md:w-72 bg-white dark:bg-slate-800 rounded-md shadow-lg border dark:border-slate-700 z-10 p-4 space-y-4">
-                {Object.entries(filterOptions).map(([categoryKey, options]) => (
-                  <div key={categoryKey}>
-                    <h4 className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2 capitalize">{categoryKey.replace('activite', 'activité')}</h4>
-                    <div className="space-y-1.5">
-                      {options.map(option => (
-                        <label key={String(option.value)} className="flex items-center space-x-2 cursor-pointer text-sm text-slate-700 dark:text-slate-200">
-                          <input type="checkbox" checked={activeFilters[categoryKey]?.includes(option.value)} onChange={() => handleFilterChange(categoryKey, option.value)}
-                            className="form-checkbox h-4 w-4 text-sky-600 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-sky-500" />
-                          <span>{option.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-                <div className="pt-3 border-t dark:border-slate-700 flex justify-end"><button onClick={clearFilters} className="text-xs text-sky-600 dark:text-sky-400 hover:underline">Réinitialiser les filtres</button></div>
-              </div>)}
-          </div>
-          <div className="relative" ref={sortDropdownRef}>
-            <button onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)} className="w-full flex items-center justify-between px-4 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600">
-               <div className="flex items-center space-x-2"><ArrowUpDown size={18} /><span>Trier par: {sortOptions.find(opt => opt.value === activeSort.field)?.label || 'Défaut'} ({activeSort.order === 'asc' ? '↑' : '↓'})</span></div>
-              {isSortDropdownOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </button>
-            {isSortDropdownOpen && ( /* Dropdown Tri */ <div className="absolute top-full left-0 mt-1 w-full bg-white dark:bg-slate-800 rounded-md shadow-lg border dark:border-slate-700 z-10 py-1">
-                {sortOptions.map(option => (
-                  <button key={option.value} onClick={() => handleSortChange(option.value)}
-                    className={`w-full text-left px-4 py-2 text-sm flex justify-between items-center ${activeSort.field === option.value ? 'bg-sky-50 dark:bg-sky-700/30 text-sky-600 dark:text-sky-300 font-semibold' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
-                    {option.label}
-                    {activeSort.field === option.value && (activeSort.order === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
-                  </button>
-                ))}
-              </div>)}
-          </div>
-        </div>
-      </div>
-
-      {viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {processedUsers.map(userObj => (
-            <div key={userObj.id} ref={userObj.id === newlyAddedUserId ? newlyAddedUserRef : null} 
-                 className={`${userObj.id === highlightedUserId ? 'ring-2 ring-green-500 ring-offset-2 dark:ring-offset-slate-900 rounded-lg bg-green-50 dark:bg-green-500/10' : ''} transition-all duration-500`}>
-              <UsersCard 
-                user={userObj}
-                onShowMoreTeams={handleShowMoreTeams}
-                isTeamsExpanded={!!expandedTeams[userObj.id]}
-                onNavigateToDetails={onNavigateToDetails}
-              />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {processedUsers.map(userObj => (
-             <div key={userObj.id} ref={userObj.id === newlyAddedUserId ? newlyAddedUserRef : null}
-                  className={`${userObj.id === highlightedUserId ? 'ring-2 ring-green-500 ring-offset-1 dark:ring-offset-slate-900 rounded-md bg-green-50 dark:bg-green-500/10' : ''} transition-all duration-500`}>
-              <UsersRow 
-                user={userObj}
-                onShowMoreTeams={handleShowMoreTeams}
-                isTeamsExpanded={!!expandedTeams[userObj.id]}
-                onNavigateToDetails={onNavigateToDetails}
-              />
-            </div>
-          ))}
-        </div>
-      )}
-      {processedUsers.length === 0 && (
-        <p className="text-center text-slate-500 dark:text-slate-400 py-10">Aucun utilisateur trouvé.</p>
-      )}
-    </div>
-  );
 };
+
+const DeleteConfirmationModal = ({ user, onConfirm, onCancel }) => (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl text-center max-w-md w-full">
+            <AlertTriangle size={40} className="text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Confirmer la suppression</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-300 my-2">Voulez-vous vraiment supprimer l'utilisateur <strong className="font-semibold">{user?.prenom} {user?.nom}</strong> ?</p>
+            <div className="flex justify-center space-x-3 mt-6">
+                <button onClick={onCancel} className="btn btn-secondary">Annuler</button>
+                <button onClick={onConfirm} className="btn btn-danger">Supprimer</button>
+            </div>
+        </div>
+    </div>
+);
+
+// --- MAIN COMPONENT ---
+
+const ConsulterUsersPage = () => {
+    const [view, setView] = useState('list');
+    const [users, setUsers] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [pageMessage, setPageMessage] = useState(null);
+    const [userToEdit, setUserToEdit] = useState(null); // For the edit modal
+    const [userToDelete, setUserToDelete] = useState(null);
+
+    const [viewMode, setViewMode] = useState('table');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filters, setFilters] = useState({ role: '', actifs: '' });
+
+    const showTemporaryMessage = useCallback((type, text) => {
+        setPageMessage({ type, text });
+        setTimeout(() => setPageMessage(null), 5000);
+    }, []);
+
+    const fetchUsers = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const response = await utilisateurService.getAllUtilisateurs(filters);
+            setUsers(response.data || []);
+        } catch (error) {
+            showTemporaryMessage('error', 'Erreur lors de la récupération des utilisateurs.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [filters, showTemporaryMessage]);
+
+    useEffect(() => {
+        if (view === 'list') {
+            fetchUsers();
+        }
+    }, [view, fetchUsers]);
+
+     const handleAddUser = async (userData, photoFile) => {
+        try {
+            await utilisateurService.createUtilisateur(userData, photoFile);
+            showTemporaryMessage('success', 'Utilisateur ajouté avec succès.');
+            setView('list'); // Switch back to list view which triggers fetchUsers via useEffect
+        } catch (error) {
+            const errorMsg = error.response?.data?.message || "Erreur lors de l'ajout.";
+            showTemporaryMessage('error', errorMsg);
+        }
+    };
+    
+    // NEW: handleUpdateUser logic (will be passed to EditUserModal)
+    const handleUpdateUser = async (id, userData, photoFile) => {
+        try {
+            await utilisateurService.updateUtilisateur(id, userData, photoFile);
+            showTemporaryMessage('success', 'Utilisateur mis à jour avec succès.');
+            setUserToEdit(null); // Close the modal
+            await fetchUsers(); // Refresh the list
+        } catch (error) {
+            const errorMsg = error.response?.data?.message || "Erreur lors de la mise à jour.";
+            showTemporaryMessage('error', errorMsg);
+        }
+    };
+
+    const handleDeleteUser = async () => {
+        if (!userToDelete) return;
+        try {
+            await utilisateurService.deleteUtilisateur(userToDelete.id);
+            showTemporaryMessage('info', 'Utilisateur supprimé.');
+            setUserToDelete(null);
+            await fetchUsers(); // Refresh the list manually
+        } catch (error) {
+            const errorMsg = error.response?.data?.error || "Impossible de supprimer l'utilisateur.";
+            showTemporaryMessage('error', errorMsg);
+        }
+    };
+
+    const filteredUsers = useMemo(() => {
+        if (!Array.isArray(users)) return [];
+        return users.filter(user => 
+            `${user.prenom} ${user.nom}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.email.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [users, searchTerm]);
+
+    if (view === 'add') {
+        return <AjouterUserPage onAddUser={handleAddUser} onCancel={() => setView('list')} />;
+    }
+
+    return (
+        <div className="p-4 md:p-6 space-y-6 bg-slate-50 dark:bg-slate-900 min-h-full">
+            {/* Modals rendered at the top level for overlaying content */}
+            <PageMessage message={pageMessage} onDismiss={() => setPageMessage(null)} />
+            {userToDelete && <DeleteConfirmationModal user={userToDelete} onConfirm={handleDeleteUser} onCancel={() => setUserToDelete(null)} />}
+            {userToEdit && <EditUserModal user={userToEdit} onUpdateUser={handleUpdateUser} onCancel={() => setUserToEdit(null)} showTemporaryMessage={showTemporaryMessage} />} {/* NEW: EditUserModal integration */}
+
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                    <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-200">Gestion des Utilisateurs ({filteredUsers.length})</h2>
+                    <div className="flex items-center space-x-2">
+                        <button onClick={() => setView('add')} className="btn btn-primary"><UserPlus size={18} className="mr-2"/> Ajouter</button>
+                        <button onClick={() => setViewMode('table')} className={`p-2 rounded-md ${viewMode === 'table' ? 'bg-sky-500 text-white' : 'bg-slate-200'}`} title="Tableau"><List size={20} /></button>
+                        <button onClick={() => setViewMode('grid')} className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-sky-500 text-white' : 'bg-slate-200'}`} title="Grille"><LayoutGrid size={20} /></button>
+                        <button onClick={() => setViewMode('list')} className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-sky-500 text-white' : 'bg-slate-200'}`} title="Lignes"><Rows3 size={20} /></button>
+                    </div>
+                </div>
+                <div className="grid md:grid-cols-3 gap-4">
+                    <input type="text" placeholder="Rechercher par nom, prénom, email..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="form-input md:col-span-1"/>
+                    <select value={filters.role} onChange={e => setFilters(f => ({...f, role: e.target.value}))} className="form-select">
+                        <option value="">Filtrer par rôle (Tous)</option>
+                        <option value="ROLE_ADMIN">Administrateur</option> {/* Case corrected for consistency with backend enum */}
+                        <option value="ROLE_CHEF_EQUIPE">Chef d'équipe</option>
+                        <option value="ROLE_USER">Utilisateur</option>
+                    </select>
+                     <select value={filters.actifs} onChange={e => setFilters(f => ({...f, actifs: e.target.value}))} className="form-select">
+                        <option value="">Filtrer par statut (Tous)</option>
+                        <option value="true">Actif</option>
+                        <option value="false">Inactif</option>
+                    </select>
+                </div>
+            </div>
+            {isLoading ? <Spinner /> : (
+                <div className="mt-6">
+                    {filteredUsers.length === 0 ? (<p className="text-center text-slate-500 py-10">Aucun utilisateur trouvé.</p>) : (
+                         <>
+                            {viewMode === 'table' && 
+                                <div className="overflow-x-auto bg-white dark:bg-slate-800 rounded-lg shadow">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="bg-slate-100 dark:bg-slate-700 text-left text-xs text-slate-700 dark:text-slate-300 uppercase">
+                                                <th className="px-6 py-3">Utilisateur</th>
+                                                <th className="px-6 py-3">Rôle</th>
+                                                <th className="px-6 py-3">Équipes / Postes</th>
+                                                <th className="px-6 py-3">Date Création</th>
+                                                <th className="px-6 py-3">Statut</th>
+                                                <th className="px-6 py-3 text-center">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredUsers.map(user => <UsersTableRow key={user.id} user={user} onEdit={() => setUserToEdit(user)} onDelete={() => setUserToDelete(user)} />)}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            {viewMode === 'grid' && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">{filteredUsers.map(user => <UsersCard key={user.id} user={user} onEdit={() => setUserToEdit(user)} onDelete={() => setUserToDelete(user)} />)}</div>}
+                            {viewMode === 'list' && <div className="space-y-3">{filteredUsers.map(user => <UsersRow key={user.id} user={user} onEdit={() => setUserToEdit(user)} onDelete={() => setUserToDelete(user)} />)}</div>}
+                        </>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
 export default ConsulterUsersPage;

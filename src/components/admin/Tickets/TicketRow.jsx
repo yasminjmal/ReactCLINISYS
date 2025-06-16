@@ -1,6 +1,6 @@
 // src/components/admin/Tickets/TicketRow.jsx
 import React from 'react';
-import { Info, CalendarDays, UserCircle, Building, Tag, FileText, AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react'; // Ajout de Clock pour 'En cours'
+import { Info, CalendarDays, UserCircle, Building, Tag, FileText, AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 const TicketRow = ({ ticket, onNavigateToDetails, isHighlighted }) => {
   if (!ticket) {
@@ -21,28 +21,30 @@ const TicketRow = ({ ticket, onNavigateToDetails, isHighlighted }) => {
   };
 
   const getStatusInfo = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'en attente':
-        return { icon: <AlertTriangle size={14} className="text-yellow-500 dark:text-yellow-400 mr-1.5" />, textClass: 'text-yellow-600 dark:text-yellow-400', label: 'En attente' };
-      case 'accepté':
-        return { icon: <CheckCircle size={14} className="text-green-500 dark:text-green-400 mr-1.5" />, textClass: 'text-green-600 dark:text-green-400', label: 'Accepté' };
-      case 'refusé':
-        return { icon: <XCircle size={14} className="text-red-500 dark:text-red-400 mr-1.5" />, textClass: 'text-red-600 dark:text-red-400', label: 'Refusé' };
-      case 'affecté': // Ancien statut, peut être conservé ou migré vers 'En cours'
-        return { icon: <Tag size={14} className="text-blue-500 dark:text-blue-400 mr-1.5" />, textClass: 'text-blue-600 dark:text-blue-400', label: 'Affecté' };
-      case 'en cours':
-        return { icon: <Clock size={14} className="text-orange-500 dark:text-orange-400 mr-1.5" />, textClass: 'text-orange-600 dark:text-orange-400', label: 'En cours' };
+    const s = status?.toUpperCase();
+    switch (s) {
+      case 'EN_ATTENTE':
+        return { icon: <AlertTriangle size={14} className="text-slate-500 mr-1.5" />, textClass: 'text-slate-600 dark:text-slate-400', label: 'En attente' };
+      case 'EN_COURS':
+        return { icon: <Clock size={14} className="text-orange-500 mr-1.5" />, textClass: 'text-orange-600 dark:text-orange-400', label: 'En cours' };
+      case 'ACCEPTE':
+        return { icon: <CheckCircle size={14} className="text-green-500 mr-1.5" />, textClass: 'text-green-600 dark:text-green-400', label: 'Accepté' };
+      case 'TERMINE':
+        return { icon: <CheckCircle size={14} className="text-sky-500 mr-1.5" />, textClass: 'text-sky-600 dark:text-sky-400', label: 'Terminé' };
+      case 'REFUSE':
+        return { icon: <XCircle size={14} className="text-red-500 mr-1.5" />, textClass: 'text-red-600 dark:text-red-400', label: 'Refusé' };
       default:
-        return { icon: <Tag size={14} className="text-slate-500 dark:text-slate-400 mr-1.5" />, textClass: 'text-slate-600 dark:text-slate-400', label: status || 'N/A' };
+        return { icon: <Tag size={14} className="text-slate-500 mr-1.5" />, textClass: 'text-slate-600', label: status || 'N/A' };
     }
   };
   
-  const statusInfo = getStatusInfo(ticket.statut);
+  const statusInfo = getStatusInfo(ticket.statue);
   const demandeurNom = ticket.demandeur ? `${ticket.demandeur.prenom || ''} ${ticket.demandeur.nom || ''}`.trim() : 'N/A';
+  const clientNom = ticket.idClient?.nom || ticket.client || 'N/A'; // Adapte le chemin du client
   const priorityClass = getPriorityClasses(ticket.priorite);
 
   return (
-    <div 
+    <div
       className={`ticket-block-container mb-2.5 rounded-lg bg-white dark:bg-slate-800 shadow hover:shadow-md transition-all duration-200 overflow-hidden border border-slate-200 dark:border-slate-700/80
                   ${isHighlighted ? 'ring-2 ring-sky-500 scale-[1.01]' : ''}`}
     >
@@ -57,8 +59,8 @@ const TicketRow = ({ ticket, onNavigateToDetails, isHighlighted }) => {
         <div className="flex-grow min-w-[180px] sm:w-auto self-start">
           <div className="flex items-center mb-0.5">
             <Building size={14} className="mr-1.5 text-slate-400 dark:text-slate-500 flex-shrink-0" />
-            <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate" title={ticket.client}>
-              {ticket.client || 'N/A'}
+            <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate" title={clientNom}>
+              {clientNom} {/* Utilise clientNom */}
             </p>
           </div>
           <div className="flex items-center">

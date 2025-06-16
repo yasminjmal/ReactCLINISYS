@@ -1,36 +1,31 @@
 // src/components/admin/Tickets/PageAffectationTicket.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { UploadCloud, Paperclip, Trash2, Send, XCircle, AlertTriangle, CheckSquare, Square } from 'lucide-react';
+import { UploadCloud, Paperclip, Trash2, Send, XCircle, AlertTriangle, CheckSquare, Square, Package as PackageIcon, UserCircle } from 'lucide-react'; // Ajout de UserCircle pour l'employé
 
 const PageAffectationTicket = ({
     ticketObject,
     isForSubTicket = false,
     onConfirmAffectation,
     onCancel,
-    availableModules = []
+    availableModules = [],
+    availableUsers = [] // NOUVEAU: prop pour les utilisateurs assignables
 }) => {
   const [ticket, setTicket] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const [selectedModuleId, setSelectedModuleId] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState(''); // NOUVEAU: État pour l'utilisateur assigné
   const [attachedFiles, setAttachedFiles] = useState([]);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (ticketObject) {
       setTicket(ticketObject);
-      // Correction de la ligne 24 :
-      // S'assurer que moduleAssigne est un objet et non null avant d'accéder à .id
-      if (ticketObject.moduleAssigne && typeof ticketObject.moduleAssigne === 'object' && ticketObject.moduleAssigne.id) {
-        setSelectedModuleId(ticketObject.moduleAssigne.id);
-      } else if (typeof ticketObject.moduleAssigne === 'string') {
-        // Si moduleAssigne est déjà un ID (chaîne), l'utiliser directement
-        setSelectedModuleId(ticketObject.moduleAssigne);
-      } else {
-        setSelectedModuleId(''); // Sinon, pas de module présélectionné
-      }
-      setAttachedFiles([]);
+      // Pré-sélection du module et de l'utilisateur si déjà assignés
+      setSelectedModuleId(ticketObject.idModule?.id || ''); // Adapte le chemin du module
+      setSelectedUserId(ticketObject.idUtilisateur?.id || ''); // Adapte le chemin de l'utilisateur
+      setAttachedFiles([]); // Reset files on ticket change
       setError('');
     } else {
       setError("Aucun ticket fourni pour l'affectation.");
@@ -44,7 +39,7 @@ const PageAffectationTicket = ({
         name: file.name,
         size: file.size,
         type: file.type,
-        fileObject: file
+        fileObject: file // Garder l'objet File pour l'upload réel
     }));
     setAttachedFiles(prev => [...prev, ...newFiles]);
   };
@@ -58,29 +53,37 @@ const PageAffectationTicket = ({
     setError('');
   };
 
+  const handleUserSelect = (userId) => { // NOUVEAU: Gère la sélection de l'utilisateur
+    setSelectedUserId(prevId => prevId === userId ? '' : userId);
+    setError('');
+  };
+
   const handleSubmitAffectation = async (e) => {
     e.preventDefault();
     if (!ticket || !onConfirmAffectation) {
         setError("Impossible de soumettre : ticket ou fonction de confirmation manquante.");
         return;
     }
-    if (!selectedModuleId) {
-        setError("Veuillez sélectionner un module pour l'affectation.");
+    if (!selectedModuleId && !selectedUserId) { // Au moins un des deux doit être sélectionné
+        setError("Veuillez sélectionner au moins un module ou un employé pour l'affectation.");
         return;
     }
 
     setIsLoading(true);
     setError('');
 
+    // Préparation des données d'affectation
     const affectationData = {
-      module: availableModules.find(m => m.id === selectedModuleId),
+        idModule: selectedModuleId || null,
+        idUtilisateur: selectedUserId || null,
+        // Le statut du ticket doit passer à 'EN_COURS' ou 'AFFECTE' s'il était 'ACCEPTE'
+        statue: selectedUserId ? 'EN_COURS' : (selectedModuleId ? 'AFFECTE' : 'ACCEPTE'), // Logique simplifiée, à affiner si besoin
+        documentsJoints: attachedFiles // Les fichiers attachés pour l'upload (pas le DTO, l'objet File)
     };
 
-    const nouveauxDocumentsPourSauvegarde = attachedFiles.map(f => ({ name: f.name, type: f.type, size: f.size, url: `#placeholder-url-for-${f.name}` }));
-
     try {
-        // Passer ticketId, affectationData, isForSubTicket, et nouveauxDocuments
-        await onConfirmAffectation(ticket.id, affectationData, isForSubTicket, nouveauxDocumentsPourSauvegarde);
+        // onConfirmAffectation gère l'appel au service ticketService.affecterTicket
+        await onConfirmAffectation(ticket.id, affectationData, isForSubTicket);
         // La redirection et le message de succès sont gérés dans InterfaceAdmin
     } catch (err) {
         console.error("Erreur lors de la tentative d'affectation:", err);
@@ -95,7 +98,7 @@ const PageAffectationTicket = ({
 
   if (!ticket && !error && !isLoading) return <div className="p-6 text-center dark:text-slate-300">Chargement des informations du ticket...</div>;
   if (error && !ticket) return <div className="p-6 text-center text-red-500 dark:text-red-400">{error}</div>;
-  if (!ticket) return null; // Ne rien rendre si le ticket n'est pas encore là et qu'il n'y a pas d'erreur de chargement initiale
+  if (!ticket) return null;
 
   return (
     <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-950 min-h-full">
@@ -146,13 +149,13 @@ const PageAffectationTicket = ({
                 ))}
               </div>
             )}
-             {ticket.documentsJoints && ticket.documentsJoints.length > 0 && (
+             {ticket.documentJointesList && ticket.documentJointesList.length > 0 && ( // Changé documentsJoints à documentJointesList
                 <div className="mt-4">
                     <p className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Documents déjà joints au ticket :</p>
-                    {ticket.documentsJoints.map((doc, index) => (
+                    {ticket.documentJointesList.map((doc, index) => ( // Changé documentsJoints à documentJointesList
                         <div key={`existing-${index}`} className="flex items-center p-2 bg-slate-100 dark:bg-slate-700 rounded-md text-xs mb-1">
                              <Paperclip size={14} className="mr-2 text-slate-500 dark:text-slate-400 flex-shrink-0" />
-                             <span className="text-slate-700 dark:text-slate-200 truncate" title={doc.name}>{doc.name}</span>
+                             <span className="text-slate-700 dark:text-slate-200 truncate" title={doc.nom}>{doc.nom}</span>
                         </div>
                     ))}
                 </div>
@@ -185,6 +188,33 @@ const PageAffectationTicket = ({
                 <p className="text-sm text-slate-500 dark:text-slate-400">Aucun module disponible pour l'affectation.</p>
             )}
           </div>
+          {/* NOUVEAU: Section pour assigner à un employé */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-2">Assigner à un Employé</h3>
+            {availableUsers.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {availableUsers.map(user => (
+                        <button
+                            type="button"
+                            key={user.id}
+                            onClick={() => handleUserSelect(user.id)}
+                            className={`p-3 border rounded-lg text-left transition-all duration-200 flex items-start space-x-3
+                                        ${selectedUserId === user.id
+                                            ? 'border-green-500 bg-green-50 dark:bg-green-700/30 ring-2 ring-green-500'
+                                            : 'border-slate-300 dark:border-slate-600 hover:border-green-400 dark:hover:border-green-500 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
+                        >
+                            {selectedUserId === user.id ? <CheckSquare size={18} className="text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" /> : <Square size={18} className="text-slate-400 dark:text-slate-500 mt-0.5 flex-shrink-0" />}
+                            <div>
+                                <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{user.prenom} {user.nom}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{user.email}</p>
+                            </div>
+                        </button>
+                    ))}
+                </div>
+            ) : (
+                <p className="text-sm text-slate-500 dark:text-slate-400">Aucun employé disponible pour l'affectation.</p>
+            )}
+          </div>
 
           <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-6 border-t border-slate-200 dark:border-slate-700">
             {onCancel && (
@@ -192,7 +222,7 @@ const PageAffectationTicket = ({
                 <XCircle size={18} className="mr-2" /> Annuler
               </button>
             )}
-            <button type="submit" className="btn btn-primary group w-full sm:w-auto" disabled={isLoading || !selectedModuleId}>
+            <button type="submit" className="btn btn-primary group w-full sm:w-auto" disabled={isLoading || (!selectedModuleId && !selectedUserId)}> {/* Désactive si ni module ni user sélectionné */}
               <Send size={18} className="mr-2" />
               {isLoading ? "Affectation en cours..." : "Confirmer l'Affectation"}
             </button>
