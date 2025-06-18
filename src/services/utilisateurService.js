@@ -64,31 +64,11 @@ const deleteUtilisateur = (id) => {
     return api.delete(`/utilisateurs/${id}`);
 };
 
-/**
- * Récupère l'image de profil d'un utilisateur.
- * Note: Cette fonction est nécessaire car le DTO principal n'inclut pas les bytes de l'image.
- * @param {number} id - L'ID de l'utilisateur.
- * @returns {Promise<string>} L'URL de l'image au format Blob.
- */
-const getPhotoUtilisateur = async (id) => {
-    try {
-        const response = await api.get(`/utilisateurs/${id}/photo`, {
-            responseType: 'blob'
-        });
-        return URL.createObjectURL(response.data);
-    } catch (error) {
-        // console.error("Impossible de charger la photo de l'utilisateur", error);
-        return null;
-    }
-};
-
-
 const utilisateurService = {
     getAllUtilisateurs,
     createUtilisateur,
     updateUtilisateur,
     deleteUtilisateur,
-    getPhotoUtilisateur
 };
 
 export default utilisateurService;

@@ -11,7 +11,7 @@ const AjouterUserPage = ({ onAddUser, onCancel }) => {
     email: '',
     motDePasse: '', // Doit être présent et non vide si backend le requiert (min 4 chars)
     numTelephone: '', // Assurez-vous que le backend accepte une chaîne vide si non renseigné
-    role: 'ROLE_USER', // Doit correspondre exactement à l'enum du backend (casse incluse)
+    role: 'E', // Doit correspondre exactement à l'enum du backend (casse incluse)
     actif: true, // Doit être un boolean (true/false)
   });
   const [photoFile, setPhotoFile] = useState(null);
@@ -88,9 +88,9 @@ const AjouterUserPage = ({ onAddUser, onCancel }) => {
               <div>
                 <label className="form-label text-sm">Rôle</label>
                 <select name="role" value={formData.role} onChange={handleInputChange} className="form-select">
-                  <option value="ROLE_USER">Utilisateur</option>
-                  <option value="ROLE_ADMIN">Administrateur</option> {/* Assurez-vous que la casse correspond au backend */}
-                  <option value="ROLE_CHEF_EQUIPE">Chef d'équipe</option>
+                  <option value="E">Emloyee</option>
+                  <option value="A">Administrateur</option> {/* Assurez-vous que la casse correspond au backend */}
+                  <option value="C">Chef d'équipe</option>
                 </select>
               </div>
               <div className="flex items-center pt-6">

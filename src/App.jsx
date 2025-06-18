@@ -36,9 +36,9 @@ const ProtectedRoute = ({ allowedRoles }) => {
     console.warn(`ProtectedRoute: Accès refusé pour le rôle "${userRoleNormalized}". Redirection.`);
     let fallbackPath = '/login';
     switch (userRoleNormalized) {
-      case 'admin': fallbackPath = '/admin'; break;
-      case 'chef_equipe': fallbackPath = '/chef'; break;
-      case 'employe': fallbackPath = '/employe'; break;
+      case 'a': fallbackPath = '/admin'; break;
+      case 'c': fallbackPath = '/chef'; break;
+      case 'e': fallbackPath = '/employe'; break;
       default: fallbackPath = '/login';
     }
     return <Navigate to={fallbackPath} replace />;
@@ -58,9 +58,9 @@ const PublicRoute = ({ children }) => {
     const userRoleNormalized = normalizeRoleApp(currentUser.role);
     let homePath = '/login';
     switch (userRoleNormalized) {
-      case 'admin': homePath = '/admin'; break;
-      case 'chef_equipe': homePath = '/chef'; break;
-      case 'employe': homePath = '/employe'; break;
+      case 'a': homePath = '/admin'; break;
+      case 'c': homePath = '/chef'; break;
+      case 'e': homePath = '/employe'; break;
       default: homePath = '/login';
     }
     return <Navigate to={homePath} replace />;
@@ -95,9 +95,9 @@ const NavigateToCorrectRouteOnLoad = () => {
   const userRoleNormalized = normalizeRoleApp(currentUser.role);
   let homePath = '/login';
   switch (userRoleNormalized) {
-    case 'admin': homePath = '/admin'; break;
-    case 'chef_equipe': homePath = '/chef'; break;
-    case 'employe': homePath = '/employe'; break;
+    case 'a': homePath = '/admin'; break;
+    case 'c': homePath = '/chef'; break;
+    case 'e': homePath = '/employe'; break;
     default: homePath = '/login';
   }
   return <Navigate to={homePath} replace />;
@@ -118,13 +118,13 @@ function AppContent({ navigate }) {
         />
 
         {/* Routes protégées */}
-        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['a']} />}>
           <Route path="/admin/*" element={<AdminInterfaceWrapper />} />
         </Route>
-        <Route element={<ProtectedRoute allowedRoles={['chef_equipe']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['c']} />}>
           <Route path="/chef/*" element={<ChefEquipeInterfaceWrapper />} />
         </Route>
-        <Route element={<ProtectedRoute allowedRoles={['employe']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['e']} />}>
           <Route path="/employe/*" element={<EmployeInterfaceWrapper />} />
         </Route>
         

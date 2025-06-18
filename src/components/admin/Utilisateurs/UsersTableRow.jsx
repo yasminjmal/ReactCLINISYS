@@ -13,31 +13,38 @@ const StatusBadge = ({ isActive }) => (
 
 const RoleDisplay = ({ role }) => {
     const roleMap = {
-        'ROLE_ADMIN': { text: 'Admin', color: 'text-red-500' },
-        'ROLE_CHEF_EQUIPE': { text: 'Chef d\'équipe', color: 'text-yellow-600' },
-        'ROLE_USER': { text: 'Utilisateur', color: 'text-sky-600' }
+        'A': { text: 'Admin', color: 'text-red-500' },
+        'C': { text: 'Chef d\'équipe', color: 'text-yellow-600' },
+        'E': { text: 'Utilisateur', color: 'text-sky-600' }
     };
     const { text, color } = roleMap[role] || { text: role, color: 'text-slate-500' };
     return <span className={`font-semibold ${color}`}>{text}</span>;
 };
+const detectImageMime=(base64)=> {
+  if (base64.startsWith("/9j/")) return "image/jpeg";
+  if (base64.startsWith("iVBOR")) return "image/png";
+  if (base64.startsWith("R0lGOD")) return "image/gif";
+  if (base64.startsWith("UklGR")) return "image/webp";
+  return "image/jpeg"; // fallback
+}
 
 const UsersTableRow = ({ user, onEdit, onDelete }) => {
-    const userPhotoUrl = defaultProfilePic; 
+    
+    const mimeType = user.photo ? detectImageMime(user.photo) : null;
+    const photoUrl = user.photo ? `data:${mimeType};base64,${user.photo}` : defaultProfilePic;
 
-    // Create an array of JSX elements for teams and postes
-    // This will be an empty array if user.equipePosteSet is null/undefined
     const equipesAndPostesElements = user.equipePosteSet?.map((ep, index) => (
         <React.Fragment key={`${user.id}-${ep.equipe?.id}-${ep.poste?.id || index}`}>
             <strong>{ep.equipe?.designation || 'N/A'}</strong> ({ep.poste?.designation || 'N/A'})
-            {index < user.equipePosteSet?.length - 1 && ', '} {/* FIX: Added optional chaining here */}
+            {index < user.equipePosteSet?.length - 1 && ', '}
         </React.Fragment>
-    )) || []; // Ensure it defaults to an empty array if equipePosteSet is undefined/null
+    )) || [];
 
     return (
         <tr className="bg-white dark:bg-slate-800 border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">
             <td className="px-6 py-4">
                 <div className="flex items-center space-x-3">
-                    <img className="h-10 w-10 rounded-full object-cover" src={userPhotoUrl} alt={`${user.prenom} ${user.nom}`} />
+                    <img className="h-10 w-10 rounded-full object-cover" src={photoUrl} alt={`${user.prenom} ${user.nom}`} onError={(e) => { e.currentTarget.src = defaultProfilePic; }}/>
                     <div>
                         <div className="font-semibold text-slate-800 dark:text-white">{user.prenom} {user.nom}</div>
                         <div className="text-xs text-slate-500 dark:text-slate-400">{user.email}</div>

@@ -48,15 +48,15 @@ const LoginPage = () => {
         console.log(`LoginPage: Rôle original: "${userData.role}", Rôle normalisé pour switch: "${normalizedUserRole}"`);
         
         switch (normalizedUserRole) { 
-          case 'admin':
+          case 'a':
             console.log("LoginPage: Redirection vers /admin");
             navigate('/admin'); 
             break;
-          case 'chef_equipe': 
+          case 'c': 
             console.log("LoginPage: Redirection vers /chef");
             navigate('/chef');
             break;
-          case 'employe': 
+          case 'e': 
             console.log("LoginPage: Redirection vers /employe");
             navigate('/employe');
             break;

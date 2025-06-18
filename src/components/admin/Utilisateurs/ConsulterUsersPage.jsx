@@ -149,9 +149,9 @@ const ConsulterUsersPage = () => {
                     <input type="text" placeholder="Rechercher par nom, prénom, email..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="form-input md:col-span-1"/>
                     <select value={filters.role} onChange={e => setFilters(f => ({...f, role: e.target.value}))} className="form-select">
                         <option value="">Filtrer par rôle (Tous)</option>
-                        <option value="ROLE_ADMIN">Administrateur</option> {/* Case corrected for consistency with backend enum */}
-                        <option value="ROLE_CHEF_EQUIPE">Chef d'équipe</option>
-                        <option value="ROLE_USER">Utilisateur</option>
+                        <option value="A">Administrateur</option> {/* Case corrected for consistency with backend enum */}
+                        <option value="C">Chef d'équipe</option>
+                        <option value="E">Utilisateur</option>
                     </select>
                      <select value={filters.actifs} onChange={e => setFilters(f => ({...f, actifs: e.target.value}))} className="form-select">
                         <option value="">Filtrer par statut (Tous)</option>

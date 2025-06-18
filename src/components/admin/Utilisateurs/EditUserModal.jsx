@@ -2,9 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, Key, Eye, EyeOff, Save, XCircle, Image as ImageIcon, Briefcase } from 'lucide-react';
 import defaultProfilePic from '../../../assets/images/default-profile.png';
-import utilisateurService from '../../../services/utilisateurService';
 
-// Helper for form fields (copied from AjouterUserPage for consistency)
 const InputField = ({ label, name, type = "text", value, onChange, error, icon: Icon, hasToggle, onToggle, show }) => (
     <div>
         <label htmlFor={name} className="form-label text-sm">{label}</label>
@@ -22,51 +20,28 @@ const InputField = ({ label, name, type = "text", value, onChange, error, icon: 
 );
 
 const EditUserModal = ({ user, onUpdateUser, onCancel, showTemporaryMessage }) => {
-    // Initialize form data with current user's details, using optional chaining and nullish coalescing for safety
     const [formData, setFormData] = useState({
         prenom: user?.prenom || '',
         nom: user?.nom || '',
         login: user?.login || '',
         email: user?.email || '',
-        motDePasse: '', // Password is often not pre-filled for security, handle update separately
+        motDePasse: '',
         numTelephone: user?.numTelephone || '',
-        role: user?.role || 'ROLE_USER', // Default to ROLE_USER if not set
-        actif: user?.actif ?? true, // Default to true if null/undefined
+        role: user?.role || 'E',
+        actif: user?.actif ?? true,
     });
     const [photoFile, setPhotoFile] = useState(null);
-    const [imagePreview, setImagePreview] = useState(null);
+    const [imagePreview, setImagePreview] = useState(defaultProfilePic);
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState({});
-    const [isLoadingPhoto, setIsLoadingPhoto] = useState(true);
 
-    // Effect to load user photo when modal opens or user changes
     useEffect(() => {
-        const loadPhoto = async () => {
-            setIsLoadingPhoto(true);
-            try {
-                // We fetch the photo using the service, which gets a Blob URL
-                const photoUrl = await utilisateurService.getPhotoUtilisateur(user.id);
-                setImagePreview(photoUrl || defaultProfilePic); // Use default if no photo
-            } catch (error) {
-                console.error("Error loading user photo:", error);
-                setImagePreview(defaultProfilePic); // Fallback to default
-            } finally {
-                setIsLoadingPhoto(false);
-            }
-        };
-        if (user?.id) { // Only load photo if user object and ID are available
-            loadPhoto();
+        if (user?.photo) {
+            setImagePreview(`data:image/jpeg;base64,${user.photo}`);
         } else {
-            setImagePreview(defaultProfilePic); // Show default immediately if no user
-            setIsLoadingPhoto(false);
+            setImagePreview(defaultProfilePic);
         }
-        // Cleanup function for URL.createObjectURL
-        return () => {
-            if (imagePreview && imagePreview.startsWith('blob:')) {
-                URL.revokeObjectURL(imagePreview);
-            }
-        };
-    }, [user?.id]); // Rerun when user ID changes
+    }, [user.photo]);
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -77,7 +52,7 @@ const EditUserModal = ({ user, onUpdateUser, onCancel, showTemporaryMessage }) =
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             setPhotoFile(file);
-            if (imagePreview && imagePreview.startsWith('blob:')) { // Revoke previous blob URL
+            if (imagePreview && imagePreview.startsWith('blob:')) {
                 URL.revokeObjectURL(imagePreview);
             }
             setImagePreview(URL.createObjectURL(file));
@@ -90,7 +65,6 @@ const EditUserModal = ({ user, onUpdateUser, onCancel, showTemporaryMessage }) =
         if (!formData.prenom.trim()) newErrors.prenom = "Le prénom est requis.";
         if (!formData.login.trim()) newErrors.login = "Le login est requis.";
         if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "L'email n'est pas valide.";
-        // Password validation only if it's being changed (i.e., not empty)
         if (formData.motDePasse && formData.motDePasse.length < 4) newErrors.motDePasse = "Mot de passe de 4 caractères min. requis.";
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -99,12 +73,10 @@ const EditUserModal = ({ user, onUpdateUser, onCancel, showTemporaryMessage }) =
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (validateForm()) {
-            // Prepare data: only include motDePasse if it's not empty, otherwise delete it
             const dataToSubmit = { ...formData };
             if (dataToSubmit.motDePasse === '') {
-                delete dataToSubmit.motDePasse; // Don't send empty password if not changed
+                delete dataToSubmit.motDePasse;
             }
-
             await onUpdateUser(user.id, dataToSubmit, photoFile);
         } else {
             showTemporaryMessage('error', 'Veuillez corriger les erreurs dans le formulaire.');
@@ -121,19 +93,12 @@ const EditUserModal = ({ user, onUpdateUser, onCancel, showTemporaryMessage }) =
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
                         <div className="md:col-span-1 flex flex-col items-center space-y-2">
                             <div className="w-28 h-28 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50 overflow-hidden">
-                                {isLoadingPhoto ? (
-                                    <div className="animate-pulse bg-slate-200 h-full w-full rounded-full flex items-center justify-center">
-                                        <ImageIcon className="h-12 w-12 text-slate-400" />
-                                    </div>
-                                ) : (
-                                    <img src={imagePreview} alt="Aperçu" className="w-full h-full object-cover" />
-                                )}
+                                <img src={imagePreview} alt="Aperçu" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultProfilePic; }}/>
                             </div>
                             <label htmlFor="photo" className="btn btn-secondary-outline text-xs py-1 px-2">Changer l'image</label>
                             <input type="file" id="photo" name="photo" accept="image/*" onChange={handleImageChange} className="hidden" />
                         </div>
                         <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {/* Form fields */}
                             <InputField label="Prénom" name="prenom" value={formData.prenom} onChange={handleInputChange} error={errors.prenom} icon={User} />
                             <InputField label="Nom" name="nom" value={formData.nom} onChange={handleInputChange} error={errors.nom} icon={User} />
                             <InputField label="Login" name="login" value={formData.login} onChange={handleInputChange} error={errors.login} icon={User} />
@@ -143,9 +108,9 @@ const EditUserModal = ({ user, onUpdateUser, onCancel, showTemporaryMessage }) =
                             <div>
                                 <label className="form-label text-sm">Rôle</label>
                                 <select name="role" value={formData.role} onChange={handleInputChange} className="form-select">
-                                    <option value="ROLE_USER">Utilisateur</option>
-                                    <option value="ROLE_ADMIN">Administrateur</option>
-                                    <option value="ROLE_CHEF_EQUIPE">Chef d'équipe</option>
+                                    <option value="E">Employee</option>
+                                    <option value="A">Administrateur</option>
+                                    <option value="C">Chef d'équipe</option>
                                 </select>
                             </div>
                             <div className="flex items-center pt-6">

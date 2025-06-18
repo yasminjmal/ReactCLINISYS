@@ -3,17 +3,18 @@ import { Edit, Trash2 } from 'lucide-react';
 import defaultProfilePic from '../../../assets/images/default-profile.png';
 
 const UsersRow = ({ user, onEdit, onDelete }) => {
-    const userPhotoUrl = defaultProfilePic;
+    const photoUrl = user.photo ? `data:image/jpeg;base64,${user.photo}` : defaultProfilePic;
+    
     const roleMap = {
-        'ROLE_ADMIN': { text: 'Admin', color: 'text-red-500' },
-        'ROLE_CHEF_EQUIPE': { text: 'Chef d\'équipe', color: 'text-yellow-600' },
-        'ROLE_USER': { text: 'Utilisateur', color: 'text-sky-600' }
+        'A': { text: 'Admin', color: 'text-red-500' },
+        'C': { text: 'Chef d\'équipe', color: 'text-yellow-600' },
+        'E': { text: 'Utilisateur', color: 'text-sky-600' }
     };
     const { text: roleText, color: roleColor } = roleMap[user.role] || { text: user.role, color: 'text-slate-500' };
 
     return (
         <div className="bg-white dark:bg-slate-800 shadow rounded-md flex items-center p-3 space-x-4 transition-all hover:shadow-md">
-            <img src={userPhotoUrl} alt={`${user.prenom} ${user.nom}`} className="h-12 w-12 rounded-full object-cover" />
+            <img src={photoUrl} alt={`${user.prenom} ${user.nom}`} className="h-12 w-12 rounded-full object-cover" onError={(e) => { e.currentTarget.src = defaultProfilePic; }}/>
             <div className="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-x-4 items-center">
                 <div>
                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{user.prenom} {user.nom}</p>

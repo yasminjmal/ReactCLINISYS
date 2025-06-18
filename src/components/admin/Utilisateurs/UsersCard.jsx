@@ -3,11 +3,12 @@ import { Edit, Trash2 } from 'lucide-react';
 import defaultProfilePic from '../../../assets/images/default-profile.png';
 
 const UsersCard = ({ user, onEdit, onDelete }) => {
-    const userPhotoUrl = defaultProfilePic;
+    const photoUrl = user.photo ? `data:image/jpeg;base64,${user.photo}` : defaultProfilePic;
+
     const roleMap = {
-        'ROLE_ADMIN': { text: 'Admin', color: 'text-red-500' },
-        'ROLE_CHEF_EQUIPE': { text: 'Chef d\'équipe', color: 'text-yellow-600' },
-        'ROLE_USER': { text: 'Utilisateur', color: 'text-sky-600' }
+        'A': { text: 'Admin', color: 'text-red-500' },
+        'C': { text: 'Chef d\'équipe', color: 'text-yellow-600' },
+        'E': { text: 'Utilisateur', color: 'text-sky-600' }
     };
     const { text: roleText, color: roleColor } = roleMap[user.role] || { text: user.role, color: 'text-slate-500' };
 
@@ -18,7 +19,7 @@ const UsersCard = ({ user, onEdit, onDelete }) => {
                 <button onClick={() => onDelete(user)} className="p-2 text-slate-500 hover:text-red-500 rounded-full hover:bg-slate-100" title="Supprimer"><Trash2 size={16}/></button>
             </div>
             <div className="flex items-center space-x-4 mb-3">
-                <img src={userPhotoUrl} alt={`${user.prenom} ${user.nom}`} className="h-16 w-16 rounded-full object-cover border-2 border-slate-200" />
+                <img src={photoUrl} alt={`${user.prenom} ${user.nom}`} className="h-16 w-16 rounded-full object-cover border-2 border-slate-200" onError={(e) => { e.currentTarget.src = defaultProfilePic; }}/>
                 <div>
                     <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{user.prenom} {user.nom}</h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 truncate w-40">{user.email}</p>
