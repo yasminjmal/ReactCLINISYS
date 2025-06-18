@@ -235,7 +235,7 @@ const AdminInterface = () => {
         />
         
         {/* Zone de contenu principal */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto pt-16 md:ml-64 transition-all duration-300 ease-in-out">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto  md:ml-64 transition-all duration-300 ease-in-out">
           {/* Affichage du message temporaire (notification) */}
           {pageMessage && pageMessage.text && (
             <div className={`fixed top-20 right-6 p-4 rounded-md shadow-lg z-[100] flex items-center space-x-3 animate-slide-in-right border-l-4
