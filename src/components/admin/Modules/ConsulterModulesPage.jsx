@@ -39,7 +39,6 @@ const DeleteConfirmationModal = ({ module, onConfirm, onCancel }) => (
 );
 
 const EditModal = ({ module, equipes, onUpdate, onCancel }) => {
-    // On utilise un seul objet pour l'état du formulaire, c'est plus propre
     const [formData, setFormData] = useState({
         designation: '',
         idEquipe: '',
@@ -47,8 +46,6 @@ const EditModal = ({ module, equipes, onUpdate, onCancel }) => {
     });
     const [errors, setErrors] = useState({});
 
-    // On utilise useEffect pour initialiser l'état du formulaire quand le modal s'ouvre.
-    // C'est plus robuste que de le faire directement dans useState.
     useEffect(() => {
         if (module) {
             setFormData({
@@ -114,7 +111,7 @@ const EditModal = ({ module, equipes, onUpdate, onCancel }) => {
 };
 
 
-const ConsulterModulesPage = () => {
+const ConsulterModulesPage = ({ initialModules = null }) => {
     const [view, setView] = useState('list');
     const [modules, setModules] = useState([]);
     const [equipes, setEquipes] = useState([]);
@@ -135,18 +132,21 @@ const ConsulterModulesPage = () => {
         setIsLoading(true);
         try {
             const filters = filterEquipeId ? { equipeId: filterEquipeId } : {};
-            const [modulesRes, equipesRes] = await Promise.all([
-                moduleService.getAllModules(filters),
-                equipeService.getAllEquipes()
-            ]);
-            setModules(modulesRes.data || []);
+            const equipesRes = await equipeService.getAllEquipes();
             setEquipes(equipesRes.data || []);
+            
+            if (initialModules) {
+                setModules(initialModules);
+            } else {
+                const modulesRes = await moduleService.getAllModules(filters);
+                setModules(modulesRes.data || []);
+            }
         } catch (err) {
             showTemporaryMessage('error', 'Erreur de chargement des données.');
         } finally {
             setIsLoading(false);
         }
-    }, [filterEquipeId]);
+    }, [filterEquipeId, initialModules, showTemporaryMessage]);
 
     useEffect(() => {
         if (view === 'list') {
@@ -230,7 +230,6 @@ const ConsulterModulesPage = () => {
                                 <div className="overflow-x-auto bg-white dark:bg-slate-800 rounded-lg shadow">
                                     <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
                                         <thead className="text-xs text-slate-700 uppercase bg-slate-100 dark:bg-slate-700 dark:text-slate-300">
-                                            {/* CHANGEMENT ICI : Suppression des classes "text-center" */}
                                             <tr>
                                                 <th scope="col" className="px-6 py-3">Module</th>
                                                 <th scope="col" className="px-6 py-3">Statut</th>

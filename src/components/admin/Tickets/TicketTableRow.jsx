@@ -48,7 +48,7 @@ const TicketTableRow = ({ ticket, onNavigateToDetails, onNavigateToUpdate }) => 
 
   const clientNom = ticket.idClient?.nomComplet || 'N/A';
   const demandeurNom = ticket.userCreation || 'N/A';
-  const moduleNom = ticket.idModule?.nom || 'N/A';
+  const moduleNom = ticket.idModule?.designation || 'N/A';
   const employeNom = ticket.idUtilisateur ? `${ticket.idUtilisateur.prenom} ${ticket.idUtilisateur.nom}` : 'N/A';
   
   const formatDate = (dateArray) => {

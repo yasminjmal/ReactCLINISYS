@@ -106,7 +106,7 @@ const TicketDetailPage = ({ ticketId, onClose }) => {
               <DetailItem icon={<User size={14} className="mr-2"/>} label="Client" value={idClient?.nomComplet} />
               <DetailItem icon={<Tag size={14} className="mr-2"/>} label="Priorité" value={<PriorityBadge priority={priorite} />} />
               <DetailItem icon={<Info size={14} className="mr-2"/>} label="Statut" value={<StatusBadge status={statue} />} />
-              <DetailItem icon={<Package size={14} className="mr-2"/>} label="Module" value={idModule?.nom} />
+              <DetailItem icon={<Package size={14} className="mr-2"/>} label="Module" value={idModule?.designation} />
               <DetailItem icon={<User size={14} className="mr-2"/>} label="Affecté à" value={idUtilisateur ? `${idUtilisateur.prenom} ${idUtilisateur.nom}` : ''} />
               <DetailItem icon={<Shield size={14} className="mr-2"/>} label="Actif" value={actif ? 'Oui' : 'Non'} />
               <DetailItem icon={<Calendar size={14} className="mr-2"/>} label="Date d'échéance" value={formatDate(date_echeance)} />

@@ -107,7 +107,7 @@ const EditModal = ({ poste, onUpdate, onCancel }) => {
 
 
 // --- Composant Principal ---
-const ConsulterPostesPage = () => {
+const ConsulterPostesPage = ({ initialPostes = null }) => {
     // --- STATE MANAGEMENT ---
     const [view, setView] = useState('list');
     const [postes, setPostes] = useState([]);
@@ -127,7 +127,6 @@ const ConsulterPostesPage = () => {
     // --- DATA FETCHING ---
     const fetchPostes = useCallback(async () => {
         setIsLoading(true);
-        // On ne reset pas le message ici pour qu'il reste visible après le fetch
         try {
             const response = await posteService.getAllPostes(filterStatus);
             setPostes(Array.isArray(response.data) ? response.data : []);
@@ -141,9 +140,14 @@ const ConsulterPostesPage = () => {
 
     useEffect(() => {
         if (view === 'list') {
-            fetchPostes();
+            if (initialPostes) {
+                setPostes(initialPostes);
+                setIsLoading(false);
+            } else {
+                fetchPostes();
+            }
         }
-    }, [view, fetchPostes]);
+    }, [view, fetchPostes, initialPostes]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {

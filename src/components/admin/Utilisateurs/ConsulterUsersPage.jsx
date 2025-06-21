@@ -1,3 +1,4 @@
+// src/components/admin/Utilisateurs/ConsulterUsersPage.jsx
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Search, List, LayoutGrid, Rows3, UserPlus, Filter, AlertTriangle, Save, XCircle, Edit, Trash2, ChevronDown, ChevronUp, X as XIcon } from 'lucide-react';
 
@@ -6,7 +7,7 @@ import AjouterUserPage from './AjouterUserPage';
 import UsersCard from './UsersCard';
 import UsersRow from './UsersRow';
 import UsersTableRow from './UsersTableRow';
-import EditUserModal from './EditUserModal'; // NEW: Import EditUserModal
+import EditUserModal from './EditUserModal';
 
 // --- INTERNAL COMPONENTS ---
 
@@ -44,12 +45,12 @@ const DeleteConfirmationModal = ({ user, onConfirm, onCancel }) => (
 
 // --- MAIN COMPONENT ---
 
-const ConsulterUsersPage = () => {
+const ConsulterUsersPage = ({ initialUsers = null }) => {
     const [view, setView] = useState('list');
     const [users, setUsers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [pageMessage, setPageMessage] = useState(null);
-    const [userToEdit, setUserToEdit] = useState(null); // For the edit modal
+    const [userToEdit, setUserToEdit] = useState(null);
     const [userToDelete, setUserToDelete] = useState(null);
 
     const [viewMode, setViewMode] = useState('table');
@@ -75,28 +76,32 @@ const ConsulterUsersPage = () => {
 
     useEffect(() => {
         if (view === 'list') {
-            fetchUsers();
+            if (initialUsers) {
+                setUsers(initialUsers);
+                setIsLoading(false);
+            } else {
+                fetchUsers();
+            }
         }
-    }, [view, fetchUsers]);
+    }, [view, fetchUsers, initialUsers]);
 
      const handleAddUser = async (userData, photoFile) => {
         try {
             await utilisateurService.createUtilisateur(userData, photoFile);
             showTemporaryMessage('success', 'Utilisateur ajouté avec succès.');
-            setView('list'); // Switch back to list view which triggers fetchUsers via useEffect
+            setView('list');
         } catch (error) {
             const errorMsg = error.response?.data?.message || "Erreur lors de l'ajout.";
             showTemporaryMessage('error', errorMsg);
         }
     };
     
-    // NEW: handleUpdateUser logic (will be passed to EditUserModal)
     const handleUpdateUser = async (id, userData, photoFile) => {
         try {
             await utilisateurService.updateUtilisateur(id, userData, photoFile);
             showTemporaryMessage('success', 'Utilisateur mis à jour avec succès.');
-            setUserToEdit(null); // Close the modal
-            await fetchUsers(); // Refresh the list
+            setUserToEdit(null);
+            await fetchUsers();
         } catch (error) {
             const errorMsg = error.response?.data?.message || "Erreur lors de la mise à jour.";
             showTemporaryMessage('error', errorMsg);
@@ -109,7 +114,7 @@ const ConsulterUsersPage = () => {
             await utilisateurService.deleteUtilisateur(userToDelete.id);
             showTemporaryMessage('info', 'Utilisateur supprimé.');
             setUserToDelete(null);
-            await fetchUsers(); // Refresh the list manually
+            await fetchUsers();
         } catch (error) {
             const errorMsg = error.response?.data?.error || "Impossible de supprimer l'utilisateur.";
             showTemporaryMessage('error', errorMsg);
@@ -130,10 +135,9 @@ const ConsulterUsersPage = () => {
 
     return (
         <div className="p-4 md:p-6 space-y-6 bg-slate-50 dark:bg-slate-900 min-h-full">
-            {/* Modals rendered at the top level for overlaying content */}
             <PageMessage message={pageMessage} onDismiss={() => setPageMessage(null)} />
             {userToDelete && <DeleteConfirmationModal user={userToDelete} onConfirm={handleDeleteUser} onCancel={() => setUserToDelete(null)} />}
-            {userToEdit && <EditUserModal user={userToEdit} onUpdateUser={handleUpdateUser} onCancel={() => setUserToEdit(null)} showTemporaryMessage={showTemporaryMessage} />} {/* NEW: EditUserModal integration */}
+            {userToEdit && <EditUserModal user={userToEdit} onUpdateUser={handleUpdateUser} onCancel={() => setUserToEdit(null)} showTemporaryMessage={showTemporaryMessage} />}
 
             <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
@@ -149,7 +153,7 @@ const ConsulterUsersPage = () => {
                     <input type="text" placeholder="Rechercher par nom, prénom, email..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="form-input md:col-span-1"/>
                     <select value={filters.role} onChange={e => setFilters(f => ({...f, role: e.target.value}))} className="form-select">
                         <option value="">Filtrer par rôle (Tous)</option>
-                        <option value="A">Administrateur</option> {/* Case corrected for consistency with backend enum */}
+                        <option value="A">Administrateur</option>
                         <option value="C">Chef d'équipe</option>
                         <option value="E">Utilisateur</option>
                     </select>

@@ -12,7 +12,7 @@ import moduleService from '../../../services/moduleService';
 import TicketTableRow from './TicketTableRow';
 import TicketCard from './TicketCard';
 import TicketRow from './TicketRow';
-import TicketDetailPage from './TicketDetailPage'; // La nouvelle page de détails
+import TicketDetailPage from './TicketDetailPage';
 import PageAffectationTicket from './PageAffectationTicket';
 import PageDiffractionTicket from './PageDiffractionTicket';
 import TicketAccepteDetailsPage from './TicketAccepteDetailsPage';
@@ -30,6 +30,7 @@ const AddTicketModal = ({ onAddTicket, onCancel, showTemporaryMessage, available
         idUtilisateur: '',
         date_echeance: '',
         actif: true,
+        statue:'En_attenteee',
     });
     const [errors, setErrors] = useState({});
 
@@ -83,9 +84,9 @@ const AddTicketModal = ({ onAddTicket, onCancel, showTemporaryMessage, available
                     <div>
                         <label className="form-label text-xs">Priorité</label>
                         <select name="priorite" value={formData.priorite} onChange={handleInputChange} className="form-select">
-                            <option value="HAUTE">Haute</option>
-                            <option value="MOYENNE">Moyenne</option>
-                            <option value="BASSE">Basse</option>
+                            <option value="Haute">Haute</option>
+                            <option value="Moyenne">Moyenne</option>
+                            <option value="Basse">Basse</option>
                         </select>
                     </div>
                     <div>
@@ -110,6 +111,7 @@ const AddTicketModal = ({ onAddTicket, onCancel, showTemporaryMessage, available
                             ))}
                         </select>
                     </div>
+                    
                     <div className="flex justify-end space-x-3 mt-6">
                         <button type="button" onClick={onCancel} className="btn btn-secondary">Annuler</button>
                         <button type="submit" className="btn btn-primary">Créer Ticket</button>
@@ -120,7 +122,7 @@ const AddTicketModal = ({ onAddTicket, onCancel, showTemporaryMessage, available
     );
 };
 
-const TicketsManagementPage = ({ showTemporaryMessage, initialFilterStatus }) => {
+const TicketsManagementPage = ({ showTemporaryMessage, initialFilterStatus, initialTickets = null }) => {
     const [tickets, setTickets] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [viewMode, setViewMode] = useState('table');
@@ -137,31 +139,40 @@ const TicketsManagementPage = ({ showTemporaryMessage, initialFilterStatus }) =>
     const [availableClients, setAvailableClients] = useState([]);
     const [availableUsers, setAvailableUsers] = useState([]);
     const [availableModules, setAvailableModules] = useState([]);
-
-    // Nouvel état pour gérer l'affichage du panneau de détails
     const [selectedTicketId, setSelectedTicketId] = useState(null);
 
     const fetchAllNecessaryData = useCallback(async () => {
         setIsLoading(true);
         try {
-            // MODIFICATION : On utilise le nouveau service pour ne récupérer que les tickets parents
-            const [ticketsRes, clientsRes, usersRes, modulesRes] = await Promise.all([
-                ticketService.getAllParentTickets(),
-                clientService.getAllClients(),
-                utilisateurService.getAllUtilisateurs(),
-                moduleService.getAllModules(),
-            ]);
-            setTickets(ticketsRes);
-            setAvailableClients(clientsRes.data || []);
-            setAvailableUsers(usersRes.data || []);
-            setAvailableModules(modulesRes.data || []);
+            if (initialTickets) {
+                const [clientsRes, usersRes, modulesRes] = await Promise.all([
+                    clientService.getAllClients(),
+                    utilisateurService.getAllUtilisateurs(),
+                    moduleService.getAllModules(),
+                ]);
+                setTickets(initialTickets);
+                setAvailableClients(clientsRes.data || []);
+                setAvailableUsers(usersRes.data || []);
+                setAvailableModules(modulesRes.data || []);
+            } else {
+                const [ticketsRes, clientsRes, usersRes, modulesRes] = await Promise.all([
+                    ticketService.getAllParentTickets(),
+                    clientService.getAllClients(),
+                    utilisateurService.getAllUtilisateurs(),
+                    moduleService.getAllModules(),
+                ]);
+                setTickets(ticketsRes);
+                setAvailableClients(clientsRes.data || []);
+                setAvailableUsers(usersRes.data || []);
+                setAvailableModules(modulesRes.data || []);
+            }
         } catch (error) {
             console.error("Erreur lors du chargement des données initiales:", error);
             showTemporaryMessage('error', 'Erreur lors du chargement des données.');
         } finally {
             setIsLoading(false);
         }
-    }, [showTemporaryMessage]);
+    }, [showTemporaryMessage, initialTickets]);
 
     useEffect(() => {
         fetchAllNecessaryData();
@@ -178,7 +189,6 @@ const TicketsManagementPage = ({ showTemporaryMessage, initialFilterStatus }) =>
         }
     };
     
-    // GESTION DE L'AFFICHAGE DU PANNEAU DE DÉTAILS
     const handleShowDetails = (ticketId) => {
         setSelectedTicketId(ticketId);
     };
@@ -194,7 +204,6 @@ const TicketsManagementPage = ({ showTemporaryMessage, initialFilterStatus }) =>
 
     const filteredAndSortedTickets = useMemo(() => {
         let processedTickets = [...tickets];
-        // Appliquer la recherche
         if (searchTerm) {
             const lower = searchTerm.toLowerCase();
             processedTickets = processedTickets.filter(t =>
@@ -202,12 +211,6 @@ const TicketsManagementPage = ({ showTemporaryMessage, initialFilterStatus }) =>
                 (t.idClient?.nomComplet?.toLowerCase().includes(lower))
             );
         }
-        // Appliquer les filtres
-        // ... votre logique de filtrage ici ...
-
-        // Appliquer le tri
-        // ... votre logique de tri ici ...
-
         return processedTickets;
     }, [tickets, searchTerm, activeFilters, dateRange, activeSort]);
 
@@ -216,7 +219,6 @@ const TicketsManagementPage = ({ showTemporaryMessage, initialFilterStatus }) =>
     return (
         <div className="p-4 md:p-6 space-y-6 bg-slate-100 dark:bg-slate-900 min-h-full">
             
-            {/* Le panneau de détails s'affichera par-dessus la liste */}
             {selectedTicketId && (
                 <TicketDetailPage 
                     ticketId={selectedTicketId} 
@@ -224,7 +226,6 @@ const TicketsManagementPage = ({ showTemporaryMessage, initialFilterStatus }) =>
                 />
             )}
 
-            {/* Modale pour ajouter un ticket */}
             {activeModal === 'add' && (
                 <AddTicketModal
                     onAddTicket={handleAddTicket}
@@ -235,7 +236,6 @@ const TicketsManagementPage = ({ showTemporaryMessage, initialFilterStatus }) =>
                     availableModules={availableModules}
                 />
             )}
-            {/* Autres modales */}
             {activeModal === 'affectation' && selectedTicketForModal && (
                 <PageAffectationTicket ticketObject={selectedTicketForModal} onConfirmAffectation={() => {}} onCancel={handleCancelModal} availableModules={availableModules} availableUsers={availableUsers} />
             )}
@@ -258,7 +258,6 @@ const TicketsManagementPage = ({ showTemporaryMessage, initialFilterStatus }) =>
                         <button onClick={() => setViewMode('card')} className={`btn-icon ${viewMode === 'card' ? 'btn-active' : 'btn-inactive'}`} title="Vue Cartes"><LayoutGrid size={20} /></button>
                     </div>
                 </div>
-                {/* La section des filtres et du tri ici... */}
             </div>
 
             {isLoading ? (
