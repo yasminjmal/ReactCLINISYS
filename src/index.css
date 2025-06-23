@@ -115,3 +115,174 @@
 .button-primary:hover {
   background-color: #0056b3;
 }
+/* ai icons */
+@keyframes moveGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  25% {
+    background-position: 100% 50%;
+  }
+  50% {
+    background-position: 50% 100%;
+  }
+  75% {
+    background-position: 50% 0%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.meta-ai-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 45%; /* Ensures the mask is applied smoothly */
+    transition: transform 0.3s ease, filter 0.3s ease;
+
+
+  /* The multi-color gradient, made much larger than the element */
+  background: linear-gradient(45deg, #ff00c8, #a052e1, #00ffff, #4399f6);
+  background-size: 300% 300%;
+
+  /* The animation that moves the background-position */
+  animation: moveGradient 6s ease-in-out infinite;
+
+  /* The mask that cuts a hole in the center to create the ring shape */
+  -webkit-mask: radial-gradient(transparent 8px, black 9px);
+          mask: radial-gradient(transparent 8px, black 9px);
+}
+
+
+/* Define the new styles for when the search bar is active/focused */
+.search-container:focus-within .meta-ai-icon {
+  /* 1. Animation accelerates */
+  animation-duration: 2s;
+  
+  /* 2. A bright "active" glow is added */
+  filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.8));
+  
+  /* 3. The icon subtly grows */
+  transform: scale(1.1);
+}
+
+
+/* ai icons */
+
+/* === loading === */
+@keyframes pulse-text-glow {
+  0%, 100% {
+    opacity: 0.8;
+    text-shadow: 0 0 8px rgba(160, 92, 225, 0.4);
+  }
+  50% {
+    opacity: 1;
+    text-shadow: 0 0 16px rgba(67, 153, 246, 0.5);
+  }
+}
+
+.animate-pulse-text {
+  animation: pulse-text-glow 3s ease-in-out infinite;
+}
+/* === loading === */
+/* === NEW ANIMATION STYLES FOR SEQUENTIAL LOADING INDICATOR === */
+
+/* Keyframe for the text sliding in from the right */
+@keyframes slide-in-text {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Keyframe for the ring drawing itself */
+@keyframes draw-ring {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Keyframe for the comet spinning around the ring */
+@keyframes spin-comet {
+  from {
+    transform: rotate(-90deg);
+  }
+  to {
+    transform: rotate(270deg);
+  }
+}
+
+/* Keyframe for the comet fading in */
+@keyframes fade-in {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Container for the loading indicator */
+.loading-indicator-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  position: relative;
+}
+
+/* Styling and animation for the "clinicAi" text */
+.loading-text {
+  font-size: 2.25rem; /* 36px */
+  font-weight: 700;
+  color: #d1d5db; /* gray-300 */
+  opacity: 0; /* Starts invisible */
+  animation: slide-in-text 0.7s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* SVG container for the ring animation */
+.loading-ring-svg {
+  position: absolute;
+  width: 160px;
+  height: 160px;
+  transform-origin: center;
+}
+
+/* The faint background track of the ring */
+.ring-background-track {
+  fill: none;
+  stroke: rgba(71, 85, 105, 0.5); /* slate-600 with opacity */
+  stroke-width: 8;
+  /* SVG math: Circumference = 2 * PI * R = 2 * 3.14159 * 40 = 251.3 */
+  stroke-dasharray: 252;
+  stroke-dashoffset: 252; /* Starts "undrawn" */
+  /* Animation starts after the text slides in */
+  animation: draw-ring 1s cubic-bezier(0.5, 1, 0.5, 1) forwards;
+  animation-delay: 0.6s;
+}
+
+/* The bright, moving comet/arrow */
+.ring-comet {
+  fill: none;
+  stroke: url(#comet-gradient);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 60 192; /* 60px visible dash, 192px invisible gap */
+  transform-origin: center;
+  opacity: 0; /* Starts invisible */
+  /* Multiple animations chained with delays */
+  animation:
+    spin-comet 1.8s cubic-bezier(0.5, 0, 0.5, 1) infinite,
+    fade-in 0.4s forwards;
+  animation-delay: 1.5s, 1.5s; /* Starts after the ring is drawn */
+}
+/* message ai */
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in-right {
+  animation: slide-in-right 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}

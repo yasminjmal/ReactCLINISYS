@@ -1,227 +1,170 @@
-// src/components/admin/InterfaceAdmin.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import utilisateurService from '../../services/utilisateurService';
-import aiSearchService from '../../services/aiSearchService'; // Import the new service
+import aiSearchService from '../../services/aiSearchService';
 
-// ... other component imports
+// Component Imports
 import NavbarAdmin from './NavbarAdmin';
 import SidebarAdmin from './SidebarAdmin';
+import MessageAi from '../shared/messageAI';
 import ConsulterUsersPage from './Utilisateurs/ConsulterUsersPage';
 import ConsulterEquipesPage from './Equipes/ConsulterEquipesPage';
 import ConsulterModulesPage from './Modules/ConsulterModulesPage';
 import ConsulterPostesPage from './Postes/ConsulterPostesPage';
 import TicketsManagementPage from './Tickets/TicketsManagementPage';
 import ConsultProfilPage from './profil/ConsultProfilPage';
-import { Menu as MenuIconLucide, X } from 'lucide-react';
+import { Menu as MenuIconLucide } from 'lucide-react';
+
+const LoadingIndicator = () => (
+  <div className="loading-indicator-container">
+    <svg className="loading-ring-svg" viewBox="0 0 100 100">
+      <defs>
+        <linearGradient id="comet-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="rgba(0, 255, 255, 0)" /><stop offset="100%" stopColor="rgba(0, 255, 255, 1)" />
+        </linearGradient>
+      </defs>
+      <circle className="ring-background-track" cx="50" cy="50" r="40" /><circle className="ring-comet" cx="50" cy="50" r="40" />
+    </svg>
+    <h2 className="loading-text">clinicAi</h2>
+  </div>
+);
+
 
 const AdminInterface = () => {
   const { currentUser, logout: appLogoutHandler } = useOutletContext();
   const [activePage, setActivePage] = useState('home');
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('theme') === 'dark';
-    }
-    return false;
-  });
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [usersData, setUsersData] = useState([]);
-  const [pageMessage, setPageMessage] = useState(null);
-
-  // New states for AI search results
+  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
+  const [notification, setNotification] = useState(null); // Replaces pageMessage
   const [searchResults, setSearchResults] = useState(null);
   const [searchEntityType, setSearchEntityType] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-
-
+  
+  // Note: usersData state and fetch logic is kept for other components that might need it.
+  const [usersData, setUsersData] = useState([]);
   const fetchUsersForAdmin = useCallback(async () => {
     try {
       const response = await utilisateurService.getAllUtilisateurs();
       setUsersData(response.data || []);
-    } catch (error) {
-      console.error("Erreur lors du chargement des utilisateurs pour l'interface admin:", error);
+    } catch (error) { console.error("Erreur:", error); }
+  }, []);
+  useEffect(() => { fetchUsersForAdmin(); }, [fetchUsersForAdmin]);
+
+  const showNotification = useCallback((type, text, action = null, duration = 7000) => {
+    setNotification({ type, text, action });
+    if (duration) {
+      setTimeout(() => setNotification(null), duration);
     }
   }, []);
 
-  useEffect(() => {
-    fetchUsersForAdmin();
-  }, [fetchUsersForAdmin]);
-  
-  const toggleTheme = () => setIsDarkMode(prev => {
-    const newMode = !prev;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('theme', newMode ? 'dark' : 'light');
-    }
-    return newMode;
-  });
+  const clearNotification = useCallback(() => setNotification(null), []);
 
-  const toggleSidebar = () => setIsSidebarOpen(prev => !prev);
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (isDarkMode) document.documentElement.classList.add('dark');
-      else document.documentElement.classList.remove('dark');
-    }
-  }, [isDarkMode]);
-  
-  const showTemporaryMessage = useCallback((type, text, targetIdForHighlight = null, status = null) => {
-    setPageMessage({ type, text });
-    setTimeout(() => {
-      setPageMessage(null);
-    }, 7000);
-  }, []);
-
-  const clearPageMessage = useCallback(() => {
-    setPageMessage(null);
-  }, []);
-
-  const handleActualLogout = () => {
-    if (appLogoutHandler) {
-      appLogoutHandler();
-    } else {
-      localStorage.clear();
-      window.location.reload();
-    }
-  };
-
-  const handleNavigateToUserProfile = useCallback(() => {
-    setActivePage('consulter_profil_admin');
-  }, []);
-
-  const handleNavigateToHome = useCallback(() => {
-    setActivePage('home');
-  }, []);
-
-  const handleUpdateUserProfile = useCallback((updatedUserData) => {
-    const newUsersData = usersData.map(u =>
-      u.id === updatedUserData.id ? updatedUserData : u
-    );
-    setUsersData(newUsersData);
-    showTemporaryMessage('success', 'Profil modifié avec succès.');
-    setActivePage('consulter_profil_admin');
-  }, [usersData, showTemporaryMessage]);
-  
-  // New function to handle AI Search
   const handleAiSearch = async (query) => {
-    clearPageMessage();
-    showTemporaryMessage('info', `Recherche IA en cours pour : "${query}"`);
+    clearNotification();
     setIsLoading(true);
     setSearchResults(null);
     setSearchEntityType(null);
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     try {
-        const results = await aiSearchService.search(query);
-        console.log("AI Search results:", results);
-
-        if (results && results.entityType && Array.isArray(results.data)) {
-            setSearchResults(results.data);
-            setSearchEntityType(results.entityType);
-
-            switch (results.entityType) {
-                case 'ticket': setActivePage('tickets_management'); break;
-                case 'utilisateur': setActivePage('utilisateurs_consulter_utilisateurs'); break;
-                case 'equipe': setActivePage('equipes_consulter_equipes'); break;
-                case 'module': setActivePage('modules_consulter_modules'); break;
-                case 'poste': setActivePage('postes_consulter_postes'); break;
-                default:
-                    showTemporaryMessage('error', `Type d'entité non reconnu : ${results.entityType}`);
-                    setSearchResults(null);
-                    setSearchEntityType(null);
+      const response = await aiSearchService.search(query);
+      const results = response; // Assuming data is nested under a 'data' property
+      console.log(response)
+      // ** NEW: Handle "doumean" suggestion response **
+      if (results && results.doumean) {
+        const suggestion = results.doumean;
+        showNotification(
+          'info',
+          `Vouliez-vous dire : "${suggestion}" ?`,
+          {
+            text: `Rechercher "${suggestion}"`,
+            onClick: () => {
+              clearNotification();
+              handleAiSearch(suggestion); // Recursively call search with the suggestion
             }
-            clearPageMessage();
-        } else {
-             showTemporaryMessage('info', "La recherche n'a retourné aucun résultat exploitable.");
-        }
+          },
+          null // Do not auto-dismiss suggestion messages
+        );
+      }
+      // Handle standard entity response
+      else if (results?.entityType && Array.isArray(results.data)) {
+        setSearchResults(results.data);
+        setSearchEntityType(results.entityType);
+        const pageMap = {
+          'ticket': 'tickets_management', 'utilisateur': 'utilisateurs_consulter_utilisateurs',
+          'equipe': 'equipes_consulter_equipes', 'module': 'modules_consulter_modules', 'poste': 'postes_consulter_postes',
+        };
+        if(pageMap[results.entityType]) setActivePage(pageMap[results.entityType]);
+        else { showNotification('error', `Type d'entité non reconnu : ${results.entityType}`); }
+      } 
+      // Handle no results
+      else {
+        showNotification('info', "La recherche n'a retourné aucun résultat pertinent.");
+      }
     } catch (error) {
-        console.error("Erreur lors de la recherche IA:", error);
-        showTemporaryMessage('error', "Erreur lors de la recherche IA.");
+      console.error("Erreur lors de la recherche IA:", error);
+      showNotification('error', "le serveur ai est en maintenance");
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
   
-  // Clears search results when navigating via the sidebar
   const handleSetActivePage = (pageId) => {
-      setSearchResults(null);
-      setSearchEntityType(null);
-      setActivePage(pageId);
-      clearPageMessage();
+    setSearchResults(null);
+    setSearchEntityType(null);
+    setActivePage(pageId);
+    clearNotification();
+    if (window.innerWidth < 768) { setIsSidebarOpen(false); }
   };
+  
+  // ... (toggleTheme, logout, profile navigation functions remain the same)
+  const toggleTheme = () => setIsDarkMode(prev => { const newMode = !prev; localStorage.setItem('theme', newMode ? 'dark' : 'light'); return newMode; });
+  const toggleSidebar = () => setIsSidebarOpen(prev => !prev);
+  useEffect(() => { if (isDarkMode) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); }, [isDarkMode]);
+  const handleActualLogout = () => { if (appLogoutHandler) appLogoutHandler(); else { localStorage.clear(); window.location.reload(); } };
+  const handleNavigateToUserProfile = useCallback(() => setActivePage('consulter_profil_admin'), []);
+  const handleNavigateToHome = useCallback(() => setActivePage('home'), []);
+  const handleUpdateUserProfile = useCallback((updatedUserData) => { setUsersData(prev => prev.map(u => u.id === updatedUserData.id ? updatedUserData : u)); showNotification('success', 'Profil modifié avec succès.'); setActivePage('consulter_profil_admin'); }, [showNotification]);
 
 
   const renderActivePage = () => {
+    // ... render logic remains the same
     const pageId = typeof activePage === 'object' ? activePage.id : activePage;
     const filter = typeof activePage === 'object' ? activePage.filter : null;
-
     switch (pageId) {
-      case 'home':
-        return <div className="p-6 text-3xl font-bold text-slate-800 dark:text-slate-100">Tableau de bord Administrateur</div>;
-
-      case 'utilisateurs_consulter_utilisateurs':
-        return <ConsulterUsersPage initialUsers={searchEntityType === 'utilisateur' ? searchResults : null} />;
-
-      case 'equipes_consulter_equipes':
-        return <ConsulterEquipesPage users={usersData} initialEquipes={searchEntityType === 'equipe' ? searchResults : null} />;
-
-      case 'modules_consulter_modules':
-        return <ConsulterModulesPage initialModules={searchEntityType === 'module' ? searchResults : null} />;
-
-      case 'postes_consulter_postes':
-        return <ConsulterPostesPage initialPostes={searchEntityType === 'poste' ? searchResults : null} />;
-
-      case 'tickets_management':
-        return (
-          <TicketsManagementPage
-            showTemporaryMessage={showTemporaryMessage}
-            initialFilterStatus={filter}
-            initialTickets={searchEntityType === 'ticket' ? searchResults : null}
-          />
-        );
-
-      case 'consulter_profil_admin':
-        return currentUser ? <ConsultProfilPage user={currentUser} onUpdateProfile={handleUpdateUserProfile} onNavigateHome={handleNavigateToHome} /> : <div className="p-6 text-center">Utilisateur non trouvé.</div>;
-
-      default:
-        return <div className="p-6 text-xl font-bold text-slate-800 dark:text-slate-100">Page "{pageId}" non trouvée</div>;
+      case 'home': return <div className="p-6 text-3xl font-bold text-slate-800 dark:text-slate-100">Tableau de bord</div>;
+      case 'utilisateurs_consulter_utilisateurs': return <ConsulterUsersPage initialUsers={searchEntityType === 'utilisateur' ? searchResults : null} />;
+      case 'equipes_consulter_equipes': return <ConsulterEquipesPage users={usersData} initialEquipes={searchEntityType === 'equipe' ? searchResults : null} />;
+      case 'modules_consulter_modules': return <ConsulterModulesPage initialModules={searchEntityType === 'module' ? searchResults : null} />;
+      case 'postes_consulter_postes': return <ConsulterPostesPage initialPostes={searchEntityType === 'poste' ? searchResults : null} />;
+      case 'tickets_management': return <TicketsManagementPage showTemporaryMessage={showNotification} initialFilterStatus={filter} initialTickets={searchEntityType === 'ticket' ? searchResults : null} />;
+      case 'consulter_profil_admin': return currentUser ? <ConsultProfilPage user={currentUser} onUpdateProfile={handleUpdateUserProfile} onNavigateHome={handleNavigateToHome} /> : <div className="p-6 text-center">Utilisateur non trouvé.</div>;
+      default: return <div className="p-6 text-xl font-bold">Page "{pageId}" non trouvée</div>;
     }
   };
 
   return (
     <div className={`flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden ${isDarkMode ? 'dark' : ''}`}>
-      <SidebarAdmin
-        activePage={activePage}
-        setActivePage={handleSetActivePage} // Use the new handler
-        isSidebarOpen={isSidebarOpen}
-        toggleSidebar={toggleSidebar}
-      />
+      <SidebarAdmin activePage={activePage} setActivePage={handleSetActivePage} isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} className={`fixed md:relative z-40 transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`} />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <button onClick={toggleSidebar} className="md:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-slate-800 rounded-md shadow text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" aria-label="Ouvrir le menu">
+        {isSidebarOpen && <div onClick={toggleSidebar} className="fixed inset-0 bg-black/50 z-30 md:hidden"></div>}
+        <button onClick={toggleSidebar} className="md:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-slate-800 rounded-md shadow text-slate-600 dark:text-slate-300">
           <MenuIconLucide size={24} />
         </button>
+        <NavbarAdmin user={currentUser} onLogout={handleActualLogout} onSearch={handleAiSearch} />
         
-        <NavbarAdmin
-          user={currentUser}
-          onLogout={handleActualLogout}
-          toggleTheme={toggleTheme}
-          isDarkMode={isDarkMode}
-          onNavigateToUserProfile={handleNavigateToUserProfile}
-          onSearch={handleAiSearch} // Pass the new search handler
-        />
-        
-        <main className="flex-1 overflow-x-hidden overflow-y-auto  md:ml-64 transition-all duration-300 ease-in-out">
-          {pageMessage && pageMessage.text && (
-            <div className={`fixed top-20 right-6 p-4 rounded-md shadow-lg z-[100] flex items-center space-x-3 animate-slide-in-right border-l-4
-                            ${pageMessage.type === 'success' ? 'bg-green-100 dark:bg-green-800/70 border-green-500 text-green-700 dark:text-green-100'
-                              : pageMessage.type === 'error' ? 'bg-red-100 dark:bg-red-800/70 border-red-500 text-red-700 dark:text-red-100'
-                              : pageMessage.type === 'info' ? 'bg-blue-100 dark:bg-blue-800/70 border-blue-500 text-blue-700 dark:text-blue-100'
-                              : 'bg-yellow-100 dark:bg-yellow-800/70 border-yellow-500 text-yellow-700 dark:text-yellow-100'}`}
-                             style={{marginTop: '0.5rem'}} role="alert"
-            >
-              <span className="font-medium flex-grow">{pageMessage.text}</span>
-              <button onClick={clearPageMessage} className="ml-auto p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-full"> <X size={18}/> </button>
-            </div>
+        <main className={`flex-1 overflow-x-hidden overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarOpen ? 'md:ml-64' : 'md:ml-0'}`}>
+          {/* Render the new MessageAi component */}
+          {notification && (
+            <MessageAi
+              message={notification.text}
+              type={notification.type}
+              action={notification.action}
+              onDismiss={clearNotification}
+            />
           )}
-          {isLoading ? <div className="flex justify-center items-center h-full"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500"></div></div> : renderActivePage()}
+          {isLoading ? <LoadingIndicator /> : renderActivePage()}
         </main>
       </div>
     </div>

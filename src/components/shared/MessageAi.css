@@ -1,0 +1,105 @@
+.message-ai {
+  position: fixed;
+  top: 36px;
+  right: 36px;
+  z-index: 100;
+  width: auto;
+  max-width: 340px;
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+}
+
+.message-ai.fade-in-scale {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.message-ai.fade-out-scale {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.message-ai-content {
+  padding: 12px 16px;
+  color: #374151; /* Tailwind gray-700 */
+}
+
+.dark .message-ai-content {
+  color: #d1d5db; /* Tailwind gray-300 */
+}
+
+.message-ai-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.message-ai-icon-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.message-ai-icon {
+  margin-right: 6px;
+}
+
+.message-ai-close-button {
+  background: none;
+  border: none;
+  color: #6b7280; /* Tailwind gray-500 */
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s ease-in-out;
+  padding: 2px;
+}
+
+.message-ai-close-button:hover {
+  opacity: 1;
+}
+
+.dark .message-ai-close-button {
+  color: #9ca3af; /* Tailwind gray-400 */
+}
+
+.message-ai-text {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+.message-ai-action {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.message-ai-action-button {
+  background-color: #f9fafb; /* Tailwind gray-50 */
+  color: #374151; /* Tailwind gray-700 */
+  border: 1px solid #d1d5db; /* Tailwind gray-300 */
+  border-radius: 0.25rem;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.message-ai-action-button:hover {
+  background-color: #e5e7eb; /* Tailwind gray-200 */
+  border-color: #9ca3af; /* Tailwind gray-400 */
+  color: #1f2937; /* Tailwind gray-800 */
+}
+
+.dark .message-ai-action-button {
+  background-color: #374151;
+  color: #f9fafb;
+  border-color: #4b5563;
+}
+
+.dark .message-ai-action-button:hover {
+  background-color: #4b5563;
+  border-color: #6b7280;
+  color: #e5e7eb;
+}

@@ -123,10 +123,11 @@ const ConsulterModulesPage = ({ initialModules = null }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterEquipeId, setFilterEquipeId] = useState('');
 
-    const showTemporaryMessage = (type, text) => {
-        setPageMessage({ type, text });
-        setTimeout(() => setPageMessage(null), 5000);
-    };
+  // After Correction
+const showTemporaryMessage = useCallback((type, text) => {
+    setPageMessage({ type, text });
+    setTimeout(() => setPageMessage(null), 5000);
+}, []); // An empty dependency array stabilizes the function
 
     const fetchAllData = useCallback(async () => {
         setIsLoading(true);

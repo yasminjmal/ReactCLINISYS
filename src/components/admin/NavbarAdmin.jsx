@@ -1,11 +1,22 @@
 // src/components/admin/NavbarAdmin.jsx
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Search, Sun, Moon, LogOut, User as UserIcon, ChevronDown } from 'lucide-react';
+import { Bell, Sun, Moon, LogOut, User as UserIcon, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../context/ThemeContext';
 import defaultUserProfileImage from '../../assets/images/default-profile.png';
 import { useAuth } from '../../context/AuthContext';
 
+// The Icon component remains the same.
+// Styling and animation is handled by the "meta-ai-icon" class in your main CSS file.
+const MetaAiIcon = () => {
+  return (
+    <div className="meta-ai-icon"></div>
+  );
+};
+
+
+// --- Main Navbar component ---
 const NavbarAdmin = ({ onSearch }) => {
   const { t, i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
@@ -41,13 +52,15 @@ const NavbarAdmin = ({ onSearch }) => {
 
   return (
     <nav className="bg-white dark:bg-slate-800 shadow-md h-16 flex items-center justify-between px-6">
+      
       <div className="flex-grow flex justify-center">
-        <div className="relative w-full max-w-md ">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+        {/* MODIFICATION: Added the "search-container" class to this div */}
+        <div className="search-container relative flex items-center w-full max-w-md bg-slate-900 rounded-full px-3 py-1.5">
+          <MetaAiIcon />
           <input
             type="text"
-            placeholder={t('search')}
-            className="w-full pl-10 pr-4 py-2 rounded-lg border bg-slate-50 dark:bg-slate-700 dark:border-slate-600"
+            placeholder="Ask CliniAI or Search"
+            className="w-full ml-3 bg-transparent text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-0"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleSearch}

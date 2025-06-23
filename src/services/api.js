@@ -3,7 +3,7 @@ import axios from 'axios';
 // Crée une instance axios pré-configurée.
 // Toutes les requêtes utiliseront cette base d'URL.
 const api = axios.create({
-  baseURL: 'http://localhost:9000/template-core/api',
+  baseURL: 'http://localhost:9010/template-core/api',
 });
 
 // Ajoute un intercepteur qui s'exécute avant chaque envoi de requête.
