@@ -1,35 +1,26 @@
 // src/components/admin/NavbarAdmin.jsx
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Sun, Moon, LogOut, User as UserIcon, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../context/ThemeContext';
 import defaultUserProfileImage from '../../assets/images/default-profile.png';
 import { useAuth } from '../../context/AuthContext';
+import LanguageSwitcher from '../shared/LanguageSwitcher'; // <-- IMPORT THE CORRECT COMPONENT
 
-// The Icon component remains the same.
-// Styling and animation is handled by the "meta-ai-icon" class in your main CSS file.
 const MetaAiIcon = () => {
   return (
     <div className="meta-ai-icon"></div>
   );
 };
 
-
-// --- Main Navbar component ---
 const NavbarAdmin = ({ onSearch }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { currentUser, logout } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const profileDropdownRef = useRef(null);
-
-  const toggleLanguage = () => {
-    const newLang = i18n.language === 'fr' ? 'en' : 'fr';
-    i18n.changeLanguage(newLang);
-  };
 
   const handleSearch = (e) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
@@ -54,7 +45,6 @@ const NavbarAdmin = ({ onSearch }) => {
     <nav className="bg-white dark:bg-slate-800 shadow-md h-16 flex items-center justify-between px-6">
       
       <div className="flex-grow flex justify-center">
-        {/* MODIFICATION: Added the "search-container" class to this div */}
         <div className="search-container relative flex items-center w-full max-w-md bg-slate-900 rounded-full px-3 py-1.5">
           <MetaAiIcon />
           <input
@@ -68,16 +58,18 @@ const NavbarAdmin = ({ onSearch }) => {
         </div>
       </div>
 
-      <div className="flex items-center space-x-3">
-        <button onClick={toggleLanguage} title={i18n.language === 'fr' ? t('switchToEnglish') : t('switchToFrench')} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
-          <span className="font-semibold text-slate-600 dark:text-slate-300">{i18n.language.toUpperCase()}</span>
-        </button>
-        <button onClick={toggleTheme} title={theme === 'dark' ? t('lightMode') : t('darkMode')} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
+      <div className="flex items-center space-x-2">
+        {/* THE OLD BUTTON IS REMOVED, AND THE CORRECT COMPONENT IS ADDED HERE */}
+        <LanguageSwitcher />
+        
+        <button onClick={toggleTheme} title={t('pages.navbar.lightMode')} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
           {theme === 'dark' ? <Sun className="text-slate-300" size={20} /> : <Moon className="text-slate-600" size={20} />}
         </button>
-        <button title={t('notifications')} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
+
+        <button title={t('pages.navbar.notifications')} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
           <Bell className="text-slate-600 dark:text-slate-300" size={20} />
         </button>
+
         <div className="relative" ref={profileDropdownRef}>
           <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="flex items-center space-x-2">
             <img src={userProfilePic} alt="Profil" className="h-9 w-9 rounded-full object-cover" onError={(e) => { e.currentTarget.src = defaultUserProfileImage; }}/>
@@ -91,11 +83,11 @@ const NavbarAdmin = ({ onSearch }) => {
               </div>
               <button onClick={() => {/* Navigate to profile */}} className="w-full text-left flex items-center px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
                 <UserIcon size={16} className="mr-2" />
-                {t('viewProfile')}
+                {t('pages.navbar.profile')}
               </button>
               <button onClick={logout} className="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50">
                 <LogOut size={16} className="mr-2" />
-                {t('logout')}
+                {t('pages.navbar.logout')}
               </button>
             </div>
           )}

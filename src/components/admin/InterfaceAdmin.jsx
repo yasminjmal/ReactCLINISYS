@@ -15,6 +15,7 @@ import TicketsManagementPage from './Tickets/TicketsManagementPage';
 import ConsultProfilPage from './profil/ConsultProfilPage';
 import { Menu as MenuIconLucide } from 'lucide-react';
 import ConsulterClientPage from './Clients/ConsulterClientPage';
+import GoodbyePage from '../shared/GoodbyePage';
 
 const LoadingIndicator = () => (
   <div className="loading-indicator-container">
@@ -40,6 +41,7 @@ const AdminInterface = () => {
   const [searchResults, setSearchResults] = useState(null);
   const [searchEntityType, setSearchEntityType] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [disconnect,setDisconnect]=useState(false);
   
   // Note: usersData state and fetch logic is kept for other components that might need it.
   const [usersData, setUsersData] = useState([]);
@@ -70,7 +72,9 @@ const AdminInterface = () => {
     try {
       const response = await aiSearchService.search(query);
       const results = response; // Assuming data is nested under a 'data' property
-      console.log(response)
+      if (results.entityType=="disconnect") {
+        setDisconnect(true)
+      }
       // ** NEW: Handle "doumean" suggestion response **
       if (results && results.doumean) {
         const suggestion = results.doumean;
@@ -91,10 +95,14 @@ const AdminInterface = () => {
       else if (results?.entityType && Array.isArray(results.data)) {
         setSearchResults(results.data);
         setSearchEntityType(results.entityType);
+        if (results.entityType==="disconnect") {
+          return <GoodbyePage/>
+        }
         const pageMap = {
           'ticket': 'tickets_management', 'utilisateur': 'utilisateurs_consulter_utilisateurs',
           'equipe': 'equipes_consulter_equipes', 'module': 'modules_consulter_modules', 'poste': 'postes_consulter_postes',
           'client':'clients_consulter_clients',
+         
         };
         if(pageMap[results.entityType]) setActivePage(pageMap[results.entityType]);
         else { showNotification('error', `Type d'entité non reconnu : ${results.entityType}`); }
@@ -144,6 +152,9 @@ const AdminInterface = () => {
       default: return <div className="p-6 text-xl font-bold">Page "{pageId}" non trouvée</div>;
     }
   };
+  if (disconnect) {
+    return <GoodbyePage/>
+  }
 
   return (
     <div className={`flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden ${isDarkMode ? 'dark' : ''}`}>

@@ -286,3 +286,141 @@
 .animate-slide-in-right {
   animation: slide-in-right 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
+/* === REFINED ANIMATION STYLES FOR LOADING AND GOODBYE PAGE === */
+
+/* Keyframe for the text sliding in from the right */
+@keyframes slide-in-text {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes text-focus-in {
+    0% {
+        -webkit-filter: blur(12px);
+                filter: blur(12px);
+        opacity: 0;
+    }
+    100% {
+        -webkit-filter: blur(0px);
+                filter: blur(0px);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+        filter: drop-shadow(0 0 6px theme('colors.sky.400'));
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(0.95);
+        filter: drop-shadow(0 0 18px theme('colors.sky.300'));
+    }
+}
+.animate-ping-slow {
+    animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Keyframe for the ring drawing itself */
+@keyframes draw-ring {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Keyframe for the spinning "comet" on the ring */
+@keyframes spin-comet {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Container for the loading elements */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Styling and animation for the "clinicAi" text during loading */
+.loading-text {
+  font-size: 2.25rem; /* 36px */
+  font-weight: 700;
+  color: white;
+  animation: slide-in-text 0.7s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* SVG container for the ring animation (used in both loading and goodbye) */
+.loading-ring-svg {
+  position: absolute;
+  width: 160px; /* Adjust size as needed */
+  height: 160px; /* Adjust size as needed */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* The faint track that the ring draws on */
+.ring-background-track {
+  fill: none;
+  stroke: rgba(71, 85, 105, 0.5); /* slate-600 with opacity */
+  stroke-width: 8;
+  /* SVG math: Circumference = 2 * PI * R = 2 * 3.14159 * 45 = 282.7 */
+  stroke-dasharray: 283;
+  stroke-dashoffset: 283; /* Starts "undrawn" */
+  /* Animation starts after the text slides in */
+  animation: draw-ring 1s cubic-bezier(0.5, 1, 0.5, 1) forwards;
+  animation-delay: 0.5s; /* Delay to sync with text */
+}
+
+/* The bright, spinning "comet" on the ring */
+.ring-comet {
+  fill: none;
+  stroke: url(#comet-gradient);
+  stroke-width: 8;
+  stroke-linecap: round; /* Makes the ends of the dash rounded */
+  stroke-dasharray: 60 223; /* 60px visible dash, 223px invisible gap */
+  transform-origin: center;
+  opacity: 0; /* Starts invisible */
+  animation: spin-comet 1.8s linear infinite, fade-in 0.5s forwards;
+  animation-delay: 1.0s; /* Delay to sync with ring drawing */
+}
+
+/* General Animation utility classes */
+.animate-slide-in-right { 
+  animation: slide-in-right 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* Animation utility classes for GoodbyePage */
+.animate-fade-in {
+    animation: fade-in 1s ease-in-out forwards;
+}
+
+.animate-fade-in-slow {
+    animation: fade-in 2s ease-in-out forwards;
+}
+
+.animate-text-focus-in {
+    animation: text-focus-in 1.2s cubic-bezier(0.550, 0.085, 0.680, 0.530) both;
+}
+.animate-pulse-glow {
+    animation: pulse-glow 3s ease-in-out infinite;
+}

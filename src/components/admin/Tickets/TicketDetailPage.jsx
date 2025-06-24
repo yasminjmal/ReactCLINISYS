@@ -49,6 +49,7 @@ const TicketDetailPage = ({ ticketId, onClose }) => {
       setError(null);
       try {
         const data = await ticketService.getTicketById(ticketId);
+        console.log(data)
         setTicket(data);
       } catch (err) {
         setError("Impossible de charger les détails du ticket.");
