@@ -42,6 +42,7 @@ const menuItems = [
   { id: 'utilisateurs_consulter_utilisateurs', label: 'UTILISATEURS', icon: UserCircleIcon },
   { id: 'modules_consulter_modules', label: 'MODULES', icon: PackageIconModule },
   { id: 'postes_consulter_postes', label: 'POSTES', icon: BriefcaseIcon },
+  { id: 'clients_consulter_clients', label: 'Clients', icon: Users },
 ];
 
 const SidebarAdmin = ({ activePage, setActivePage, isSidebarOpen, toggleSidebar }) => {

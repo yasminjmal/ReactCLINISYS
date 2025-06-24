@@ -14,6 +14,7 @@ import ConsulterPostesPage from './Postes/ConsulterPostesPage';
 import TicketsManagementPage from './Tickets/TicketsManagementPage';
 import ConsultProfilPage from './profil/ConsultProfilPage';
 import { Menu as MenuIconLucide } from 'lucide-react';
+import ConsulterClientPage from './Clients/ConsulterClientPage';
 
 const LoadingIndicator = () => (
   <div className="loading-indicator-container">
@@ -93,6 +94,7 @@ const AdminInterface = () => {
         const pageMap = {
           'ticket': 'tickets_management', 'utilisateur': 'utilisateurs_consulter_utilisateurs',
           'equipe': 'equipes_consulter_equipes', 'module': 'modules_consulter_modules', 'poste': 'postes_consulter_postes',
+          'client':'clients_consulter_clients',
         };
         if(pageMap[results.entityType]) setActivePage(pageMap[results.entityType]);
         else { showNotification('error', `Type d'entité non reconnu : ${results.entityType}`); }
@@ -136,7 +138,7 @@ const AdminInterface = () => {
       case 'utilisateurs_consulter_utilisateurs': return <ConsulterUsersPage initialUsers={searchEntityType === 'utilisateur' ? searchResults : null} />;
       case 'equipes_consulter_equipes': return <ConsulterEquipesPage users={usersData} initialEquipes={searchEntityType === 'equipe' ? searchResults : null} />;
       case 'modules_consulter_modules': return <ConsulterModulesPage initialModules={searchEntityType === 'module' ? searchResults : null} />;
-      case 'postes_consulter_postes': return <ConsulterPostesPage initialPostes={searchEntityType === 'poste' ? searchResults : null} />;
+      case 'clients_consulter_clients': return <ConsulterClientPage />;      case 'postes_consulter_postes': return <ConsulterPostesPage initialPostes={searchEntityType === 'poste' ? searchResults : null} />;
       case 'tickets_management': return <TicketsManagementPage showTemporaryMessage={showNotification} initialFilterStatus={filter} initialTickets={searchEntityType === 'ticket' ? searchResults : null} />;
       case 'consulter_profil_admin': return currentUser ? <ConsultProfilPage user={currentUser} onUpdateProfile={handleUpdateUserProfile} onNavigateHome={handleNavigateToHome} /> : <div className="p-6 text-center">Utilisateur non trouvé.</div>;
       default: return <div className="p-6 text-xl font-bold">Page "{pageId}" non trouvée</div>;
