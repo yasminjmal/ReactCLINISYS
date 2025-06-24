@@ -36,3 +36,5 @@ package.json
 yarn.lock
 node_modules/@esbuild/win32-x64/esbuild.exe
 /node_modules
+
+postcss.config.js

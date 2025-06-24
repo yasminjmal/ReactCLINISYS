@@ -89,7 +89,7 @@ const NavbarAdmin = ({ onSearch }) => {
                 <LogOut size={16} className="mr-2" />
                 {t('pages.navbar.logout')}
               </button>
-            </div>
+            </div>  
           )}
         </div>
       </div>
