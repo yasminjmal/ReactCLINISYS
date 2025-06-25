@@ -1,13 +1,6 @@
 // src/components/chefEquipe/SuiviAffectationsChefPage.jsx
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, Info, User, Package, CalendarDays, Clock, CheckCircle, AlertTriangle, Tag as TagIcon, Eye } from 'lucide-react';
-
-// Statut possible pour un ticket après assignation par le chef
-// 'Assigné au technicien' -> l'employé n'a pas encore accepté
-// 'En cours' -> l'employé a accepté et travaille dessus
-// 'En attente validation Chef' -> l'employé a marqué comme résolu, en attente de validation par le chef
-// 'Résolu' -> Validé par le chef (ou auto-validé)
-// 'Réouvert' -> Si le chef n'est pas satisfait de la résolution
+import { Search, Info, User, Package, CalendarDays, Clock, CheckCircle, AlertTriangle, Tag as TagIcon, Eye } from 'lucide-react';
 
 const TicketSuiviRow = ({ ticket, onVoirDetailsTicket }) => {
   const getPriorityStyling = (priority) => {
@@ -21,19 +14,18 @@ const TicketSuiviRow = ({ ticket, onVoirDetailsTicket }) => {
 
   const getStatusStyling = (status) => {
     status = status?.toLowerCase();
-    if (status === 'en cours') return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700/20 dark:text-yellow-300';
-    if (status === 'assigné au technicien') return 'bg-blue-100 text-blue-700 dark:bg-blue-700/20 dark:text-blue-300';
-    if (status === 'en attente validation chef') return 'bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-300';
-    if (status === 'résolu') return 'bg-green-100 text-green-700 dark:bg-green-700/20 dark:text-green-300';
-    if (status === 'réouvert') return 'bg-orange-100 text-orange-700 dark:bg-orange-700/20 dark:text-orange-300';
-    return 'bg-slate-100 text-slate-700 dark:bg-slate-700/20 dark:text-slate-300';
+    if (status === 'en_cours') return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700/20 dark:text-yellow-300';
+    if (status === 'resolu') return 'bg-green-100 text-green-700 dark:bg-green-700/20 dark:text-green-300';
+    if (status === 'ferme') return 'bg-slate-100 text-slate-700 dark:bg-slate-700/20 dark:text-slate-300';
+    if (status === 'reouvert') return 'bg-orange-100 text-orange-700 dark:bg-orange-700/20 dark:text-orange-300';
+    return 'bg-blue-100 text-blue-700 dark:bg-blue-700/20 dark:text-blue-300';
   };
 
   const priorityStyle = getPriorityStyling(ticket.priorite);
-  const statusStyle = getStatusStyling(ticket.statut);
-  const dateAssignationEmployeFormatted = ticket.dateAssignationEmploye ? new Date(ticket.dateAssignationEmploye).toLocaleDateString('fr-CA') : 'N/A';
-  const demandeurNom = ticket.demandeur ? `${ticket.demandeur.prenom || ''} ${ticket.demandeur.nom || ''}`.trim() : 'N/A';
-  const employeNom = ticket.employeAssigne ? `${ticket.employeAssigne.prenom || ''} ${ticket.employeAssigne.nom || ''}`.trim() : 'N/A';
+  const statusStyle = getStatusStyling(ticket.statue); // Note: property is 'statue'
+  // Use dateCreation as date_modification is not in the provided API response
+  const dateDisplay = ticket.dateCreation ? new Date(ticket.dateCreation[0], ticket.dateCreation[1] - 1, ticket.dateCreation[2]).toLocaleDateString('fr-CA') : 'N/A'; // Used dateCreation and fixed formatting
+  const employeNom = ticket.idUtilisateur ? `${ticket.idUtilisateur.prenom || ''} ${ticket.idUtilisateur.nom || ''}`.trim() : 'Non assigné'; // Changed from 'N/A' for clarity
 
   const cellClass = "px-3 py-3.5 text-sm text-slate-700 dark:text-slate-200 align-middle border-b border-r border-slate-200 dark:border-slate-700";
   const fixedWidthClass = "whitespace-nowrap";
@@ -44,15 +36,15 @@ const TicketSuiviRow = ({ ticket, onVoirDetailsTicket }) => {
       <td className={`${cellClass} ${fixedWidthClass} w-[8%]`}>{ticket.ref}</td>
       <td className={`${cellClass} ${wrappingCellClass} w-[20%]`}>
         <p className="font-semibold text-slate-800 dark:text-slate-100">{ticket.titre}</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Client: {ticket.client}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Client: {ticket.idClient?.nomComplet || 'N/A'}</p> {/* Changed ticket.idClient?.nom to ticket.idClient?.nomComplet*/}
       </td>
       <td className={`${cellClass} ${fixedWidthClass} w-[15%]`}>
         <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${statusStyle}`}>
-          {ticket.statut || 'N/A'}
+          {ticket.statue || 'N/A'}
         </span>
       </td>
       <td className={`${cellClass} ${wrappingCellClass} w-[15%]`}>
-        {ticket.employeAssigne ? (
+        {ticket.idUtilisateur ? (
             <div className="flex items-center">
                 <User size={16} className="mr-2 text-sky-600 dark:text-sky-400 flex-shrink-0" />
                 <span className="text-xs">{employeNom}</span>
@@ -62,25 +54,24 @@ const TicketSuiviRow = ({ ticket, onVoirDetailsTicket }) => {
         )}
       </td>
       <td className={`${cellClass} ${wrappingCellClass} w-[18%]`}>
-        {ticket.moduleAssigne ? (
+        {ticket.idModule ? (
             <div className="flex items-center">
                 <Package size={16} className="mr-2 text-indigo-500 dark:text-indigo-400 flex-shrink-0"/>
-                <span className="text-xs">{ticket.moduleAssigne.nom}</span>
+                <span className="text-xs">{ticket.idModule.designation}</span> {/* Changed ticket.idModule.nom to ticket.idModule.designation*/}
             </div>
         ) : (
             <span className="text-xs italic text-slate-400 dark:text-slate-500">Non spécifié</span>
         )}
       </td>
-      <td className={`${cellClass} ${fixedWidthClass} w-[12%]`}>{dateAssignationEmployeFormatted}</td>
+      <td className={`${cellClass} ${fixedWidthClass} w-[12%]`}>{dateDisplay}</td> {/* Changed dateModificationFormatted to dateDisplay*/}
       <td className={`${cellClass} ${fixedWidthClass} w-[12%] text-center`}>
         <button
-          onClick={() => onVoirDetailsTicket(ticket.id)} // La fonction de détails devra être adaptée
+          onClick={() => onVoirDetailsTicket(ticket.id)}
           className="btn btn-secondary-icon btn-xs group"
           title="Voir détails du ticket"
         >
           <Eye size={16} />
         </button>
-        {/* D'autres actions pourraient être ajoutées ici, comme "Valider Résolution" ou "Réouvrir Ticket" */}
       </td>
     </tr>
   );
@@ -90,10 +81,9 @@ const TicketSuiviRow = ({ ticket, onVoirDetailsTicket }) => {
 const SuiviAffectationsChefPage = ({ ticketsAssignesParChef, onNavigateToTicketDetails }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
-    statut: '',
+    statue: '',
     priorite: '',
     employeId: '',
-    // Ajoutez d'autres filtres si nécessaire
   });
 
   const ticketsFiltres = useMemo(() => {
@@ -104,32 +94,34 @@ const SuiviAffectationsChefPage = ({ ticketsAssignesParChef, onNavigateToTicketD
       resultat = resultat.filter(t =>
         t.ref.toLowerCase().includes(lowerSearch) ||
         t.titre.toLowerCase().includes(lowerSearch) ||
-        t.client.toLowerCase().includes(lowerSearch) ||
-        (t.employeAssigne && `${t.employeAssigne.prenom} ${t.employeAssigne.nom}`.toLowerCase().includes(lowerSearch)) ||
-        (t.moduleAssigne && t.moduleAssigne.nom.toLowerCase().includes(lowerSearch))
+        (t.idClient && t.idClient.nomComplet.toLowerCase().includes(lowerSearch)) || // Changed t.idClient.nom to t.idClient.nomComplet
+        (t.idUtilisateur && `${t.idUtilisateur.prenom} ${t.idUtilisateur.nom}`.toLowerCase().includes(lowerSearch)) ||
+        (t.idModule && t.idModule.designation.toLowerCase().includes(lowerSearch)) // Changed t.idModule.nom to t.idModule.designation
       );
     }
 
-    if (filters.statut) {
-        resultat = resultat.filter(t => t.statut?.toLowerCase() === filters.statut.toLowerCase());
+    if (filters.statue) {
+        resultat = resultat.filter(t => t.statue?.toLowerCase() === filters.statue.toLowerCase());
     }
     if (filters.priorite) {
         resultat = resultat.filter(t => t.priorite?.toLowerCase() === filters.priorite.toLowerCase());
     }
     if (filters.employeId) {
-        resultat = resultat.filter(t => t.employeAssigne?.id === filters.employeId);
+        resultat = resultat.filter(t => t.idUtilisateur?.id === filters.employeId);
     }
     
-    // Tri par défaut (peut être rendu configurable)
-    resultat.sort((a,b) => new Date(b.dateAssignationEmploye || b.dateCreation) - new Date(a.dateAssignationEmploye || a.dateCreation));
-
+    // Fallback to dateCreation if date_modification is not present
+    resultat.sort((a,b) => {
+        const dateA = a.date_modification ? new Date(a.date_modification[0], a.date_modification[1] - 1, a.date_modification[2]) : (a.dateCreation ? new Date(a.dateCreation[0], a.dateCreation[1] - 1, a.dateCreation[2]) : new Date(0));
+        const dateB = b.date_modification ? new Date(b.date_modification[0], b.date_modification[1] - 1, b.date_modification[2]) : (b.dateCreation ? new Date(b.dateCreation[0], b.dateCreation[1] - 1, b.dateCreation[2]) : new Date(0));
+        return dateB.getTime() - dateA.getTime();
+    });
 
     return resultat;
   }, [ticketsAssignesParChef, searchTerm, filters]);
 
-  // Extraire les options uniques pour les filtres
   const uniqueStatuts = useMemo(() => {
-    const statuts = new Set(ticketsAssignesParChef?.map(t => t.statut).filter(Boolean) || []);
+    const statuts = new Set(ticketsAssignesParChef?.map(t => t.statue).filter(Boolean) || []);
     return Array.from(statuts);
   }, [ticketsAssignesParChef]);
 
@@ -141,8 +133,8 @@ const SuiviAffectationsChefPage = ({ ticketsAssignesParChef, onNavigateToTicketD
   const uniqueEmployes = useMemo(() => {
     const employesMap = new Map();
     ticketsAssignesParChef?.forEach(t => {
-        if (t.employeAssigne && !employesMap.has(t.employeAssigne.id)) {
-            employesMap.set(t.employeAssigne.id, t.employeAssigne);
+        if (t.idUtilisateur && !employesMap.has(t.idUtilisateur.id)) {
+            employesMap.set(t.idUtilisateur.id, t.idUtilisateur);
         }
     });
     return Array.from(employesMap.values());
@@ -174,11 +166,10 @@ const SuiviAffectationsChefPage = ({ ticketsAssignesParChef, onNavigateToTicketD
             />
           </div>
         </div>
-        {/* Section des filtres */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pb-4 border-b border-slate-200 dark:border-slate-700">
             <div>
                 <label htmlFor="filter-statut" className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Statut</label>
-                <select id="filter-statut" name="statut" value={filters.statut} onChange={handleFilterChange} className="form-select w-full text-sm">
+                <select id="filter-statut" name="statue" value={filters.statue} onChange={handleFilterChange} className="form-select w-full text-sm">
                     <option value="">Tous les statuts</option>
                     {uniqueStatuts.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
@@ -204,7 +195,7 @@ const SuiviAffectationsChefPage = ({ ticketsAssignesParChef, onNavigateToTicketD
         <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-xl shadow-lg">
             <Info size={56} className="mx-auto text-slate-400 dark:text-slate-500 mb-4" />
             <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-200 mb-1">
-                {searchTerm || filters.statut || filters.priorite || filters.employeId ? "Aucun ticket ne correspond à vos critères de recherche/filtre." : "Aucun ticket assigné à suivre pour le moment."}
+                {searchTerm || filters.statue || filters.priorite || filters.employeId ? "Aucun ticket ne correspond à vos critères." : "Aucun ticket assigné à suivre pour le moment."}
             </h3>
             <p className="text-sm text-slate-500 dark:text-slate-400">
                 Vérifiez vos filtres ou revenez plus tard.
@@ -220,7 +211,7 @@ const SuiviAffectationsChefPage = ({ ticketsAssignesParChef, onNavigateToTicketD
                 <th scope="col" className={`${tableHeaderClass} w-[15%]`}> <Clock size={14} className="inline-block mr-1.5 align-text-bottom"/>Statut Ticket</th>
                 <th scope="col" className={`${tableHeaderClass} w-[15%]`}> <User size={14} className="inline-block mr-1.5 align-text-bottom"/>Assigné À</th>
                 <th scope="col" className={`${tableHeaderClass} w-[18%]`}> <Package size={14} className="inline-block mr-1.5 align-text-bottom"/>Module</th>
-                <th scope="col" className={`${tableHeaderClass} w-[12%]`}> <CalendarDays size={14} className="inline-block mr-1.5 align-text-bottom"/>Assigné le</th>
+                <th scope="col" className={`${tableHeaderClass} w-[12%]`}> <CalendarDays size={14} className="inline-block mr-1.5 align-text-bottom"/>Modifié le</th>
                 <th scope="col" className={`${tableHeaderClass} w-[12%] text-center`}>Détails</th>
               </tr>
             </thead>
@@ -229,7 +220,7 @@ const SuiviAffectationsChefPage = ({ ticketsAssignesParChef, onNavigateToTicketD
                 <TicketSuiviRow
                   key={ticket.id}
                   ticket={ticket}
-                  onVoirDetailsTicket={onNavigateToTicketDetails} // Vous devrez implémenter la navigation vers une page de détails de ticket
+                  onVoirDetailsTicket={onNavigateToTicketDetails}
                 />
               ))}
             </tbody>

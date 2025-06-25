@@ -138,7 +138,7 @@
   width: 26px;
   height: 26px;
   border-radius: 45%; /* Ensures the mask is applied smoothly */
-    transition: transform 0.3s ease, filter 0.3s ease;
+    transition: transform 0.4s ease, filter 0.3s ease;
 
 
   /* The multi-color gradient, made much larger than the element */
@@ -157,13 +157,16 @@
 /* Define the new styles for when the search bar is active/focused */
 .search-container:focus-within .meta-ai-icon {
   /* 1. Animation accelerates */
-  animation-duration: 2s;
+  animation-duration: 1s;
   
   /* 2. A bright "active" glow is added */
   filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.8));
   
   /* 3. The icon subtly grows */
   transform: scale(1.1);
+
+  /* 4 adjust the  box raduis*/
+  border-radius: 70%; 
 }
 
 

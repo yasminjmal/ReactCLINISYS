@@ -14,6 +14,10 @@ const createEquipe = (equipeData) => {
     return api.post('/equipes', equipeData);
 };
 
+const getMyEquipes = (id)=>{
+return api.get(`/equipes/chef/${id}`)
+};
+
 /**
  * Met à jour les informations de base d'une équipe.
  * @param {number} id - L'ID de l'équipe.
@@ -38,6 +42,7 @@ const equipeService = {
     createEquipe,
     updateEquipe,
     deleteEquipe,
+    getMyEquipes,
 };
 
 export default equipeService;

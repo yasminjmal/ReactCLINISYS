@@ -1,17 +1,6 @@
 // src/components/chefEquipe/TicketsATraiterChefPage.jsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Filter, Search, ArrowUpDown, ChevronDown, ChevronUp, UserPlus, XCircle, Info, Package, CalendarDays, AlertTriangle, CheckCircle, Clock, Users as UsersIcon, User as UserIcon, Tag as TagIcon, FileText } from 'lucide-react';
-
-// Données mockées pour les employés (pour la sélection lors de l'assignation)
-const mockAllUsers = [
-    { id: 'user001', prenom: 'Yasmin', nom: 'Jmal', poste: 'Développeur Front', equipeId: 'eq1', profileImage: 'https://placehold.co/100x100/E0E7FF/4F46E5?text=YJ' },
-    { id: 'user002', prenom: 'Karim', nom: 'Bello', poste: 'Développeur Back', equipeId: 'eq1', profileImage: 'https://placehold.co/100x100/DBEAFE/1D4ED8?text=KB' },
-    { id: 'user005', prenom: 'Sophie', nom: 'Durand', poste: 'Testeur QA', equipeId: 'eq1', profileImage: 'https://placehold.co/100x100/FEF3C7/D97706?text=SD' },
-    { id: 'user003', prenom: 'Ali', nom: 'Ben Salah', poste: 'Spécialiste Support Applicatif', equipeId: 'eq3', profileImage: 'https://placehold.co/100x100/D1FAE5/059669?text=AB' },
-    { id: 'user006', prenom: 'Linda', nom: 'Martin', poste: 'Développeur Fullstack', equipeId: 'eq3', profileImage: 'https://placehold.co/100x100/FCE7F3/DB2777?text=LM' },
-    { id: 'user007', prenom: 'Marc', nom: 'Dupont', poste: 'Technicien Support N1', equipeId: 'eq4', profileImage: 'https://placehold.co/100x100/E0E7FF/4F46E5?text=MD' },
-];
-
 
 const TicketRowChef = ({ ticket, onAssigner, onRefuser, equipeMembres }) => {
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -28,8 +17,8 @@ const TicketRowChef = ({ ticket, onAssigner, onRefuser, equipeMembres }) => {
     }
   };
   const priorityStyle = getPriorityStyling(ticket.priorite);
-  const dateCreationFormatted = ticket.dateCreation ? new Date(ticket.dateCreation).toLocaleDateString('fr-CA') : 'N/A';
-  const demandeurNom = ticket.demandeur ? `${ticket.demandeur.prenom || ''} ${ticket.demandeur.nom || ''}`.trim() : 'N/A';
+  const dateCreationFormatted = ticket.dateCreation ? new Date(ticket.dateCreation[0], ticket.dateCreation[1] - 1, ticket.dateCreation[2]).toLocaleDateString('fr-CA') : 'N/A'; // Fixed date formatting
+  const demandeurNom = ticket.userCreation || (ticket.idClient ? ticket.idClient.nomComplet : 'N/A'); // Changed to use userCreation first, then nomComplet
 
 
   const handleAssignSubmit = () => {
@@ -63,7 +52,7 @@ const TicketRowChef = ({ ticket, onAssigner, onRefuser, equipeMembres }) => {
         <td className={`${cellClass} ${fixedWidthClass} w-[8%]`}>{ticket.ref}</td>
         <td className={`${cellClass} ${wrappingCellClass} w-[22%]`}>
             <p className="font-semibold text-slate-800 dark:text-slate-100">{ticket.titre}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Client: {ticket.client}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Client: {ticket.idClient?.nomComplet || 'N/A'}</p> {/* Changed ticket.idClient?.nom to ticket.idClient?.nomComplet*/}
         </td>
         <td className={`${cellClass} ${fixedWidthClass} w-[12%]`}>
             <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${priorityStyle.badge}`}>
@@ -72,10 +61,10 @@ const TicketRowChef = ({ ticket, onAssigner, onRefuser, equipeMembres }) => {
             </span>
         </td>
         <td className={`${cellClass} ${wrappingCellClass} w-[18%]`}>
-            {ticket.moduleAssigne ? (
+            {ticket.idModule ? (
                 <div className="flex items-center">
                     <Package size={16} className="mr-2 text-indigo-500 dark:text-indigo-400 flex-shrink-0"/>
-                    <span className="text-xs">{ticket.moduleAssigne.nom}</span>
+                    <span className="text-xs">{ticket.idModule.designation}</span> {/* Changed ticket.idModule.nom to ticket.idModule.designation*/}
                 </div>
             ) : (
                 <span className="text-xs italic text-slate-400 dark:text-slate-500">Non spécifié</span>
@@ -90,29 +79,26 @@ const TicketRowChef = ({ ticket, onAssigner, onRefuser, equipeMembres }) => {
         <td className={`${cellClass} ${fixedWidthClass} w-[10%]`}>{dateCreationFormatted}</td>
         <td className={`${cellClass} ${fixedWidthClass} w-[15%] text-center`}>
           <div className="flex items-center justify-center space-x-1.5">
-            {/* Bouton Assigner avec texte */}
             <button
               onClick={() => setShowAssignModal(true)}
-              className="btn btn-primary-outline btn-xs group flex items-center" // Changement de classe
+              className="btn btn-primary-outline btn-xs group flex items-center"
               title="Assigner à un employé"
             >
-              <UserPlus size={14} className="mr-1.5 group-hover:scale-110" /> {/* Ajustement marge */}
+              <UserPlus size={14} className="mr-1.5 group-hover:scale-110" />
               <span>Assigner</span>
             </button>
-            {/* Bouton Refuser avec texte */}
             <button
               onClick={() => setShowRefusModal(true)}
-              className="btn btn-danger-outline btn-xs group flex items-center" // Changement de classe
+              className="btn btn-danger-outline btn-xs group flex items-center"
               title="Refuser le ticket"
             >
-              <XCircle size={14} className="mr-1.5 group-hover:rotate-12" /> {/* Ajustement marge */}
+              <XCircle size={14} className="mr-1.5 group-hover:rotate-12" />
               <span>Refuser</span>
             </button>
           </div>
         </td>
       </tr>
 
-      {/* Modal d'assignation améliorée */}
       {showAssignModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300 ease-in-out">
           <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-2xl w-full max-w-lg transform transition-all duration-300 ease-in-out scale-100">
@@ -124,7 +110,7 @@ const TicketRowChef = ({ ticket, onAssigner, onRefuser, equipeMembres }) => {
             </div>
             <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-md">
                 <p className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-0.5">Titre: {ticket.titre}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Module: {ticket.moduleAssigne?.nom}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Module: {ticket.idModule?.designation}</p> {/* Changed ticket.idModule?.nom to ticket.idModule?.designation*/}
             </div>
             
             <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Sélectionner un employé de l'équipe :</p>
@@ -140,14 +126,14 @@ const TicketRowChef = ({ ticket, onAssigner, onRefuser, equipeMembres }) => {
                                             : 'border-slate-300 dark:border-slate-600 hover:border-sky-400 dark:hover:border-sky-500 hover:bg-slate-50 dark:hover:bg-slate-700/30'}`}
                         >
                             <img 
-                                src={membre.profileImage || `https://placehold.co/60x60/E2E8F0/475569?text=${membre.prenom?.charAt(0)}${membre.nom?.charAt(0)}`} 
+                                src={membre.image || `https://placehold.co/60x60/E2E8F0/475569?text=${membre.prenom?.charAt(0)}${membre.nom?.charAt(0)}`} 
                                 alt="" 
                                 className="w-10 h-10 rounded-full object-cover flex-shrink-0"
                                 onError={(e) => { e.target.src = `https://placehold.co/60x60/CBD5E1/475569?text=??`; }}
                             />
                             <div>
                                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{membre.prenom} {membre.nom}</p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">{membre.poste}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">{membre.poste?.designation}</p> {/* Changed membre.poste?.nom to membre.poste?.designation*/}
                             </div>
                         </button>
                     ))}
@@ -164,7 +150,6 @@ const TicketRowChef = ({ ticket, onAssigner, onRefuser, equipeMembres }) => {
         </div>
       )}
 
-      {/* Modal de refus */}
       {showRefusModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-2xl w-full max-w-md">
@@ -203,9 +188,7 @@ const TicketsATraiterChefPage = ({
     onRefuserTicketParChef 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilters, setActiveFilters] = useState({ priorite: [], client: [] }); // Placeholder pour filtres
   const [activeSort, setActiveSort] = useState({ field: 'dateCreation', order: 'desc' });
-  const [isFilterOpen, setIsFilterOpen] = useState(false); // Pour le dropdown des filtres
 
   const ticketsFiltresEtTries = useMemo(() => {
     let resultat = [...(ticketsNonAssignes || [])];
@@ -214,11 +197,10 @@ const TicketsATraiterChefPage = ({
         resultat = resultat.filter(t =>
             t.ref.toLowerCase().includes(lowerSearch) ||
             t.titre.toLowerCase().includes(lowerSearch) ||
-            t.client.toLowerCase().includes(lowerSearch) ||
-            (t.moduleAssigne && t.moduleAssigne.nom.toLowerCase().includes(lowerSearch))
+            (t.idClient && t.idClient.nomComplet.toLowerCase().includes(lowerSearch)) || // Changed t.idClient.nom to t.idClient.nomComplet
+            (t.idModule && t.idModule.designation.toLowerCase().includes(lowerSearch)) // Changed t.idModule.nom to t.idModule.designation
         );
     }
-    // Logique de filtre et de tri (peut être étendue)
     if (activeSort.field) {
         resultat.sort((a, b) => {
             const valA = a[activeSort.field];
@@ -231,17 +213,6 @@ const TicketsATraiterChefPage = ({
     }
     return resultat;
   }, [ticketsNonAssignes, searchTerm, activeSort]);
-
-  const getMembresEquipePourModule = (moduleId) => {
-    if (!equipesDuChef || !moduleId) return [];
-    for (const equipe of equipesDuChef) {
-        if (equipe.modulesAssocies && equipe.modulesAssocies.some(m => m.id === moduleId)) {
-            // Retourner les membres de cette équipe, en s'assurant qu'ils existent
-            return equipe.membres ? equipe.membres.filter(m => m.statut === 'Actif') : []; // Filtrer pour n'afficher que les actifs pour l'assignation
-        }
-    }
-    return [];
-  };
   
   const tableHeaderClass = "px-3 py-3.5 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider border-b-2 border-slate-300 dark:border-slate-600";
 
@@ -263,14 +234,8 @@ const TicketsATraiterChefPage = ({
                 className="form-input-icon w-full py-2.5 text-sm pl-10"
                 />
             </div>
-             {/* Bouton Filtre (fonctionnalité à implémenter si besoin) */}
-            {/* <button onClick={() => setIsFilterOpen(!isFilterOpen)} className="btn btn-secondary-outline">
-                <Filter size={16} className="mr-2"/> Filtrer {isFilterOpen ? <ChevronUp size={16} className="ml-1"/> : <ChevronDown size={16} className="ml-1"/>}
-            </button> */}
           </div>
         </div>
-        {/* Zone de filtres (à implémenter si besoin) */}
-        {/* {isFilterOpen && ( <div className="p-4 border-t border-slate-200 dark:border-slate-700"> ... Filtres ... </div> )} */}
       </div>
 
       {ticketsFiltresEtTries.length === 0 ? (
@@ -298,15 +263,20 @@ const TicketsATraiterChefPage = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-              {ticketsFiltresEtTries.map(ticket => (
-                <TicketRowChef
-                  key={ticket.id}
-                  ticket={ticket}
-                  onAssigner={onAssignerTicketAEmploye}
-                  onRefuser={onRefuserTicketParChef}
-                  equipeMembres={getMembresEquipePourModule(ticket.moduleAssigne?.id)}
-                />
-              ))}
+              {ticketsFiltresEtTries.map(ticket => {
+                  const equipeDuModule = equipesDuChef.find(eq => eq.id === ticket.idModule?.equipe?.id);
+                  const membresEquipe = equipeDuModule ? (equipeDuModule.utilisateurs || []).filter(m => m.actif === true) : []; // Changed m.statut === 'Actif' to m.actif === true
+
+                  return (
+                    <TicketRowChef
+                      key={ticket.id}
+                      ticket={ticket}
+                      onAssigner={onAssignerTicketAEmploye}
+                      onRefuser={onRefuserTicketParChef}
+                      equipeMembres={membresEquipe}
+                    />
+                  );
+              })}
             </tbody>
           </table>
         </div>

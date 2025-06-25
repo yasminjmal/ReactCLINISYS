@@ -18,6 +18,11 @@ const ticketService = {
         const response = await api.post(BASE_URL, ticketData);
         return response.data;
     },
+
+    getTickets: async()=>{
+        const response = await api.get(`${BASE_URL}`)
+        return response.data;
+    },
     
     /**
      * CORRECTION : Cette fonction appelle bien le bon endpoint PUT.
