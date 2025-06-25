@@ -1,11 +1,11 @@
-// src/components/admin/NavbarAdmin.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Sun, Moon, LogOut, User as UserIcon, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../context/ThemeContext';
 import defaultUserProfileImage from '../../assets/images/default-profile.png';
 import { useAuth } from '../../context/AuthContext';
-import LanguageSwitcher from '../shared/LanguageSwitcher'; // <-- IMPORT THE CORRECT COMPONENT
+import LanguageSwitcher from '../shared/LanguageSwitcher';
+import { useWebSocket } from '../../context/WebSocketContext'; // <-- IMPORT THE WEBSOCKET CONTEXT
 
 const MetaAiIcon = () => {
   return (
@@ -17,10 +17,16 @@ const NavbarAdmin = ({ onSearch }) => {
   const { t } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { currentUser, logout } = useAuth();
+  
+  // Use the WebSocket context to get notifications
+  const { notifications, clearNotifications } = useWebSocket(); 
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
+
   const profileDropdownRef = useRef(null);
+  const notificationDropdownRef = useRef(null);
 
   const handleSearch = (e) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
@@ -33,6 +39,9 @@ const NavbarAdmin = ({ onSearch }) => {
       if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
         setIsProfileDropdownOpen(false);
       }
+      if (notificationDropdownRef.current && !notificationDropdownRef.current.contains(event.target)) {
+        setIsNotificationDropdownOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -40,6 +49,10 @@ const NavbarAdmin = ({ onSearch }) => {
 
   const userName = currentUser ? `${currentUser.prenom || ''} ${currentUser.nom || ''}`.trim() : 'Utilisateur';
   const userProfilePic = currentUser?.photo ? `data:image/jpeg;base64,${currentUser.photo}` : defaultUserProfileImage;
+
+  const handleNotificationClick = () => {
+      setIsNotificationDropdownOpen(!isNotificationDropdownOpen);
+  };
 
   return (
     <nav className="bg-white dark:bg-slate-800 shadow-md h-16 flex items-center justify-between px-6">
@@ -59,16 +72,43 @@ const NavbarAdmin = ({ onSearch }) => {
       </div>
 
       <div className="flex items-center space-x-2">
-        {/* THE OLD BUTTON IS REMOVED, AND THE CORRECT COMPONENT IS ADDED HERE */}
         <LanguageSwitcher />
         
         <button onClick={toggleTheme} title={t('pages.navbar.lightMode')} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
           {theme === 'dark' ? <Sun className="text-slate-300" size={20} /> : <Moon className="text-slate-600" size={20} />}
         </button>
 
-        <button title={t('pages.navbar.notifications')} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
-          <Bell className="text-slate-600 dark:text-slate-300" size={20} />
-        </button>
+        {/* --- NOTIFICATION BUTTON AND DROPDOWN --- */}
+        <div className="relative" ref={notificationDropdownRef}>
+            <button onClick={handleNotificationClick} title={t('pages.navbar.notifications')} className="relative p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
+                <Bell className="text-slate-600 dark:text-slate-300" size={20} />
+                {notifications.length > 0 && (
+                    <span className="absolute top-1 right-1 block h-3 w-3 rounded-full bg-red-500 border-2 border-white dark:border-slate-800" />
+                )}
+            </button>
+            {isNotificationDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-md shadow-lg border dark:border-slate-700 z-50">
+                    <div className="p-3 border-b dark:border-slate-700 flex justify-between items-center">
+                        <p className="font-semibold text-slate-800 dark:text-slate-100">Notifications</p>
+                        {notifications.length > 0 && (
+                            <button onClick={clearNotifications} className="text-xs text-blue-500 hover:underline">Clear all</button>
+                        )}
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                        {notifications.length > 0 ? (
+                            notifications.map((notif, index) => (
+                                <div key={index} className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">
+                                    <p className="text-sm text-slate-700 dark:text-slate-300">{notif.content}</p>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">No new notifications</p>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+        {/* --- END NOTIFICATION SECTION --- */}
 
         <div className="relative" ref={profileDropdownRef}>
           <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="flex items-center space-x-2">

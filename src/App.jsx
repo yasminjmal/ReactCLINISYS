@@ -8,6 +8,7 @@ import AdminInterface from './components/admin/InterfaceAdmin';
 import ChefEquipeInterface from './components/chefEquipe/InterfaceChefEquipe';
 import EmployeInterface from './components/employe/InterfaceEmploye';
 import './index.css';
+import { WebSocketProvider } from './context/WebSocketContext';
 
 const normalizeRoleApp = (roleFromServer) => {
   if (!roleFromServer) return '';
@@ -141,7 +142,9 @@ function App() {
   return (
     <BrowserRouter>
       {/* C'est le composant qui va fournir la fonction navigate à AuthProvider */}
+      <WebSocketProvider>
       <AppWrapperWithAuthContext />
+      </WebSocketProvider>
     </BrowserRouter>
   );
 }

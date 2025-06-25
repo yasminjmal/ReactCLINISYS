@@ -1,25 +1,21 @@
-// src/context/AuthContext.js
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-// REMOVED: import { useNavigate } from 'react-router-dom'; // NE PLUS IMPORTER ICI !
 import authService from '../services/authService';
 import api from '../services/api';
 
 const AuthContext = createContext(null);
 
-// MODIFIÉ : AuthProvider reçoit 'navigate' en prop
-export const AuthProvider = ({ children, navigate }) => { // Recevez 'navigate' ici
+export const AuthProvider = ({ children, navigate }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // REMOVED: const navigate = useNavigate(); // Ne plus appeler useNavigate ici !
-
   const loadUserFromStorage = useCallback(() => {
     setIsLoading(true);
     try {
       const storedUser = localStorage.getItem('currentUser');
-const storedToken = localStorage.getItem('authToken');
+      // --- FIX: Use the correct key 'authToken' to load the token ---
+      const storedToken = localStorage.getItem('authToken'); 
       if (storedUser && storedToken) {
         const parsedUser = JSON.parse(storedUser);
         setCurrentUser(parsedUser);
@@ -51,7 +47,8 @@ const storedToken = localStorage.getItem('authToken');
       const { token: newToken, user: userData } = await authService.login(credentials);
       
       localStorage.setItem('currentUser', JSON.stringify(userData));
-      localStorage.setItem('jwtToken', newToken);
+      // --- FIX: Use the same key 'authToken' to save the token ---
+      localStorage.setItem('authToken', newToken);
       setCurrentUser(userData);
       setToken(newToken);
       setIsAuthenticated(true);
@@ -70,14 +67,12 @@ const storedToken = localStorage.getItem('authToken');
     setToken(null);
     setIsAuthenticated(false);
     delete api.defaults.headers.common['Authorization'];
-    // CLÉ : Utiliser la prop 'navigate' passée
     if (navigate) {
-        navigate('/login'); // Utilise la prop navigate pour la redirection
+        navigate('/login');
     } else {
-        // Fallback si navigate n'est pas disponible (cas rare ou de test)
         window.location.href = '/login';
     }
-  }, [navigate]); // 'navigate' est maintenant une dépendance
+  }, [navigate]);
 
   const value = useMemo(() => ({
     currentUser,
