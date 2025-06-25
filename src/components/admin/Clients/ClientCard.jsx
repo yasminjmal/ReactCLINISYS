@@ -1,44 +1,65 @@
-import React from 'react';
-import { Edit, Trash2, Users as UsersIcon, UserCheck } from 'lucide-react';
-import defaultProfilePic from '../../../assets/images/default-profile.png';
+// --- ClientCard.jsx ---
+// NOTE: Ce composant semblait être une copie de 'EquipeCard', je l'ai adapté pour 'Client'.
 
-const ClientCard = ({ equipe, onEditRequest, onDeleteRequest }) => {
-    const members = Array.isArray(equipe.utilisateurs) ? equipe.utilisateurs : [];
+import { Briefcase, Mail, MapPin as MapPinIcon, Calendar, User as UserCreatorIcon } from 'lucide-react';
+
+const ClientCard = ({ client, onEditRequest, onDeleteRequest }) => {
+    
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-5 flex flex-col relative transition-all duration-300 hover:shadow-2xl min-h-[250px]">
-            {/* Display active/inactive status */}
-            <div className={`absolute top-4 left-4 px-2 py-1 text-xs font-semibold rounded-full flex items-center ${equipe.actif ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'}`}>
-                <span className={`h-2 w-2 mr-2 rounded-full ${equipe.actif ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                {equipe.actif ? 'Actif' : 'Inactif'}
-            </div>
-
-            <div className="absolute top-4 right-4 flex space-x-1">
-                <button onClick={() => onEditRequest(equipe)} className="p-1.5 rounded-full text-slate-500 hover:text-sky-600 hover:bg-slate-100 dark:hover:bg-slate-700" title="Modifier">
-                    <Edit size={16} />
-                </button>
-                <button onClick={() => onDeleteRequest(equipe)} className="p-1.5 rounded-full text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-700" title="Supprimer">
-                    <Trash2 size={16} />
-                </button>
-            </div>
-
-            <div className="mb-3 pt-8">
-                <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-100 truncate" title={equipe.designation}>{equipe.designation}</h3>
-            </div>
-
-            <div className="mb-3 pl-1">
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center"><UserCheck size={14} className="mr-1.5"/> Chef :</p>
-                <div className="flex items-center space-x-2 pl-1">
-                    <img src={equipe.chefEquipe?.photoUrl || defaultProfilePic} alt={equipe.chefEquipe?.nom || "Chef"} className="h-7 w-7 rounded-full object-cover"/>
-                    <span className="text-sm text-slate-700 dark:text-slate-200">{equipe.chefEquipe ? `${equipe.chefEquipe.prenom} ${equipe.chefEquipe.nom}` : 'N/A'}</span>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-5 flex flex-col relative transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+            {/* Statut et boutons d'action */}
+            <div className="flex justify-between items-start mb-3">
+                <div className={`px-2 py-1 text-xs font-semibold rounded-full flex items-center ${client.actif ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'}`}>
+                    <span className={`h-2 w-2 mr-2 rounded-full ${client.actif ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                    {client.actif ? 'Actif' : 'Inactif'}
+                </div>
+                <div className="flex space-x-1">
+                    <button onClick={() => onEditRequest(client)} className="p-1.5 rounded-full text-slate-500 hover:text-sky-600 hover:bg-slate-100 dark:hover:bg-slate-700" title="Modifier">
+                        <Edit size={16} />
+                    </button>
+                    <button onClick={() => onDeleteRequest(client)} className="p-1.5 rounded-full text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-700" title="Supprimer">
+                        <Trash2 size={16} />
+                    </button>
                 </div>
             </div>
 
+            {/* Informations principales */}
             <div className="flex-grow">
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Membres ({members.length})</p>
-                {/* Display members here if needed */}
+                <Briefcase className="w-10 h-10 text-sky-500 mb-2" />
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 truncate" title={client.nomComplet}>{client.nomComplet}</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center mt-1">
+                    <MapPinIcon size={14} className="mr-1.5 flex-shrink-0" />
+                    {client.region || 'Région non définie'}
+                </p>
+            </div>
+            
+            {/* Détails supplémentaires */}
+            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 space-y-2 text-xs text-slate-600 dark:text-slate-400">
+                <div className="flex items-center">
+                    <Mail size={12} className="mr-2"/>
+                    <span className="truncate">{client.email || 'Pas d\'email'}</span>
+                </div>
+                <div className="flex items-center">
+                    <MapPinIcon size={12} className="mr-2"/>
+                    <span className="truncate">{client.adress || 'Pas d\'adresse'}</span>
+                </div>
+                <div className="flex items-center">
+                    <Calendar size={12} className="mr-2"/>
+                    <span>Créé le {formatDate(client.dateCreation)}</span>
+                </div>
+                 <div className="flex items-center">
+                    <UserCreatorIcon size={12} className="mr-2"/>
+                    <span>par {client.userCreation || 'N/A'}</span>
+                </div>
             </div>
         </div>
     );
 };
-export default ClientCard;
+
+export default ClientCard; // Assurez-vous d'exporter le bon composant
