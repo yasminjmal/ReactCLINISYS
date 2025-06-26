@@ -64,5 +64,4 @@ const AjouterPostePage = ({ onAddPoste, onCancel }) => {
     </div>
   );
 };
-
 export default AjouterPostePage;

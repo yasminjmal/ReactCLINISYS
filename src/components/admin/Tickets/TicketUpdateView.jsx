@@ -89,54 +89,47 @@ const ModuleEditor = ({ ticket, onUpdate, onRemove, allModules }) => { const [is
 const PriorityEditor = ({ ticket, onUpdate }) => {const priorities = ["Basse", "Moyenne", "Haute"]; return (<select value={ticket.priorite} onChange={(e) => onUpdate('priorite', e.target.value)} className="form-select text-sm font-medium bg-transparent border-0 focus:ring-0 p-0">{priorities.map(p => <option key={p} value={p}>{p}</option>)}</select>);};
 
 // --- TABLEAU & LIGNES DE SOUS-TICKETS ---
-const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel }) => {
+const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModule }) => {
     const [editableData, setEditableData] = useState({ ...sub });
     const [isSaving, setIsSaving] = useState(false);
     const textAreaRef = useRef(null);
     useAutosizeTextArea(textAreaRef, editableData.description);
     const [moduleSearchTerm, setModuleSearchTerm] = useState('');
+    const [isSearchingModule, setIsSearchingModule] = useState(!sub.idModule);
 
     const handleChange = (field, value) => setEditableData(prev => ({ ...prev, [field]: value }));
     const handleModuleChange = (module) => {
         setEditableData(prev => ({ ...prev, idModule: module }));
+        setIsSearchingModule(false);
     };
     const handleSaveClick = async () => { setIsSaving(true); await onSave(sub, editableData); setIsSaving(false); };
-    return (
-        <tr className="bg-sky-50 dark:bg-sky-900/50 align-top">
-            <td className="px-2 py-2"><input type="text" value={editableData.titre} onChange={(e) => handleChange('titre', e.target.value)} className="form-input text-sm"/></td>
-            <td className="px-2 py-2">
-                <textarea 
-                    ref={textAreaRef}
-                    value={editableData.description || ''} 
-                    onChange={(e) => handleChange('description', e.target.value)} 
-                    className="form-textarea text-sm w-full overflow-hidden resize-none"
-                    rows={1}
-                    placeholder="Ajouter une description..."
-                ></textarea>
-            </td>
-            <td className="px-2 py-2">
+
+    useEffect(() => {
+        setEditableData({ ...sub });
+    }, [sub]);
+
+    const renderModuleCell = () => {
+        if (editableData.idModule && editableData.idUtilisateur) {
+            return <span className="text-sm text-slate-500 italic">{editableData.idModule.designation} (verrouillé)</span>;
+        }
+
+        if (isSearchingModule || !editableData.idModule) {
+            return (
                 <div className="relative">
-                    <input 
+                    <input
                         type="text"
                         className="form-input text-sm w-full"
-                        value={moduleSearchTerm || editableData.idModule?.designation || ''}
+                        value={moduleSearchTerm}
                         onChange={(e) => setModuleSearchTerm(e.target.value)}
-                        onFocus={() => setModuleSearchTerm('')}
                         placeholder="Rechercher un module..."
+                        autoFocus
                     />
                     {moduleSearchTerm && (
                         <div className="absolute z-10 mt-1 w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md shadow-lg max-h-48 overflow-y-auto">
                             {allModules
                                 .filter(m => m.designation.toLowerCase().includes(moduleSearchTerm.toLowerCase()))
                                 .map(module => (
-                                    <div 
-                                        key={module.id} 
-                                        onClick={() => {
-                                            handleModuleChange(module);
-                                            setModuleSearchTerm('');
-                                        }}
-                                        className="p-2 text-sm hover:bg-sky-100 dark:hover:bg-sky-800 cursor-pointer"
-                                    >
+                                    <div key={module.id} onClick={() => handleModuleChange(module)} className="p-2 text-sm hover:bg-sky-100 dark:hover:bg-sky-800 cursor-pointer">
                                         {module.designation}
                                     </div>
                                 ))
@@ -144,6 +137,34 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel }) => {
                         </div>
                     )}
                 </div>
+            );
+        }
+
+        if (editableData.idModule) {
+            return (
+                <div className="flex items-center justify-between">
+                    <span className="text-sm">{editableData.idModule.designation}</span>
+                    <div className="flex items-center">
+                        <button onClick={() => setIsSearchingModule(true)} className="p-1 text-slate-400 hover:text-sky-500" title="Modifier le module">
+                            <Edit size={14}/>
+                        </button>
+                        <button onClick={() => onRemoveModule(sub.id)} className="p-1 text-slate-400 hover:text-red-500" title="Supprimer le module">
+                            <Trash2 size={14}/>
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+    };
+
+    return (
+        <tr className="bg-sky-50 dark:bg-sky-900/50 align-top">
+            <td className="px-2 py-2"><input type="text" value={editableData.titre} onChange={(e) => handleChange('titre', e.target.value)} className="form-input text-sm"/></td>
+            <td className="px-2 py-2">
+                <textarea ref={textAreaRef} value={editableData.description || ''} onChange={(e) => handleChange('description', e.target.value)} className="form-textarea text-sm w-full overflow-hidden resize-none" rows={1} placeholder="Ajouter une description..."></textarea>
+            </td>
+            <td className="px-2 py-2">
+                {renderModuleCell()}
             </td>
             <td className="px-2 py-2 text-xs">{sub.idUtilisateur ? `${sub.idUtilisateur.prenom} ${sub.idUtilisateur.nom}` : 'N/A'}</td>
             <td className="px-2 py-2 text-xs">{formatDate(sub.date_echeance)}</td>
@@ -166,15 +187,8 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel }) => {
 
 const DisplaySubTicketRow = ({ sub, onEdit, onDelete, allModules, isDescriptionExpanded, onToggleDescription }) => {
     const isAssigned = !!sub.idUtilisateur;
-    
-    // --- Aide au diagnostic pour le problème du Module ---
-    // Cette console.log vous montrera exactement ce que le composant reçoit du backend.
-    // Si vous voyez "idModule: null" pour un ticket qui a un module, le problème est bien côté backend.
-    console.log(`[Debug Module] Donnée reçue pour le sous-ticket ${sub.id}:`, sub.idModule);
-
     const getModuleName = (moduleId) => {
         if (!moduleId || !allModules || allModules.length === 0) return 'N/A';
-        // Cette logique robuste trouve le module même si `moduleId` est un objet ou juste un nombre
         const idToFind = typeof moduleId === 'object' && moduleId !== null ? moduleId.id : moduleId;
         const module = allModules.find(m => Number(m.id) === Number(idToFind));
         return module ? module.designation : 'N/A';
@@ -212,7 +226,7 @@ const DisplaySubTicketRow = ({ sub, onEdit, onDelete, allModules, isDescriptionE
     );
 };
 
-const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModules }) => {
+const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModules, onRemoveModule }) => {
     const [editingTicketId, setEditingTicketId] = useState(null);
     const [expandedDescriptions, setExpandedDescriptions] = useState(new Set());
 
@@ -223,7 +237,7 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
             return newSet;
         });
     };
-    
+
     const handleSaveAndClose = async (originalSubTicket, editedSubTicket) => {
         await onSaveSubTicket(originalSubTicket, editedSubTicket);
         setEditingTicketId(null);
@@ -238,16 +252,8 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
                     <tbody className="divide-y dark:divide-slate-700">
                         {subTickets.map(sub => (
                             editingTicketId === sub.id
-                            ? <EditableSubTicketRow key={sub.id} sub={sub} allModules={allModules} onSave={handleSaveAndClose} onCancel={() => setEditingTicketId(null)} />
-                            : <DisplaySubTicketRow 
-                                key={sub.id} 
-                                sub={sub} 
-                                onEdit={setEditingTicketId} 
-                                onDelete={onDelete} 
-                                allModules={allModules}
-                                isDescriptionExpanded={expandedDescriptions.has(sub.id)}
-                                onToggleDescription={toggleDescriptionExpansion}
-                              />
+                                ? <EditableSubTicketRow key={sub.id} sub={sub} allModules={allModules} onSave={handleSaveAndClose} onCancel={() => setEditingTicketId(null)} onRemoveModule={onRemoveModule} />
+                                : <DisplaySubTicketRow key={sub.id} sub={sub} onEdit={setEditingTicketId} onDelete={onDelete} allModules={allModules} isDescriptionExpanded={expandedDescriptions.has(sub.id)} onToggleDescription={toggleDescriptionExpansion} />
                         ))}
                     </tbody>
                 </table>
@@ -277,10 +283,17 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
     useEffect(() => { setIsLoading(true); fetchInitialData(); }, [fetchInitialData]);
 
     const _updateField = async (id, originalData, fieldName, value) => {
-        const payload = { ...originalData, idModule: originalData.idModule?.id, idClient: originalData.idClient?.id, idUtilisateur: originalData.idUtilisateur?.id, idParentTicket: originalData.idParentTicket?.id, [fieldName]: value };
+        const payload = {
+            ...originalData,
+            idModule: fieldName === 'idModule' ? value : originalData.idModule?.id,
+            idClient: originalData.idClient?.id,
+            idUtilisateur: originalData.idUtilisateur?.id,
+            idParentTicket: originalData.idParentTicket?.id,
+            [fieldName]: value
+        };
         await ticketService.updateTicket(id, payload);
     };
-    
+
     const handleUpdateParentField = async (fieldName, value) => {
         if (!ticket) return;
         try {
@@ -289,7 +302,7 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
             await fetchInitialData();
         } catch (err) { if (showTemporaryMessage) showTemporaryMessage('error', 'La mise à jour a échoué.'); }
     };
-    
+
     const handleUpdateLocalSubTicketState = (updatedSubTicket) => {
         setTicket(currentParentTicket => {
             if (!currentParentTicket) return null;
@@ -297,7 +310,7 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
             return { ...currentParentTicket, childTickets: newChildTickets };
         });
     };
-    
+
     const handleSaveSubTicket = async (originalSubTicket, editedSubTicket) => {
         const updatePromises = [];
         const originalModuleId = originalSubTicket.idModule?.id ?? originalSubTicket.idModule;
@@ -307,7 +320,7 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
         if (originalSubTicket.description !== editedSubTicket.description) { updatePromises.push(_updateField(originalSubTicket.id, originalSubTicket, 'description', editedSubTicket.description)); }
         if (originalSubTicket.priorite !== editedSubTicket.priorite) { updatePromises.push(_updateField(originalSubTicket.id, originalSubTicket, 'priorite', editedSubTicket.priorite)); }
         if (originalModuleId !== editedModuleId) { updatePromises.push(_updateField(originalSubTicket.id, originalSubTicket, 'idModule', editedModuleId || null)); }
-        
+
         if (updatePromises.length === 0) {
             if (showTemporaryMessage) showTemporaryMessage('info', 'Aucune modification détectée.');
             return Promise.resolve();
@@ -323,40 +336,62 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
             throw err;
         }
     };
-    
-    const handleDirectStatusUpdate = async (newStatus) => { 
-        setIsActionLoading(true); 
-        await handleUpdateParentField('statue', newStatus); 
-        setIsActionLoading(false); 
+
+    const handleDirectStatusUpdate = async (newStatus) => {
+        setIsActionLoading(true);
+        await handleUpdateParentField('statue', newStatus);
+        setIsActionLoading(false);
     };
 
     const handleDiffractionSuccess = () => { setIsDiffractionModalOpen(false); fetchInitialData(); if (showTemporaryMessage) showTemporaryMessage('success', 'Sous-tickets créés.'); };
-    
-    // --- CORRECTION : Logique de suppression de sous-ticket ---
+
     const handleDeleteSubTicket = async (subTicketId) => {
         if (window.confirm("Êtes-vous sûr de vouloir supprimer ce sous-ticket ?")) {
             try {
                 await ticketService.deleteTicket(subTicketId);
                 if (showTemporaryMessage) showTemporaryMessage('success', 'Sous-ticket supprimé.');
-                
-                // Mise à jour instantanée de l'état local pour refléter la suppression
                 setTicket(currentTicket => {
                     if (!currentTicket) return null;
                     const updatedChildTickets = currentTicket.childTickets.filter(sub => sub.id !== subTicketId);
                     return { ...currentTicket, childTickets: updatedChildTickets };
                 });
-
             } catch (error) {
                 if (showTemporaryMessage) showTemporaryMessage('error', 'La suppression a échoué.');
                 console.error("Erreur lors de la suppression du sous-ticket:", error);
             }
         }
     };
-    
+
+    // --- CORRECTION: Logique de suppression du module d'un sous-ticket ---
+    const handleRemoveSubTicketModule = async (subTicketId) => {
+        const subTicketToUpdate = ticket.childTickets.find(sub => sub.id === subTicketId);
+        if (!subTicketToUpdate) return;
+
+        // On demande confirmation à l'utilisateur
+        if (window.confirm("Voulez-vous vraiment supprimer le module de ce sous-ticket ?")) {
+            try {
+                // On met à jour le champ idModule à null via l'API
+                await _updateField(subTicketToUpdate.id, subTicketToUpdate, 'idModule', null);
+                if (showTemporaryMessage) showTemporaryMessage('success', 'Module du sous-ticket supprimé.');
+
+                // --- C'est l'étape qui manquait : on met à jour l'état local INSTANTANÉMENT ---
+                setTicket(currentTicket => {
+                    if (!currentTicket) return null;
+                    const updatedChildTickets = currentTicket.childTickets.map(sub =>
+                        sub.id === subTicketId ? { ...sub, idModule: null } : sub
+                    );
+                    return { ...currentTicket, childTickets: updatedChildTickets };
+                });
+
+            } catch (err) {
+                if (showTemporaryMessage) showTemporaryMessage('error', 'La suppression du module a échoué.');
+                console.error("Erreur lors de la suppression du module du sous-ticket:", err);
+            }
+        }
+    };
+
     const renderActions = () => {
         if (!ticket) return null;
-        
-        // --- CORRECTION : Utilisation des valeurs exactes de votre Enum Java ---
         switch (ticket.statue) {
             case 'En_attente':
                 return (
@@ -369,7 +404,6 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
                         </button>
                     </div>
                 );
-
             case 'Accepte':
                 if (!ticket.childTickets || ticket.childTickets.length === 0) {
                     return (
@@ -383,19 +417,19 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
                 return null;
         }
     };
-    
+
     if (isLoading) return <div className="flex justify-center items-center h-screen"><Spinner /></div>;
     if (error) return <div className="text-center text-red-500 p-8">{error}</div>;
     if (!ticket) return null;
     const hasSubTickets = ticket.childTickets && ticket.childTickets.length > 0;
-    
+
     let affectedToValue;
     if (hasSubTickets && !ticket.idUtilisateur) {
-      affectedToValue = <span className="italic text-slate-500 dark:text-slate-400">Géré par le chef d'équipe</span>;
+        affectedToValue = <span className="italic text-slate-500 dark:text-slate-400">Géré par le chef d'équipe</span>;
     } else if (ticket.idUtilisateur) {
-      affectedToValue = `${ticket.idUtilisateur.prenom} ${ticket.idUtilisateur.nom}`;
+        affectedToValue = `${ticket.idUtilisateur.prenom} ${ticket.idUtilisateur.nom}`;
     } else {
-      affectedToValue = <span className="italic text-slate-500 dark:text-slate-400">Non affecté</span>;
+        affectedToValue = <span className="italic text-slate-500 dark:text-slate-400">Non affecté</span>;
     }
 
     let dueDateValue;
@@ -404,38 +438,38 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
     } else {
         dueDateValue = formatDate(ticket.date_echeance);
     }
-    
+
     return (
         <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
             <div className="flex justify-between items-center mb-6"><button onClick={onBack} className="btn btn-secondary"><ArrowLeft size={18} className="mr-2"/> Retour</button><div>{isActionLoading ? <Spinner /> : renderActions()}</div></div>
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg mb-6">
                  <div className="flex flex-col md:flex-row gap-8">
-                      <div className="flex-grow md:w-2/3 space-y-6">
-                          <EditableField initialValue={ticket.titre} onSave={handleUpdateParentField} fieldName="titre" />
-                          <div><h3 className="text-sm font-semibold uppercase text-slate-400 mb-2">Description</h3><EditableField initialValue={ticket.description} onSave={handleUpdateParentField} fieldName="description" isTextarea={true} /></div>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 border-t dark:border-slate-700">
-                                <DetailItem icon={<ModuleIcon size={14} className="mr-2"/>} label="Module"><ModuleEditor ticket={ticket} onUpdate={handleUpdateParentField} onRemove={() => handleUpdateParentField('idModule', null)} allModules={allModules} /></DetailItem>
-                                <DetailItem icon={<UserCheck size={14} className="mr-2"/>} label="Affecté à">{affectedToValue}</DetailItem>
-                                <DetailItem icon={<Calendar size={14} className="mr-2"/>} label="Échéance">{dueDateValue}</DetailItem>
-                          </div>
-                      </div>
-                      <div className="flex-shrink-0 md:w-1/3 space-y-4">
-                          <div className="grid grid-cols-2 gap-x-4 gap-y-4 bg-slate-100 dark:bg-slate-900/50 p-4 rounded-lg">
+                     <div className="flex-grow md:w-2/3 space-y-6">
+                         <EditableField initialValue={ticket.titre} onSave={handleUpdateParentField} fieldName="titre" />
+                         <div><h3 className="text-sm font-semibold uppercase text-slate-400 mb-2">Description</h3><EditableField initialValue={ticket.description} onSave={handleUpdateParentField} fieldName="description" isTextarea={true} /></div>
+                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 border-t dark:border-slate-700">
+                              <DetailItem icon={<ModuleIcon size={14} className="mr-2"/>} label="Module"><ModuleEditor ticket={ticket} onUpdate={handleUpdateParentField} onRemove={() => handleUpdateParentField('idModule', null)} allModules={allModules} /></DetailItem>
+                              <DetailItem icon={<UserCheck size={14} className="mr-2"/>} label="Affecté à">{affectedToValue}</DetailItem>
+                              <DetailItem icon={<Calendar size={14} className="mr-2"/>} label="Échéance">{dueDateValue}</DetailItem>
+                         </div>
+                     </div>
+                     <div className="flex-shrink-0 md:w-1/3 space-y-4">
+                         <div className="grid grid-cols-2 gap-x-4 gap-y-4 bg-slate-100 dark:bg-slate-900/50 p-4 rounded-lg">
                               <DetailItem icon={<Tag size={14} className="mr-2"/>} label="Priorité">
-                                  <select value={ticket.priorite} onChange={(e) => handleUpdateParentField('priorite', e.target.value)} className="form-select text-sm font-medium bg-transparent border-0 focus:ring-0 p-0">
-                                    {["Basse", "Moyenne", "Haute"].map(p => <option key={p} value={p}>{p}</option>)}
-                                  </select>
+                                   <select value={ticket.priorite} onChange={(e) => handleUpdateParentField('priorite', e.target.value)} className="form-select text-sm font-medium bg-transparent border-0 focus:ring-0 p-0">
+                                        {["Basse", "Moyenne", "Haute"].map(p => <option key={p} value={p}>{p}</option>)}
+                                   </select>
                               </DetailItem>
                               <DetailItem icon={<Info size={14} className="mr-2"/>} label="Statut" value={ticket.statue} />
-                          </div>
-                          <div className="pt-4 space-y-4 border-t dark:border-slate-700">
+                         </div>
+                         <div className="pt-4 space-y-4 border-t dark:border-slate-700">
                               <div className="grid grid-cols-2 gap-x-4 gap-y-4"><DetailItem icon={<User size={14} className="mr-2"/>} label="Client" value={ticket.idClient?.nomComplet} /><DetailItem icon={<User size={14} className="mr-2"/>} label="Créé par" value={ticket.userCreation} /></div>
                               <div className="grid grid-cols-2 gap-x-4 gap-y-4"><DetailItem icon={<Calendar size={14} className="mr-2"/>} label="Créé le" value={formatDate(ticket.dateCreation)} /><DetailItem icon={<Shield size={14} className="mr-2"/>} label="Actif"><select value={ticket.actif.toString()} onChange={(e) => handleUpdateParentField('actif', e.target.value === 'true')} className="form-select text-sm font-medium bg-transparent border-0 focus:ring-0 p-0"><option value="true">Oui</option><option value="false">Non</option></select></DetailItem></div>
-                          </div>
-                      </div>
-                  </div>
+                         </div>
+                     </div>
+                 </div>
             </div>
-            {hasSubTickets && (<div className="mt-8"><SubTicketsTable subTickets={ticket.childTickets} onDelete={handleDeleteSubTicket} onAdd={() => setIsDiffractionModalOpen(true)} onSaveSubTicket={handleSaveSubTicket} allModules={allModules}/></div>)}
+            {hasSubTickets && (<div className="mt-8"><SubTicketsTable subTickets={ticket.childTickets} onDelete={handleDeleteSubTicket} onAdd={() => setIsDiffractionModalOpen(true)} onSaveSubTicket={handleSaveSubTicket} allModules={allModules} onRemoveModule={handleRemoveSubTicketModule} /></div>)}
             {isDiffractionModalOpen && (<DiffractionForm parentTicket={ticket} onClose={() => setIsDiffractionModalOpen(false)} onSuccess={handleDiffractionSuccess} showTemporaryMessage={showTemporaryMessage} />)}
         </div>
     );

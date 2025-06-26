@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { 
-    Search, ChevronDown, ChevronUp, Plus, X, Filter, AlertTriangle, 
-    Save, XCircle, Settings2, Eye, EyeOff, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight 
+import {
+    Search, Plus, X, Filter, AlertTriangle, Save, XCircle, Settings2, Eye,
+    EyeOff, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, ArrowUpDown, RefreshCw, LayoutGrid, Rows3
 } from 'lucide-react';
+import FloatingActionButton from '../../FloatingActionButton';
 
-// Assurez-vous que ces chemins d'importation sont corrects pour VOTRE projet
 import posteService from '../../../services/posteService';
-import PosteTableRow from './PosteTableRow'; 
+import PosteTableRow from './PosteTableRow';
+import PosteCard from './PosteCard';
 import AjouterPostePage from './AjouterPostePage';
 
-// --- COMPOSANTS INTERNES POUR LA LISIBILITÉ ---
 const Spinner = () => <div className="text-center py-20"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div></div>;
 
 const DeleteConfirmationModal = ({ poste, onConfirm, onCancel }) => (
@@ -45,7 +45,7 @@ const EditModal = ({ poste, onUpdate, onCancel }) => {
                     </div>
                     <div className="flex items-center"><input type="checkbox" id="actif" checked={actif} onChange={(e) => setActif(e.target.checked)} className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" /><label htmlFor="actif" className="ml-3 block text-sm font-medium text-slate-700 dark:text-slate-300">Actif</label></div>
                 </div>
-                <div className="pt-8 flex justify-end space-x-2"><button type="button" onClick={onCancel} className="btn btn-secondary"><XCircle size={16} className="mr-1.5"/> Annuler</button><button type="button" onClick={handleSubmit} className="btn btn-primary"><Save size={16} className="mr-1.5"/> Confirmer</button></div>
+                <div className="pt-8 flex justify-end space-x-2"><button type="button" onClick={onCancel} className="btn btn-secondary"><XCircle size={16} className="mr-1.5" /> Annuler</button><button type="button" onClick={handleSubmit} className="btn btn-primary"><Save size={16} className="mr-1.5" /> Confirmer</button></div>
             </div>
         </div>
     );
@@ -65,6 +65,7 @@ const DropdownMenuItem = ({ children, onClick, isSelected }) => (
 const ConsulterPostesPage = () => {
     // --- STATE MANAGEMENT COMPLET ---
     const [view, setView] = useState('list');
+    const [viewMode, setViewMode] = useState('table');
     const [postes, setPostes] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [posteToEdit, setPosteToEdit] = useState(null);
@@ -84,12 +85,12 @@ const ConsulterPostesPage = () => {
         try {
             const response = await posteService.getAllPostes();
             setPostes(Array.isArray(response.data) ? response.data : []);
-        } catch (err) { console.error(err); } 
+        } catch (err) { console.error(err); }
         finally { setIsLoading(false); }
     }, []);
 
     useEffect(() => {
-        if(view === 'list') {
+        if (view === 'list') {
             fetchPostes();
         }
     }, [view, fetchPostes]);
@@ -134,17 +135,19 @@ const ConsulterPostesPage = () => {
         if (searchTerm) {
             filtered = filtered.filter(p => p.designation.toLowerCase().includes(searchTerm.toLowerCase()));
         }
-        filtered.sort((a, b) => {
-            let valA = a[sortConfig.key];
-            let valB = b[sortConfig.key];
-            if (sortConfig.key === 'dateCreation') {
-                valA = new Date(valA?.[0], valA?.[1] - 1, valA?.[2]);
-                valB = new Date(valB?.[0], valB?.[1] - 1, valB?.[2]);
-            }
-            if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
-            if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
-            return 0;
-        });
+        if (sortConfig.key) {
+            filtered.sort((a, b) => {
+                let valA = a[sortConfig.key];
+                let valB = b[sortConfig.key];
+                if (sortConfig.key === 'dateCreation') {
+                    valA = new Date(valA?.[0], valA?.[1] - 1, valA?.[2]);
+                    valB = new Date(valB?.[0], valB?.[1] - 1, valB?.[2]);
+                }
+                if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
         return filtered;
     }, [postes, searchTerm, filterStatus, sortConfig]);
 
@@ -153,36 +156,33 @@ const ConsulterPostesPage = () => {
         const startIndex = (currentPage - 1) * entriesPerPage;
         return processedPostes.slice(startIndex, startIndex + entriesPerPage);
     }, [processedPostes, currentPage, entriesPerPage]);
-    
+
     useEffect(() => { setCurrentPage(1); }, [entriesPerPage, filterStatus, searchTerm]);
-    
+
     // --- HANDLERS POUR LES CONTRÔLES UI ---
-    const handleSort = (key) => setSortConfig(p => ({ key, direction: p.key === key && p.direction === 'asc' ? 'desc' : 'asc' }));
+    const handleSort = (key) => {
+        if (key !== 'dateCreation') return;
+        setSortConfig(p => ({ key, direction: p.key === key && p.direction === 'asc' ? 'desc' : 'asc' }));
+    }
     const handleToggleColumn = (key) => setVisibleColumns(p => ({ ...p, [key]: !p[key] }));
     const toggleDropdown = (name) => setOpenDropdown(p => p === name ? null : name);
 
-    // --- COMPOSANTS D'EN-TÊTE ET DE PAGINATION POUR LA COHÉRENCE ---
+    // --- COMPOSANTS D'EN-TÊTE ET DE PAGINATION ---
     const TableHeader = () => (
-        <thead className="text-sm text-white uppercase bg-blue-600 dark:bg-blue-700">
+        <thead className="text-sm text-black bg-sky-100 dark:bg-blue-200">
             <tr>
-                {Object.keys(visibleColumns).map(key => {
-                    const labels = { poste: 'Poste', statut: 'Statut', creePar: 'Créé Par', dateCreation: 'Date Création' };
-                    if (visibleColumns[key]) {
-                        return (
-                            <th scope="col" className="px-6 py-4 font-semibold" key={key}>
-                                <button onClick={() => handleSort(key)} className="flex items-center gap-1.5 hover:text-blue-200">
-                                    {labels[key]}
-                                    {sortConfig.key === key 
-                                      ? (sortConfig.direction === 'asc' ? <ChevronUp size={16}/> : <ChevronDown size={16}/>)
-                                      : <ChevronDown size={16} className="opacity-40"/>
-                                    }
-                                </button>
-                            </th>
-                        );
-                    }
-                    return null;
-                })}
-                <th scope="col" className="px-6 py-4 font-semibold text-center">Actions</th>
+                {visibleColumns.poste && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Poste</th>}
+                {visibleColumns.statut && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Statut</th>}
+                {visibleColumns.creePar && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Créé par</th>}
+                {visibleColumns.dateCreation && (
+                    <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">
+                        <button onClick={() => handleSort('dateCreation')} className="flex items-center justify-between w-full hover:text-blue-200">
+                            <span>Créé le</span>
+                            <ArrowUpDown size={16} className="opacity-70" />
+                        </button>
+                    </th>
+                )}
+                <th scope="col" className="px-6 py-3 font-sans text-center">Actions</th>
             </tr>
         </thead>
     );
@@ -194,17 +194,17 @@ const ConsulterPostesPage = () => {
         }
 
         return (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 px-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-3 px-6">
                 <div className="text-sm text-slate-600 dark:text-slate-400">
                     Affichage de <strong>{(currentPage - 1) * entriesPerPage + 1}</strong>-<strong>{Math.min(currentPage * entriesPerPage, processedPostes.length)}</strong> sur <strong>{processedPostes.length}</strong>
                 </div>
                 <div className="flex items-center gap-1">
                     <button onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1} className="pagination-btn"><ChevronLeft size={16} /></button>
                     {pageNumbers.map(number => (
-                        <button 
-                            key={number} 
+                        <button
+                            key={number}
                             onClick={() => setCurrentPage(number)}
-                            className={`px-3 py-1.5 text-sm rounded-md ${currentPage === number ? 'bg-blue-600 text-white font-bold shadow-sm' : 'text-slate-600 hover:bg-slate-200'}`}
+                            className={`px-3 py-1.5 text-sm rounded-md ${currentPage === number ? 'bg-blue-500 text-white font-bold shadow-sm' : 'text-slate-600 hover:bg-slate-200'}`}
                         >
                             {number}
                         </button>
@@ -214,24 +214,31 @@ const ConsulterPostesPage = () => {
             </div>
         );
     }
-    
+
     // --- RENDU PRINCIPAL ---
     if (view === 'add') {
         return <AjouterPostePage onAddPoste={handleAddPoste} onCancel={() => setView('list')} />;
     }
-    
+
     return (
         <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
             <style>{`
-              .btn { @apply inline-flex items-center justify-center px-4 py-2 border text-sm font-semibold rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-150; }
-              .btn-primary { @apply text-white bg-blue-600 hover:bg-blue-700 border-transparent focus:ring-blue-500; }
-              .btn-secondary { @apply text-slate-700 bg-white hover:bg-slate-50 border-slate-300 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-600; }
-              .btn-danger { @apply text-white bg-red-600 hover:bg-red-700 border-transparent focus:ring-red-500; }
-              .form-label { @apply block text-sm font-medium text-slate-700 dark:text-slate-300; }
-              .form-input { @apply block w-full px-3 py-2 bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm; }
-              .pagination-btn { @apply p-2 rounded-md text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed; }
+                .btn { @apply inline-flex items-center justify-center px-4 py-2 border text-sm font-semibold rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-150; }
+                .btn-primary { @apply text-white bg-blue-600 hover:bg-blue-700 border-transparent focus:ring-blue-500; }
+                .btn-secondary { @apply text-slate-700 bg-white hover:bg-slate-50 border-slate-300 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-600; }
+                .btn-danger { @apply text-white bg-red-600 hover:bg-red-700 border-transparent focus:ring-red-500; }
+                .form-label { @apply block text-sm font-medium text-slate-700 dark:text-slate-300; }
+                .form-input { @apply block w-full px-3 py-2 bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm; }
+                .pagination-btn { @apply p-2 rounded-md text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed; }
+                .separateur-colonne-leger:not(:last-child) {
+                  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.05); /* Ajustez l'opacité selon vos préférences */
+                }
+
+                .dark .separateur-colonne-leger:not(:last-child) {
+                  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.05); /* Ajustez l'opacité pour le mode sombre */
+                }
             `}</style>
-            
+
             {posteToDelete && <DeleteConfirmationModal poste={posteToDelete} onConfirm={handleDeletePoste} onCancel={() => setPosteToDelete(null)} />}
             {posteToEdit && <EditModal poste={posteToEdit} onUpdate={handleUpdatePoste} onCancel={() => setPosteToEdit(null)} />}
 
@@ -243,38 +250,50 @@ const ConsulterPostesPage = () => {
                         <input type="text" placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="form-input pl-10 w-full" />
                     </div>
                     <div className="flex items-center gap-2 flex-wrap" ref={dropdownsRef}>
-                        <div className="relative"><button onClick={() => toggleDropdown('filter')} className="btn btn-secondary"><Filter size={16} className="mr-2"/>{filterStatus === 'tous' ? 'Filtre' : `Filtre: ${filterStatus}`}</button>
+                        <button onClick={() => setView('add')} className="btn btn-primary h-full px-3"><Plus size={20} /></button>
+                        <button onClick={fetchPostes} className="btn btn-secondary h-full px-3" title="Rafraîchir"><RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} /></button>
+                        <div className="relative"><button onClick={() => toggleDropdown('filter')} className="btn btn-secondary"><Filter size={16} className="mr-2" />{filterStatus === 'tous' ? 'Filtre' : `Filtre: ${filterStatus}`}</button>
                             {openDropdown === 'filter' && <DropdownMenu><DropdownMenuItem isSelected={filterStatus === 'tous'} onClick={() => { setFilterStatus('tous'); toggleDropdown(); }}>Tous</DropdownMenuItem><DropdownMenuItem isSelected={filterStatus === 'actif'} onClick={() => { setFilterStatus('actif'); toggleDropdown(); }}>Actifs</DropdownMenuItem><DropdownMenuItem isSelected={filterStatus === 'inactif'} onClick={() => { setFilterStatus('inactif'); toggleDropdown(); }}>Inactifs</DropdownMenuItem></DropdownMenu>}
                         </div>
-                        <div className="relative"><button onClick={() => toggleDropdown('columns')} className="btn btn-secondary"><Eye size={16} className="mr-2"/>Colonnes</button>
-                            {openDropdown === 'columns' && <DropdownMenu>{Object.keys(visibleColumns).map(key => (<DropdownMenuItem key={key} onClick={() => handleToggleColumn(key)}>{visibleColumns[key] ? <Eye size={16} className="mr-2 text-blue-500"/> : <EyeOff size={16} className="mr-2 text-slate-400"/>}<span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span></DropdownMenuItem>))}</DropdownMenu>}
+                        <div className="relative"><button onClick={() => toggleDropdown('columns')} className="btn btn-secondary"><Eye size={16} className="mr-2" />Colonnes</button>
+                            {openDropdown === 'columns' && <DropdownMenu>{Object.keys(visibleColumns).map(key => (<DropdownMenuItem key={key} onClick={() => handleToggleColumn(key)}>{visibleColumns[key] ? <Eye size={16} className="mr-2 text-blue-500" /> : <EyeOff size={16} className="mr-2 text-slate-400" />}<span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span></DropdownMenuItem>))}</DropdownMenu>}
                         </div>
                         <div className="relative"><button onClick={() => toggleDropdown('entries')} className="btn btn-secondary">{entriesPerPage} / page</button>
                             {openDropdown === 'entries' && <DropdownMenu>{[10, 25, 50].map(num => (<DropdownMenuItem isSelected={entriesPerPage === num} key={num} onClick={() => { setEntriesPerPage(num); toggleDropdown(); }}>{num} lignes</DropdownMenuItem>))}</DropdownMenu>}
                         </div>
-                        <button onClick={() => setView('add')} className="btn btn-primary h-full px-3"><Plus size={20}/></button>
+                        <button onClick={() => setViewMode(p => p === 'table' ? 'grid' : 'table')} className="btn btn-secondary h-full px-3" title="Changer de vue">
+                            {viewMode === 'table' ? <LayoutGrid size={18} /> : <Rows3 size={18} />}
+                        </button>
                     </div>
                 </div>
             </div>
 
             {/* Contenu Principal */}
             {isLoading ? <Spinner /> : (
-                <div className="bg-white dark:bg-slate-800/80 rounded-lg shadow-sm border border-slate-200/80 dark:border-slate-700">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <TableHeader />
-                            <tbody className="divide-y divide-slate-200 dark:divide-slate-700/50">
-                                {paginatedPostes.map(poste => (
-                                    <PosteTableRow key={poste.id} poste={poste} onEdit={setPosteToEdit} onDelete={setPosteToDelete} visibleColumns={visibleColumns} />
-                                ))}
-                            </tbody>
-                        </table>
+                viewMode === 'table' ? (
+                    <div className="bg-white dark:bg-slate-800/80 rounded-lg shadow-sm border border-slate-200/80 dark:border-slate-700 overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <TableHeader />
+                                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                                    {paginatedPostes.map(poste => (
+                                        <PosteTableRow key={poste.id} poste={poste} onEdit={setPosteToEdit} onDelete={setPosteToDelete} visibleColumns={visibleColumns} />
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {processedPostes.length > 0 && <PaginationControls />}
                     </div>
-                    {processedPostes.length > 0 && <PaginationControls />}
-                </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                        {paginatedPostes.map(poste => (
+                            <PosteCard key={poste.id} poste={poste} onEdit={setPosteToEdit} onDelete={setPosteToDelete} />
+                        ))}
+                    </div>
+                )
             )}
+            <FloatingActionButton />
         </div>
     );
 };
-
 export default ConsulterPostesPage;

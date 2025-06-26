@@ -1,6 +1,5 @@
 import React from 'react';
 import { Briefcase, Edit, Trash2 } from 'lucide-react';
-// import { formatDateFromArray } from '../../../utils/dateFormatter';
 
 const PosteCard = ({ poste, onEdit, onDelete }) => {
     
@@ -11,20 +10,24 @@ const PosteCard = ({ poste, onEdit, onDelete }) => {
         });
     };
 
+    const StatusBadge = ({ isActive }) => (
+         <span className={`px-2.5 py-1 text-xs font-medium rounded-md inline-flex items-center gap-2 border ${
+            isActive 
+            ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/20' 
+            : 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-700/20 dark:text-slate-400 dark:border-slate-700'
+        }`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-blue-500' : 'bg-slate-400'}`}></span>
+            {isActive ? 'Actif' : 'Inactif'}
+        </span>
+    );
+
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-5 flex flex-col transition-all duration-300 hover:shadow-lg hover:border-blue-300">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-5 flex flex-col transition-all duration-300 hover:shadow-md hover:border-blue-300">
             <div className="flex justify-between items-start mb-3">
-                <div className="flex items-center gap-3">
-                    <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-blue-100 dark:bg-blue-900/50 rounded-lg">
-                        <Briefcase className="text-blue-600 dark:text-blue-400" size={20}/>
-                    </div>
-                    <h3 className="text-md font-bold text-slate-800 dark:text-slate-100" title={poste.designation}>
-                        {poste.designation}
-                    </h3>
-                </div>
-                <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${poste.actif ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {poste.actif ? 'Actif' : 'Inactif'}
-                </span>
+                <h3 className="text-md font-bold text-slate-800 dark:text-slate-100 pr-4" title={poste.designation}>
+                    {poste.designation}
+                </h3>
+                <StatusBadge isActive={poste.actif} />
             </div>
 
             <div className="flex-grow space-y-2 text-sm text-slate-500 dark:text-slate-400 my-4">
