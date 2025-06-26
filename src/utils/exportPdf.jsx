@@ -1,8 +1,10 @@
-// src/utils/exportPdf.js
+// src/utils/exportPdf.jsx
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 
+// C'est l'importation clé pour jspdf-autotable.
+// Nous l'importons d'une manière qui garantit que son code d'initialisation s'exécute.
+// J'ai renommé l'importation pour éviter un conflit direct si jsPDF avait déjà une fonction autoTable non liée. // Assurez-vous que cette ligne est présente et active
 /**
  * Exporte des données de tableau dans un fichier PDF.
  * @param {string} title Le titre du document PDF.
@@ -11,31 +13,43 @@ import html2canvas from 'html2canvas';
  * @param {string} filename Le nom du fichier de sortie (ex: 'rapport.pdf').
  */
 export const exportToPdf = (title, headers, data, filename = 'document.pdf') => {
-  const doc = new jsPDF();
+  const doc = new jsPDF(); // Crée une nouvelle instance de jsPDF
 
   doc.setFontSize(18);
   doc.text(title, 14, 22);
 
+  // Vérification de sécurité avant d'appeler autoTable
+  // Cette vérification est cruciale pour le débogage.
+  if (typeof doc.autoTable !== 'function') {
+    console.error("Erreur: jspdf-autotable n'a pas été chargé correctement. doc.autoTable n'est pas une fonction.");
+    console.log("Solution possible: Vérifiez l'installation de 'jspdf-autotable' et assurez-vous que 'import \"jspdf-autotable\";' est exécuté. Si le problème persiste dans Vite/React, essayez de l'importer dans un fichier de plus haut niveau comme main.jsx.");
+    // Lancer une erreur pour arrêter l'exécution et signaler clairement le problème
+    throw new Error("jsPDF-Autotable plugin non chargé. Impossible d'exporter en PDF.");
+  }
+
+  // Utilisation de la fonction autoTable
   doc.autoTable({
     head: headers,
     body: data,
-    startY: 30,
-    theme: 'striped',
+    startY: 30, // Commence le tableau 30 unités sous le haut de la page
+    theme: 'striped', // Style de tableau (striped, grid, plain)
     styles: {
       fontSize: 10,
       cellPadding: 3,
     },
     headStyles: {
-      fillColor: [41, 128, 185],
-      textColor: 255,
+      fillColor: [41, 128, 185], // Couleur de fond des en-têtes (bleu)
+      textColor: 255, // Couleur du texte des en-têtes (blanc)
       fontStyle: 'bold',
     },
     alternateRowStyles: {
-      fillColor: [245, 245, 245],
+      fillColor: [245, 245, 245], // Couleur de fond des lignes alternées
     },
+    // Ajoute un footer (numéro de page)
     didDrawPage: function(data) {
       let str = 'Page ' + doc.internal.getNumberOfPages();
       doc.setFontSize(10);
+      // Positionne le numéro de page en bas à droite
       doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10);
     }
   });
@@ -60,14 +74,14 @@ export const exportHtmlElementToPdf = async (elementId, filename = 'page.pdf', t
 
   try {
     const canvas = await html2canvas(input, {
-      scale: 2,
-      useCORS: true,
+      scale: 2, // Augmente la résolution pour une meilleure qualité
+      useCORS: true, // Important si des images proviennent d'autres domaines
     });
 
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgWidth = 210;
-    const pageHeight = 297;
+    const imgWidth = 210; // A4 width in mm
+    const pageHeight = 297; // A4 height in mm
     const imgHeight = canvas.height * imgWidth / canvas.width;
     let heightLeft = imgHeight;
 

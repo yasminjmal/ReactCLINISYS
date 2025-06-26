@@ -3,7 +3,8 @@ import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
-
+import { jsPDF } from 'jspdf'; 
+import 'jspdf-autotable';
 // Import contexts and i18n config
 import { AuthProvider } from './context/AuthContext.jsx'; // Assuming you have this
 import { ThemeProvider } from './context/ThemeContext.jsx';

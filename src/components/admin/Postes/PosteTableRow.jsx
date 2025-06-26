@@ -17,7 +17,7 @@ const PosteTableRow = ({ poste, onEdit, onDelete, visibleColumns }) => {
             : 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-700/20 dark:text-slate-400 dark:border-slate-700'
         }`}>
             <span className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-blue-500' : 'bg-slate-400'}`}></span>
-            {isActive ? 'Actif' : 'Inactif'}
+            {isActive ? 'Actif' : 'Non actif'}
         </span>
     );
 

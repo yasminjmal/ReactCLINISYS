@@ -190,7 +190,7 @@ const AdminInterface = () => {
         />
         
         {/* Contenu principal: `pt-16` pour laisser de la place à la navbar fixe. */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto pt-16 relative">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto pt-0 relative">
           {notification && (
             <MessageAi
               message={notification.text}

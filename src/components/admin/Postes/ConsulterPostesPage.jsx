@@ -3,14 +3,16 @@ import {
     Search, Plus, X, Filter, AlertTriangle, Save, XCircle, Settings2, Eye,
     EyeOff, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, ArrowUpDown, RefreshCw, LayoutGrid, Rows3
 } from 'lucide-react';
-import FloatingActionButton from '../../FloatingActionButton';
-
 import posteService from '../../../services/posteService';
 import PosteTableRow from './PosteTableRow';
 import PosteCard from './PosteCard';
 import AjouterPostePage from './AjouterPostePage';
+import { exportToPdf } from '../../../utils/exportPdf';
+import { exportTableToExcel } from '../../../utils/exportExcel';
+import { printHtmlContent } from '../../../utils/printContent';
+import { useExport } from '../../../context/ExportContext';
 
-
+// --- Composants Modaux et Dropdowns (inchangés, mais positionnés ici pour clarté) ---
 const Spinner = () => <div className="text-center py-20"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div></div>;
 
 const DeleteConfirmationModal = ({ poste, onConfirm, onCancel }) => (
@@ -63,7 +65,59 @@ const DropdownMenuItem = ({ children, onClick, isSelected }) => (
     </button>
 );
 
-const ConsulterPostesPage = () => {
+// --- NOUVEAU: Composant TableHeader extrait de ConsulterPostesPage ---
+// Il reçoit les props nécessaires directement
+const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => (
+    <thead className="text-sm text-black bg-sky-100 dark:bg-blue-200">
+        <tr>
+            {visibleColumns.poste && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Poste</th>}
+            {visibleColumns.statut && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Statut</th>}
+            {visibleColumns.creePar && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Créé par</th>}
+            {visibleColumns.dateCreation && (
+                <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">
+                    <button onClick={() => handleSort('dateCreation')} className="flex items-center justify-between w-full hover:text-blue-200">
+                        <span>Date de création</span>
+                        <ArrowUpDown size={16} className="opacity-70" />
+                    </button>
+                </th>
+            )}
+            <th scope="col" className="px-6 py-3 font-sans text-center">Actions</th>
+        </tr>
+    </thead>
+);
+
+// --- NOUVEAU: Composant PaginationControls extrait de ConsulterPostesPage ---
+// Il reçoit les props nécessaires directement
+const PaginationControls = ({ currentPage, totalPages, setCurrentPage, processedPostes, entriesPerPage }) => {
+    const pageNumbers = [];
+    for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+    }
+
+    return (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-3 px-6">
+            <div className="text-sm text-slate-600 dark:text-slate-400">
+                Affichage de <strong>{(currentPage - 1) * entriesPerPage + 1}</strong>-<strong>{Math.min(currentPage * entriesPerPage, processedPostes.length)}</strong> sur <strong>{processedPostes.length}</strong>
+            </div>
+            <div className="flex items-center gap-1">
+                <button onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1} className="pagination-btn"><ChevronLeft size={16} /></button>
+                {pageNumbers.map(number => (
+                    <button
+                        key={number}
+                        onClick={() => setCurrentPage(number)}
+                        className={`px-3 py-1.5 text-sm rounded-md ${currentPage === number ? 'bg-blue-500 text-white font-bold shadow-sm' : 'text-slate-600 hover:bg-slate-200'}`}
+                    >
+                        {number}
+                    </button>
+                ))}
+                <button onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages} className="pagination-btn"><ChevronRight size={16} /></button>
+            </div>
+        </div>
+    );
+};
+
+
+const ConsulterPostesPage = ({ initialPostes }) => { 
     // --- STATE MANAGEMENT COMPLET ---
     const [view, setView] = useState('list');
     const [viewMode, setViewMode] = useState('table');
@@ -79,7 +133,7 @@ const ConsulterPostesPage = () => {
     const [visibleColumns, setVisibleColumns] = useState({ poste: true, statut: true, creePar: true, dateCreation: true });
     const [openDropdown, setOpenDropdown] = useState(null);
     const dropdownsRef = useRef(null);
-        
+    const { setExportFunctions } = useExport();
 
     // --- LOGIQUE DE DONNÉES ET D'EFFETS ---
     const fetchPostes = useCallback(async () => {
@@ -87,15 +141,20 @@ const ConsulterPostesPage = () => {
         try {
             const response = await posteService.getAllPostes();
             setPostes(Array.isArray(response.data) ? response.data : []);
-        } catch (err) { console.error(err); }
+        } catch (err) { 
+            console.error("Erreur lors de la récupération des postes:", err); 
+        }
         finally { setIsLoading(false); }
     }, []);
 
     useEffect(() => {
-        if (view === 'list') {
+        if (initialPostes && initialPostes.length > 0) {
+            setPostes(initialPostes);
+            setIsLoading(false);
+        } else if (view === 'list') {
             fetchPostes();
         }
-    }, [view, fetchPostes]);
+    }, [view, fetchPostes, initialPostes]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -110,6 +169,7 @@ const ConsulterPostesPage = () => {
         try {
             await posteService.createPoste(posteData);
             setView('list');
+            fetchPostes(); 
         } catch (err) { console.error("Erreur lors de l'ajout du poste."); }
     };
     const handleUpdatePoste = async (id, posteData) => {
@@ -142,8 +202,8 @@ const ConsulterPostesPage = () => {
                 let valA = a[sortConfig.key];
                 let valB = b[sortConfig.key];
                 if (sortConfig.key === 'dateCreation') {
-                    valA = new Date(valA?.[0], valA?.[1] - 1, valA?.[2]);
-                    valB = new Date(valB?.[0], valB?.[1] - 1, valB?.[2]);
+                    valA = new Date(a.dateCreation).getTime();
+                    valB = new Date(b.dateCreation).getTime();
                 }
                 if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
                 if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
@@ -154,6 +214,7 @@ const ConsulterPostesPage = () => {
     }, [postes, searchTerm, filterStatus, sortConfig]);
 
     const totalPages = Math.ceil(processedPostes.length / entriesPerPage);
+    
     const paginatedPostes = useMemo(() => {
         const startIndex = (currentPage - 1) * entriesPerPage;
         return processedPostes.slice(startIndex, startIndex + entriesPerPage);
@@ -162,60 +223,74 @@ const ConsulterPostesPage = () => {
     useEffect(() => { setCurrentPage(1); }, [entriesPerPage, filterStatus, searchTerm]);
 
     // --- HANDLERS POUR LES CONTRÔLES UI ---
-    const handleSort = (key) => {
-        if (key !== 'dateCreation') return;
+    const handleSort = useCallback((key) => { // useCallback ajouté
         setSortConfig(p => ({ key, direction: p.key === key && p.direction === 'asc' ? 'desc' : 'asc' }));
-    }
-    const handleToggleColumn = (key) => setVisibleColumns(p => ({ ...p, [key]: !p[key] }));
-    const toggleDropdown = (name) => setOpenDropdown(p => p === name ? null : name);
+    }, []);
+    const handleToggleColumn = useCallback((key) => setVisibleColumns(p => ({ ...p, [key]: !p[key] })), []); // useCallback ajouté
+    const toggleDropdown = useCallback((name) => setOpenDropdown(p => p === name ? null : name), []); // useCallback ajouté
 
-    // --- COMPOSANTS D'EN-TÊTE ET DE PAGINATION ---
-    const TableHeader = () => (
-        <thead className="text-sm text-black bg-sky-100 dark:bg-blue-200">
-            <tr>
-                {visibleColumns.poste && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Poste</th>}
-                {visibleColumns.statut && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Statut</th>}
-                {visibleColumns.creePar && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Créé par</th>}
-                {visibleColumns.dateCreation && (
-                    <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">
-                        <button onClick={() => handleSort('dateCreation')} className="flex items-center justify-between w-full hover:text-blue-200">
-                            <span>Créé le</span>
-                            <ArrowUpDown size={16} className="opacity-70" />
-                        </button>
-                    </th>
-                )}
-                <th scope="col" className="px-6 py-3 font-sans text-center">Actions</th>
-            </tr>
-        </thead>
-    );
 
-    const PaginationControls = () => {
-        const pageNumbers = [];
-        for (let i = 1; i <= totalPages; i++) {
-            pageNumbers.push(i);
-        }
+    // --- PRÉPARATION DES DONNÉES ET FONCTIONS D'EXPORTATION POUR LE CONTEXTE ---
+    const pdfHeaders = useMemo(() => [['ID', 'Poste', 'Statut', 'Créé par', 'Date Création']], []);
+    const pdfData = useMemo(() => processedPostes.map(poste => [
+        poste.id,
+        poste.designation,
+        poste.actif ? 'Actif' : 'Inactif',
+        poste.creePar || 'N/A',
+        new Date(poste.dateCreation).toLocaleDateString()
+    ]), [processedPostes]); 
 
-        return (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-3 px-6">
-                <div className="text-sm text-slate-600 dark:text-slate-400">
-                    Affichage de <strong>{(currentPage - 1) * entriesPerPage + 1}</strong>-<strong>{Math.min(currentPage * entriesPerPage, processedPostes.length)}</strong> sur <strong>{processedPostes.length}</strong>
-                </div>
-                <div className="flex items-center gap-1">
-                    <button onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1} className="pagination-btn"><ChevronLeft size={16} /></button>
-                    {pageNumbers.map(number => (
-                        <button
-                            key={number}
-                            onClick={() => setCurrentPage(number)}
-                            className={`px-3 py-1.5 text-sm rounded-md ${currentPage === number ? 'bg-blue-500 text-white font-bold shadow-sm' : 'text-slate-600 hover:bg-slate-200'}`}
-                        >
-                            {number}
-                        </button>
-                    ))}
-                    <button onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages} className="pagination-btn"><ChevronRight size={16} /></button>
-                </div>
-            </div>
-        );
-    }
+    const excelData = useMemo(() => {
+        return processedPostes.map(poste => ({
+            ID: poste.id,
+            'Poste': poste.designation,
+            'Statut': poste.actif ? 'Actif' : 'Inactif',
+            'Créé par': poste.creePar || 'N/A',
+            'Date Création': new Date(poste.dateCreation).toLocaleDateString()
+        }));
+    }, [processedPostes]);
+
+    const handleExportPdfPostes = useCallback(() => {
+        exportToPdf('Liste des Postes', pdfHeaders, pdfData, 'liste_postes.pdf');
+    }, [pdfHeaders, pdfData]);
+
+    const handleExportExcelPostes = useCallback(() => {
+        exportTableToExcel(pdfHeaders, pdfData, 'liste_postes.xlsx', 'Postes');
+    }, [pdfHeaders, pdfData]);
+
+    const handlePrintPostes = useCallback(() => {
+        let tableHtml = `<h2 style="text-align:center; font-size: 24px; margin-bottom: 20px;">Liste des Postes</h2>
+                         <table style="width:100%; border-collapse: collapse; margin-top: 20px;">
+                            <thead>
+                                <tr style="background-color:#f2f2f2;">
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">ID</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Poste</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Statut</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Créé par</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Date Création</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+        processedPostes.forEach(poste => {
+            tableHtml += `<tr>
+                            <td style="padding: 8px; border: 1px solid #ddd;">${poste.id}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">${poste.designation}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">${poste.actif ? 'Actif' : 'Inactif'}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">${poste.creePar || 'N/A'}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">${new Date(poste.dateCreation).toLocaleDateString()}</td>
+                          </tr>`;
+        });
+        tableHtml += `</tbody></table>`;
+        printHtmlContent(tableHtml, 'Impression Liste des Postes');
+    }, [processedPostes]);
+
+    useEffect(() => {
+        setExportFunctions(handleExportPdfPostes, handleExportExcelPostes, handlePrintPostes);
+        return () => {
+            setExportFunctions(null, null, null); 
+        };
+    }, [setExportFunctions, handleExportPdfPostes, handleExportExcelPostes, handlePrintPostes]);
+
 
     // --- RENDU PRINCIPAL ---
     if (view === 'add') {
@@ -224,6 +299,7 @@ const ConsulterPostesPage = () => {
 
     return (
         <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
+            {/* Styles CSS personnalisés intégrés dans le composant */}
             <style>{`
                 .btn { @apply inline-flex items-center justify-center px-4 py-2 border text-sm font-semibold rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-150; }
                 .btn-primary { @apply text-white bg-blue-600 hover:bg-blue-700 border-transparent focus:ring-blue-500; }
@@ -233,19 +309,17 @@ const ConsulterPostesPage = () => {
                 .form-input { @apply block w-full px-3 py-2 bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm; }
                 .pagination-btn { @apply p-2 rounded-md text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed; }
                 .separateur-colonne-leger:not(:last-child) {
-                  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.05); /* Ajustez l'opacité selon vos préférences */
+                    box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.05); 
                 }
-
                 .dark .separateur-colonne-leger:not(:last-child) {
-                  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.05); /* Ajustez l'opacité pour le mode sombre */
+                    box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.05); 
                 }
             `}</style>
 
             {posteToDelete && <DeleteConfirmationModal poste={posteToDelete} onConfirm={handleDeletePoste} onCancel={() => setPosteToDelete(null)} />}
             {posteToEdit && <EditModal poste={posteToEdit} onUpdate={handleUpdatePoste} onCancel={() => setPosteToEdit(null)} />}
-
             {/* Barre de contrôles */}
-            <div className="bg-white dark:bg-slate-800/80 p-4 rounded-lg shadow-sm border border-slate-200/80 dark:border-slate-700 mb-6">
+            <div className="bg-white dark:bg-slate-800/80 px-4 py-1 rounded-lg shadow-sm border border-slate-200/80 dark:border-slate-700 mb-2">
                 <div className="flex flex-col md:flex-row gap-4 justify-between">
                     <div className="relative flex-grow max-w-xs">
                         <Search className="h-5 w-5 text-slate-400 absolute top-1/2 left-3 -translate-y-1/2" />
@@ -270,31 +344,52 @@ const ConsulterPostesPage = () => {
                 </div>
             </div>
 
-            {/* Contenu Principal */}
+            {/* Contenu Principal (Tableau ou Grille) */}
             {isLoading ? <Spinner /> : (
-                viewMode === 'table' ? (
-                    <div className="bg-white dark:bg-slate-800/80 rounded-lg shadow-sm border border-slate-200/80 dark:border-slate-700 overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <TableHeader />
-                                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                                    {paginatedPostes.map(poste => (
-                                        <PosteTableRow key={poste.id} poste={poste} onEdit={setPosteToEdit} onDelete={setPosteToDelete} visibleColumns={visibleColumns} />
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                        {processedPostes.length > 0 && <PaginationControls />}
-                    </div>
+                processedPostes.length === 0 ? (
+                    <div className="text-center py-10 text-slate-600 dark:text-slate-400">Aucun poste trouvé pour la sélection actuelle.</div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                        {paginatedPostes.map(poste => (
-                            <PosteCard key={poste.id} poste={poste} onEdit={setPosteToEdit} onDelete={setPosteToDelete} />
-                        ))}
-                    </div>
+                    viewMode === 'table' ? (
+                        <div className="bg-white dark:bg-slate-800/80 rounded-lg shadow-sm border border-slate-200/80 dark:border-slate-700 overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <TableHeader // Appel du composant TableHeader
+                                        visibleColumns={visibleColumns} 
+                                        handleSort={handleSort} 
+                                        sortConfig={sortConfig} 
+                                    />
+                                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                                        {paginatedPostes.map(poste => (
+                                            <PosteTableRow 
+                                                key={poste.id} 
+                                                poste={poste} 
+                                                onEdit={setPosteToEdit} 
+                                                onDelete={setPosteToDelete} 
+                                                visibleColumns={visibleColumns} 
+                                            />
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {processedPostes.length > 0 && 
+                                <PaginationControls // Appel du composant PaginationControls
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    setCurrentPage={setCurrentPage}
+                                    processedPostes={processedPostes}
+                                    entriesPerPage={entriesPerPage}
+                                />
+                            }
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                            {paginatedPostes.map(poste => (
+                                <PosteCard key={poste.id} poste={poste} onEdit={setPosteToEdit} onDelete={setPosteToDelete} />
+                            ))}
+                        </div>
+                    )
                 )
             )}
-            <FloatingActionButton />
         </div>
     );
 };
