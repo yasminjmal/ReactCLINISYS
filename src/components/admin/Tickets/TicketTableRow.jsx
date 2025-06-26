@@ -1,6 +1,7 @@
 // src/components/admin/Tickets/TicketTableRow.jsx
 import React, { Fragment } from 'react';
 import { Edit, Trash2, Info, ChevronDown, ChevronUp, CheckCircle, XCircle } from 'lucide-react';
+import { formatDateFromArray } from '../../../utils/dateFormatter';
 
 // --- Petits composants pour les badges ---
 const PriorityBadge = ({ priority }) => {
@@ -45,16 +46,7 @@ const TicketTableRow = ({
     
     const hasSubTickets = ticket.childTickets && ticket.childTickets.length > 0;
 
-    const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
-        try {
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return 'Date invalide';
-            return date.toLocaleDateString('fr-CA'); // Format AAAA-MM-JJ
-        } catch (e) {
-            return 'Date invalide';
-        }
-    };
+
     
     const clientNom = ticket.idClient?.nomComplet || ticket.client || 'N/A';
     const demandeurNom = ticket.userCreation || (ticket.demandeur ? `${ticket.demandeur.prenom} ${ticket.demandeur.nom}`.trim() : 'N/A');
@@ -71,8 +63,8 @@ const TicketTableRow = ({
             <td className="px-4 py-3 text-sm"><div className="flex flex-col space-y-1.5 items-start"><PriorityBadge priority={ticket.priorite} /><StatusBadge status={ticket.statue} /></div></td>
             <td className="px-4 py-3 text-sm">{ticket.idModule?.designation || 'N/A'}</td>
             <td className="px-4 py-3 text-sm">{employeNom === 'N/A' ? 'Non assigné' : employeNom}</td>
-            <td className="px-4 py-3 text-sm text-slate-500">{formatDate(ticket.date_echeance)}</td>
-            <td className="px-4 py-3 text-sm text-slate-500">{formatDate(ticket.dateCreation)}</td>
+            <td className="px-4 py-3 text-sm text-slate-500">{formatDateFromArray(ticket.date_echeance)}</td>
+            <td className="px-4 py-3 text-sm text-slate-500">{formatDateFromArray(ticket.dateCreation)}</td>
             <td className="px-4 py-3"><ActifBadge actif={ticket.actif} /></td>
             <td className="px-4 py-3">
                 <div className="flex items-center space-x-1">
