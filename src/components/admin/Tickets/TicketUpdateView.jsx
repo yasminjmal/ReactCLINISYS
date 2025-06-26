@@ -1,7 +1,28 @@
-import React, { useState, useEffect, useCallback , useRef} from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ticketService from '../../../services/ticketService';
 import moduleService from '../../../services/moduleService';
-import { formatDateFromArray } from '../../../utils/dateFormatter';
+
+// Utilisation de la fonction de formatage de date universelle
+const formatDate = (dateInput) => {
+    if (!dateInput) {
+        return 'N/A';
+    }
+    let date;
+    if (Array.isArray(dateInput) && dateInput.length >= 3) {
+        const [year, month, day, hours = 0, minutes = 0, seconds = 0] = dateInput;
+        date = new Date(year, month - 1, day, hours, minutes, seconds);
+    } else {
+        date = new Date(dateInput);
+    }
+    if (isNaN(date.getTime())) {
+        return 'Date invalide';
+    }
+    return date.toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    });
+};
 
 import {
     ArrowLeft, Check, X, GitFork, Loader, Send, PlusCircle, User, Tag, Info, Calendar,
@@ -13,14 +34,13 @@ const Spinner = () => <div className="animate-spin rounded-full h-6 w-6 border-b
 const useAutosizeTextArea = (textAreaRef, value) => {
     useEffect(() => {
         if (textAreaRef.current) {
-            // Réinitialise la hauteur pour permettre au champ de rétrécir si du texte est supprimé
             textAreaRef.current.style.height = "0px";
             const scrollHeight = textAreaRef.current.scrollHeight;
-            // Définit la hauteur en fonction du contenu
             textAreaRef.current.style.height = scrollHeight + "px";
         }
     }, [textAreaRef, value]);
 };
+
 // --- MODAL DE DIFFRACTION ---
 const DiffractionForm = ({ parentTicket, onClose, onSuccess, showTemporaryMessage }) => {
     const [subTickets, setSubTickets] = useState([{ titre: '', description: '', priorite: 'Moyenne' }]);
@@ -77,10 +97,9 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel }) => {
     const [moduleSearchTerm, setModuleSearchTerm] = useState('');
 
     const handleChange = (field, value) => setEditableData(prev => ({ ...prev, [field]: value }));
-    const handleModuleChange = (module) => { 
-    // Maintenant, 'module' est bien la variable reçue et le code fonctionne
-    setEditableData(prev => ({ ...prev, idModule: module }));
-};
+    const handleModuleChange = (module) => {
+        setEditableData(prev => ({ ...prev, idModule: module }));
+    };
     const handleSaveClick = async () => { setIsSaving(true); await onSave(sub, editableData); setIsSaving(false); };
     return (
         <tr className="bg-sky-50 dark:bg-sky-900/50 align-top">
@@ -90,22 +109,21 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel }) => {
                     ref={textAreaRef}
                     value={editableData.description || ''} 
                     onChange={(e) => handleChange('description', e.target.value)} 
-                    className="form-textarea text-sm w-full overflow-hidden resize-none" // `resize-none` est important
-                    rows={1} // Commence avec une seule ligne
+                    className="form-textarea text-sm w-full overflow-hidden resize-none"
+                    rows={1}
                     placeholder="Ajouter une description..."
                 ></textarea>
-            </td>            
+            </td>
             <td className="px-2 py-2">
-                 <div className="relative">
+                <div className="relative">
                     <input 
                         type="text"
                         className="form-input text-sm w-full"
                         value={moduleSearchTerm || editableData.idModule?.designation || ''}
                         onChange={(e) => setModuleSearchTerm(e.target.value)}
-                        onFocus={() => setModuleSearchTerm('')} // Vide le champ pour commencer la recherche
+                        onFocus={() => setModuleSearchTerm('')}
                         placeholder="Rechercher un module..."
                     />
-                    {/* Affiche la liste filtrée si on tape quelque chose */}
                     {moduleSearchTerm && (
                         <div className="absolute z-10 mt-1 w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md shadow-lg max-h-48 overflow-y-auto">
                             {allModules
@@ -115,7 +133,7 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel }) => {
                                         key={module.id} 
                                         onClick={() => {
                                             handleModuleChange(module);
-                                            setModuleSearchTerm(''); // Réinitialise la recherche
+                                            setModuleSearchTerm('');
                                         }}
                                         className="p-2 text-sm hover:bg-sky-100 dark:hover:bg-sky-800 cursor-pointer"
                                     >
@@ -125,17 +143,17 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel }) => {
                             }
                         </div>
                     )}
-                 </div>
+                </div>
             </td>
             <td className="px-2 py-2 text-xs">{sub.idUtilisateur ? `${sub.idUtilisateur.prenom} ${sub.idUtilisateur.nom}` : 'N/A'}</td>
-            <td className="px-2 py-2 text-xs">{formatDateFromArray(sub.date_echeance)}</td>
+            <td className="px-2 py-2 text-xs">{formatDate(sub.date_echeance)}</td>
             <td className="px-2 py-2">
                 <select value={editableData.priorite} onChange={(e) => handleChange('priorite', e.target.value)} className="form-select text-sm">
                     {["Basse", "Moyenne", "Haute"].map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
             </td>
             <td className="px-2 py-2 text-sm">{sub.statue}</td>
-            <td className="px-2 py-2 text-xs">{formatDateFromArray(sub.dateCreation)}</td>
+            <td className="px-2 py-2 text-xs">{formatDate(sub.dateCreation)}</td>
             <td className="px-2 py-2">
                 <div className="flex items-center justify-center space-x-1">
                     <button onClick={handleSaveClick} className="p-1.5 text-green-500 hover:text-green-700" title="Enregistrer" disabled={isSaving}>{isSaving ? <Spinner/> : <Check size={16}/>}</button>
@@ -148,44 +166,42 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel }) => {
 
 const DisplaySubTicketRow = ({ sub, onEdit, onDelete, allModules, isDescriptionExpanded, onToggleDescription }) => {
     const isAssigned = !!sub.idUtilisateur;
+    
+    // --- Aide au diagnostic pour le problème du Module ---
+    // Cette console.log vous montrera exactement ce que le composant reçoit du backend.
+    // Si vous voyez "idModule: null" pour un ticket qui a un module, le problème est bien côté backend.
+    console.log(`[Debug Module] Donnée reçue pour le sous-ticket ${sub.id}:`, sub.idModule);
+
     const getModuleName = (moduleId) => {
         if (!moduleId || !allModules || allModules.length === 0) return 'N/A';
+        // Cette logique robuste trouve le module même si `moduleId` est un objet ou juste un nombre
         const idToFind = typeof moduleId === 'object' && moduleId !== null ? moduleId.id : moduleId;
-        // CORRECTION : On force la comparaison entre nombres pour éviter les problèmes de type (ex: "5" vs 5)
         const module = allModules.find(m => Number(m.id) === Number(idToFind));
         return module ? module.designation : 'N/A';
     };
     const descriptionIsLong = sub.description && sub.description.length > 50;
-
 
     return (
         <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50 align-top">
             <td className="px-3 py-2">{sub.titre}</td>
             <td className="px-3 py-2 max-w-xs">
                 <div className="flex items-start justify-between gap-2">
-                    <p 
-                        className={`text-sm text-slate-600 dark:text-slate-300 ${isDescriptionExpanded ? 'whitespace-pre-wrap break-words' : 'truncate'}`}
-                        title={!isDescriptionExpanded ? sub.description : ''}
-                    >
+                    <p className={`text-sm text-slate-600 dark:text-slate-300 ${isDescriptionExpanded ? 'whitespace-pre-wrap break-words' : 'truncate'}`} title={!isDescriptionExpanded ? sub.description : ''}>
                         {sub.description || <span className="italic">Pas de desciption</span>}
                     </p>
                     {descriptionIsLong && (
-                        <button 
-                            onClick={() => onToggleDescription(sub.id)} 
-                            className="p-1 text-slate-400 hover:text-sky-500 flex-shrink-0" 
-                            title={isDescriptionExpanded ? 'Réduire la description' : 'Afficher toute la description'}
-                        >
+                        <button onClick={() => onToggleDescription(sub.id)} className="p-1 text-slate-400 hover:text-sky-500 flex-shrink-0" title={isDescriptionExpanded ? 'Réduire' : 'Afficher plus'}>
                             {isDescriptionExpanded ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                     )}
                 </div>
-            </td>            
+            </td>
             <td className="px-3 py-2">{getModuleName(sub.idModule )}</td>
             <td className="px-3 py-2">{sub.idUtilisateur ? `${sub.idUtilisateur.prenom} ${sub.idUtilisateur.nom}` : 'Aucun employé affecté'}</td>
-            <td className="px-3 py-2">{formatDateFromArray(sub.date_echeance) }</td>
+            <td className="px-3 py-2">{formatDate(sub.date_echeance) }</td>
             <td className="px-3 py-2">{sub.priorite}</td>
             <td className="px-3 py-2">{sub.statue}</td>
-            <td className="px-3 py-2">{formatDateFromArray(sub.dateCreation)}</td>
+            <td className="px-3 py-2">{formatDate(sub.dateCreation)}</td>
             <td className="px-3 py-2">
                 <div className="flex items-center justify-center space-x-2">
                     <button onClick={() => onEdit(sub.id)} className="p-1.5 text-slate-500 hover:text-blue-500" title="Modifier"><Edit size={16}/></button>
@@ -195,26 +211,24 @@ const DisplaySubTicketRow = ({ sub, onEdit, onDelete, allModules, isDescriptionE
         </tr>
     );
 };
+
 const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModules }) => {
     const [editingTicketId, setEditingTicketId] = useState(null);
+    const [expandedDescriptions, setExpandedDescriptions] = useState(new Set());
+
+    const toggleDescriptionExpansion = (subTicketId) => {
+        setExpandedDescriptions(prevSet => {
+            const newSet = new Set(prevSet);
+            if (newSet.has(subTicketId)) { newSet.delete(subTicketId); } else { newSet.add(subTicketId); }
+            return newSet;
+        });
+    };
+    
     const handleSaveAndClose = async (originalSubTicket, editedSubTicket) => {
         await onSaveSubTicket(originalSubTicket, editedSubTicket);
         setEditingTicketId(null);
     };
-    const [expandedDescriptions, setExpandedDescriptions] = useState(new Set());
 
-    // --- AJOUT : Fonction pour basculer l'état d'une description ---
-    const toggleDescriptionExpansion = (subTicketId) => {
-        setExpandedDescriptions(prevSet => {
-            const newSet = new Set(prevSet);
-            if (newSet.has(subTicketId)) {
-                newSet.delete(subTicketId);
-            } else {
-                newSet.add(subTicketId);
-            }
-            return newSet;
-        });
-    };
     return (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg">
             <div className="flex justify-between items-center mb-4"><h2 className="text-xl font-semibold">Sous-tickets</h2><button onClick={onAdd} className="btn btn-primary-icon" title="Ajouter un sous-ticket"><PlusCircle size={20} /></button></div>
@@ -230,12 +244,10 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
                                 sub={sub} 
                                 onEdit={setEditingTicketId} 
                                 onDelete={onDelete} 
-                                allModules={allModules} 
-                                
-                                // --- VÉRIFIEZ BIEN QUE CES DEUX LIGNES SONT PRÉSENTES ---
+                                allModules={allModules}
                                 isDescriptionExpanded={expandedDescriptions.has(sub.id)}
                                 onToggleDescription={toggleDescriptionExpansion}
-                            />
+                              />
                         ))}
                     </tbody>
                 </table>
@@ -277,23 +289,16 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
             await fetchInitialData();
         } catch (err) { if (showTemporaryMessage) showTemporaryMessage('error', 'La mise à jour a échoué.'); }
     };
+    
     const handleUpdateLocalSubTicketState = (updatedSubTicket) => {
         setTicket(currentParentTicket => {
             if (!currentParentTicket) return null;
-
-            const newChildTickets = currentParentTicket.childTickets.map(sub => {
-                if (sub.id === updatedSubTicket.id) {
-                    return updatedSubTicket; // On remplace l'ancien sous-ticket par le nouveau
-                }
-                return sub;
-            });
-
+            const newChildTickets = currentParentTicket.childTickets.map(sub => sub.id === updatedSubTicket.id ? updatedSubTicket : sub);
             return { ...currentParentTicket, childTickets: newChildTickets };
         });
     };
     
     const handleSaveSubTicket = async (originalSubTicket, editedSubTicket) => {
-        // La logique pour déterminer ce qui a changé reste la même
         const updatePromises = [];
         const originalModuleId = originalSubTicket.idModule?.id ?? originalSubTicket.idModule;
         const editedModuleId = editedSubTicket.idModule?.id ?? editedSubTicket.idModule;
@@ -305,37 +310,100 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
         
         if (updatePromises.length === 0) {
             if (showTemporaryMessage) showTemporaryMessage('info', 'Aucune modification détectée.');
-            // On retourne quand même `editedSubTicket` pour refléter les changements locaux même sans sauvegarde (ex: objet module complet)
-            return Promise.resolve(editedSubTicket);
+            return Promise.resolve();
         }
 
         try {
             await Promise.all(updatePromises);
             if (showTemporaryMessage) showTemporaryMessage('success', 'Sous-ticket mis à jour.');
-            
-            // EXPLICATION : Au lieu de re-fetcher depuis le serveur (ce qui cause le bug),
-            // nous mettons directement à jour l'état local avec le sous-ticket modifié.
-            // L'objet `editedSubTicket` contient déjà l'objet module complet `{id: ..., designation: ...}`.
             handleUpdateLocalSubTicketState(editedSubTicket);
-
         } catch(err) {
             console.error(err);
-            if (showTemporaryMessage) showTemporaryMessage('error', 'Une erreur est survenue lors de la mise à jour.');
-            // En cas d'erreur, on ne met pas à jour l'état local et on propage l'erreur
+            if (showTemporaryMessage) showTemporaryMessage('error', 'Une erreur est survenue.');
             throw err;
         }
     };
-    const handleRemoveParentModule = () => handleUpdateParentField('idModule', null);
-    const handleDirectStatusUpdate = async (newStatus) => { setIsActionLoading(true); await handleUpdateParentField('statue', newStatus); setIsActionLoading(false); };
-    const handleDiffractionSuccess = () => { setIsDiffractionModalOpen(false); fetchInitialData(); if (showTemporaryMessage) showTemporaryMessage('success', 'Sous-tickets créés.'); };
-    const handleDeleteSubTicket = async (subTicketId) => { if (window.confirm("Êtes-vous sûr ?")) { try { await ticketService.deleteTicket(subTicketId); if (showTemporaryMessage) showTemporaryMessage('success', 'Sous-ticket supprimé.'); fetchInitialData(); } catch (error) { if (showTemporaryMessage) showTemporaryMessage('error', 'La suppression a échoué.'); } } };
     
-    const renderActions = () => { /* Votre code ici */ };
+    const handleDirectStatusUpdate = async (newStatus) => { 
+        setIsActionLoading(true); 
+        await handleUpdateParentField('statue', newStatus); 
+        setIsActionLoading(false); 
+    };
+
+    const handleDiffractionSuccess = () => { setIsDiffractionModalOpen(false); fetchInitialData(); if (showTemporaryMessage) showTemporaryMessage('success', 'Sous-tickets créés.'); };
+    
+    // --- CORRECTION : Logique de suppression de sous-ticket ---
+    const handleDeleteSubTicket = async (subTicketId) => {
+        if (window.confirm("Êtes-vous sûr de vouloir supprimer ce sous-ticket ?")) {
+            try {
+                await ticketService.deleteTicket(subTicketId);
+                if (showTemporaryMessage) showTemporaryMessage('success', 'Sous-ticket supprimé.');
+                
+                // Mise à jour instantanée de l'état local pour refléter la suppression
+                setTicket(currentTicket => {
+                    if (!currentTicket) return null;
+                    const updatedChildTickets = currentTicket.childTickets.filter(sub => sub.id !== subTicketId);
+                    return { ...currentTicket, childTickets: updatedChildTickets };
+                });
+
+            } catch (error) {
+                if (showTemporaryMessage) showTemporaryMessage('error', 'La suppression a échoué.');
+                console.error("Erreur lors de la suppression du sous-ticket:", error);
+            }
+        }
+    };
+    
+    const renderActions = () => {
+        if (!ticket) return null;
+        
+        // --- CORRECTION : Utilisation des valeurs exactes de votre Enum Java ---
+        switch (ticket.statue) {
+            case 'En_attente':
+                return (
+                    <div className="flex items-center space-x-3">
+                        <button onClick={() => handleDirectStatusUpdate('Refuse')} className="btn btn-danger">
+                            <X size={18} className="mr-2"/> Refuser
+                        </button>
+                        <button onClick={() => handleDirectStatusUpdate('Accepte')} className="btn btn-success">
+                            <Check size={18} className="mr-2"/> Accepter
+                        </button>
+                    </div>
+                );
+
+            case 'Accepte':
+                if (!ticket.childTickets || ticket.childTickets.length === 0) {
+                    return (
+                        <button onClick={() => setIsDiffractionModalOpen(true)} className="btn btn-primary">
+                            <GitFork size={18} className="mr-2"/> Diffracter
+                        </button>
+                    );
+                }
+                return null;
+            default:
+                return null;
+        }
+    };
     
     if (isLoading) return <div className="flex justify-center items-center h-screen"><Spinner /></div>;
     if (error) return <div className="text-center text-red-500 p-8">{error}</div>;
     if (!ticket) return null;
     const hasSubTickets = ticket.childTickets && ticket.childTickets.length > 0;
+    
+    let affectedToValue;
+    if (hasSubTickets && !ticket.idUtilisateur) {
+      affectedToValue = <span className="italic text-slate-500 dark:text-slate-400">Géré par le chef d'équipe</span>;
+    } else if (ticket.idUtilisateur) {
+      affectedToValue = `${ticket.idUtilisateur.prenom} ${ticket.idUtilisateur.nom}`;
+    } else {
+      affectedToValue = <span className="italic text-slate-500 dark:text-slate-400">Non affecté</span>;
+    }
+
+    let dueDateValue;
+    if (hasSubTickets && !ticket.date_echeance) {
+        dueDateValue = <span className="italic text-slate-500 dark:text-slate-400">Géré par l'employé affecté</span>;
+    } else {
+        dueDateValue = formatDate(ticket.date_echeance);
+    }
     
     return (
         <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
@@ -345,7 +413,11 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
                       <div className="flex-grow md:w-2/3 space-y-6">
                           <EditableField initialValue={ticket.titre} onSave={handleUpdateParentField} fieldName="titre" />
                           <div><h3 className="text-sm font-semibold uppercase text-slate-400 mb-2">Description</h3><EditableField initialValue={ticket.description} onSave={handleUpdateParentField} fieldName="description" isTextarea={true} /></div>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 border-t dark:border-slate-700"><DetailItem icon={<ModuleIcon size={14} className="mr-2"/>} label="Module"><ModuleEditor ticket={ticket} onUpdate={handleUpdateParentField} onRemove={handleRemoveParentModule} allModules={allModules} /></DetailItem><DetailItem icon={<UserCheck size={14} className="mr-2"/>} label="Affecté à" value={hasSubTickets ? "Géré par chef d'équipe" : (ticket.idUtilisateur ? `${ticket.idUtilisateur.prenom} ${ticket.idUtilisateur.nom}` : 'Non affecté')} /><DetailItem icon={<Calendar size={14} className="mr-2"/>} label="Échéance" value={hasSubTickets ? "Géré par employé affecté" : formatDateFromArray(ticket.date_echeance)} /></div>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 border-t dark:border-slate-700">
+                                <DetailItem icon={<ModuleIcon size={14} className="mr-2"/>} label="Module"><ModuleEditor ticket={ticket} onUpdate={handleUpdateParentField} onRemove={() => handleUpdateParentField('idModule', null)} allModules={allModules} /></DetailItem>
+                                <DetailItem icon={<UserCheck size={14} className="mr-2"/>} label="Affecté à">{affectedToValue}</DetailItem>
+                                <DetailItem icon={<Calendar size={14} className="mr-2"/>} label="Échéance">{dueDateValue}</DetailItem>
+                          </div>
                       </div>
                       <div className="flex-shrink-0 md:w-1/3 space-y-4">
                           <div className="grid grid-cols-2 gap-x-4 gap-y-4 bg-slate-100 dark:bg-slate-900/50 p-4 rounded-lg">
@@ -356,7 +428,10 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
                               </DetailItem>
                               <DetailItem icon={<Info size={14} className="mr-2"/>} label="Statut" value={ticket.statue} />
                           </div>
-                          <div className="pt-4 space-y-4 border-t dark:border-slate-700"><div className="grid grid-cols-2 gap-x-4 gap-y-4"><DetailItem icon={<User size={14} className="mr-2"/>} label="Client" value={ticket.idClient?.nomComplet} /><DetailItem icon={<User size={14} className="mr-2"/>} label="Créé par" value={ticket.userCreation} /></div><div className="grid grid-cols-2 gap-x-4 gap-y-4"><DetailItem icon={<Calendar size={14} className="mr-2"/>} label="Créé le" value={formatDateFromArray(ticket.dateCreation)} /><DetailItem icon={<Shield size={14} className="mr-2"/>} label="Actif"><select value={ticket.actif.toString()} onChange={(e) => handleUpdateParentField('actif', e.target.value === 'true')} className="form-select text-sm font-medium bg-transparent border-0 focus:ring-0 p-0"><option value="true">Oui</option><option value="false">Non</option></select></DetailItem></div></div>
+                          <div className="pt-4 space-y-4 border-t dark:border-slate-700">
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-4"><DetailItem icon={<User size={14} className="mr-2"/>} label="Client" value={ticket.idClient?.nomComplet} /><DetailItem icon={<User size={14} className="mr-2"/>} label="Créé par" value={ticket.userCreation} /></div>
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-4"><DetailItem icon={<Calendar size={14} className="mr-2"/>} label="Créé le" value={formatDate(ticket.dateCreation)} /><DetailItem icon={<Shield size={14} className="mr-2"/>} label="Actif"><select value={ticket.actif.toString()} onChange={(e) => handleUpdateParentField('actif', e.target.value === 'true')} className="form-select text-sm font-medium bg-transparent border-0 focus:ring-0 p-0"><option value="true">Oui</option><option value="false">Non</option></select></DetailItem></div>
+                          </div>
                       </div>
                   </div>
             </div>

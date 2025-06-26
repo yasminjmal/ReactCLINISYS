@@ -1,56 +1,48 @@
-// src/components/admin/Postes/PosteCard.jsx
 import React from 'react';
-import { Briefcase, Edit, Trash2, User, Calendar } from 'lucide-react';
-import { formatDateFromArray } from '../../../utils/dateFormatter'; // <-- IMPORTER LA FONCTION
-
-const StatusBadge = ({ isActive }) => (
-    <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-        isActive 
-        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' 
-        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-    }`}>
-        {isActive ? 'Actif' : 'Inactif'}
-    </span>
-);
+import { Briefcase, Edit, Trash2 } from 'lucide-react';
+// import { formatDateFromArray } from '../../../utils/dateFormatter';
 
 const PosteCard = ({ poste, onEdit, onDelete }) => {
-  return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-5 flex flex-col relative transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-        <div className="absolute top-3 right-3 flex items-center space-x-1">
-             <button onClick={onEdit} className="p-2 text-slate-500 hover:text-sky-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700" title="Modifier">
-                <Edit size={16}/>
-              </button>
-              <button onClick={onDelete} className="p-2 text-slate-500 hover:text-red-500 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700" title="Supprimer">
-                <Trash2 size={16}/>
-              </button>
-        </div>
+    
+    const formatDate = (dateArray) => {
+        if (!Array.isArray(dateArray) || dateArray.length < 3) return 'N/A';
+        return new Date(dateArray[0], dateArray[1] - 1, dateArray[2]).toLocaleDateString('fr-FR', {
+            day: 'numeric', month: 'long', year: 'numeric'
+        });
+    };
 
-        <div className="flex items-start mb-4">
-             <div className="p-3 bg-amber-100 dark:bg-amber-700/30 rounded-lg mr-4">
-                <Briefcase className="text-amber-600 dark:text-amber-400" size={24} />
+    return (
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-5 flex flex-col transition-all duration-300 hover:shadow-lg hover:border-blue-300">
+            <div className="flex justify-between items-start mb-3">
+                <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-blue-100 dark:bg-blue-900/50 rounded-lg">
+                        <Briefcase className="text-blue-600 dark:text-blue-400" size={20}/>
+                    </div>
+                    <h3 className="text-md font-bold text-slate-800 dark:text-slate-100" title={poste.designation}>
+                        {poste.designation}
+                    </h3>
+                </div>
+                <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${poste.actif ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    {poste.actif ? 'Actif' : 'Inactif'}
+                </span>
             </div>
-            <div className="flex-1 pr-8">
-                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 truncate" title={poste.designation}>
-                    {poste.designation}
-                </h3>
-            </div>
-        </div>
 
-        <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
-            <div className="flex items-center justify-between">
-                <span className="font-medium text-slate-500 dark:text-slate-400">Statut</span>
-                <StatusBadge isActive={poste.actif} />
+            <div className="flex-grow space-y-2 text-sm text-slate-500 dark:text-slate-400 my-4">
+                <div className="flex">
+                     <span className="w-24 font-medium text-slate-400">Créé par</span>
+                     <span className="font-semibold text-slate-600 dark:text-slate-300">{poste.userCreation || 'N/A'}</span>
+                </div>
+                 <div className="flex">
+                     <span className="w-24 font-medium text-slate-400">Le</span>
+                     <span className="font-semibold text-slate-600 dark:text-slate-300">{formatDate(poste.dateCreation)}</span>
+                </div>
             </div>
-            <div className="flex items-center">
-                 <User size={14} className="mr-2 text-slate-400"/>
-                 <span>Créé par: <span className="font-semibold">{poste.userCreation || 'N/A'}</span></span>
-            </div>
-             <div className="flex items-center">
-                 <Calendar size={14} className="mr-2 text-slate-400"/>
-                 <span>Créé le: <span className="font-semibold">{formatDateFromArray(poste.dateCreation)}</span></span>
+            
+            <div className="border-t border-slate-100 dark:border-slate-700 pt-3 flex items-center justify-end space-x-2">
+                 <button onClick={() => onEdit(poste)} className="btn btn-secondary py-1 px-3 text-xs"><Edit size={14} className="mr-1"/> Modifier</button>
+                 <button onClick={() => onDelete(poste)} className="btn btn-danger py-1 px-3 text-xs"><Trash2 size={14} className="mr-1"/> Supprimer</button>
             </div>
         </div>
-    </div>
-  );
+    );
 };
 export default PosteCard;
