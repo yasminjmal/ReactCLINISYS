@@ -10,6 +10,7 @@ import PosteTableRow from './PosteTableRow';
 import PosteCard from './PosteCard';
 import AjouterPostePage from './AjouterPostePage';
 
+
 const Spinner = () => <div className="text-center py-20"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div></div>;
 
 const DeleteConfirmationModal = ({ poste, onConfirm, onCancel }) => (
@@ -78,6 +79,7 @@ const ConsulterPostesPage = () => {
     const [visibleColumns, setVisibleColumns] = useState({ poste: true, statut: true, creePar: true, dateCreation: true });
     const [openDropdown, setOpenDropdown] = useState(null);
     const dropdownsRef = useRef(null);
+        
 
     // --- LOGIQUE DE DONNÉES ET D'EFFETS ---
     const fetchPostes = useCallback(async () => {

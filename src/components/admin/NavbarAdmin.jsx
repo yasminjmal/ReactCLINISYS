@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Sun, Moon, LogOut, User as UserIcon, ChevronDown } from 'lucide-react';
+import { Bell, Sun, Moon, LogOut, User as UserIcon, ChevronDown } from 'lucide-react'; 
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../context/ThemeContext';
 import defaultUserProfileImage from '../../assets/images/default-profile.png';
 import { useAuth } from '../../context/AuthContext';
 import LanguageSwitcher from '../shared/LanguageSwitcher';
-import { useWebSocket } from '../../context/WebSocketContext'; // <-- IMPORT THE WEBSOCKET CONTEXT
+import { useWebSocket } from '../../context/WebSocketContext';
 
 const MetaAiIcon = () => {
   return (
@@ -13,12 +13,11 @@ const MetaAiIcon = () => {
   );
 };
 
-const NavbarAdmin = ({ onSearch }) => {
+const NavbarAdmin = ({ onSearch, isSidebarOpen }) => { 
   const { t } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { currentUser, logout } = useAuth();
   
-  // Use the WebSocket context to get notifications
   const { notifications, clearNotifications } = useWebSocket(); 
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,9 +54,16 @@ const NavbarAdmin = ({ onSearch }) => {
   };
 
   return (
-    <nav className="bg-white dark:bg-slate-800 shadow-md h-16 flex items-center justify-between px-6">
+    // La nav est fixe en haut de son conteneur parent (qui est décalé par la sidebar).
+    // Elle a relative z-20 pour que son contenu soit correctement positionné.
+    <nav className="fixed w-full top-0 left-0 bg-white dark:bg-slate-800 shadow-md h-16 flex items-center justify-between px-6 relative z-20">
       
-      <div className="flex-grow flex justify-center">
+      {/* Le bouton de bascule de la sidebar a été déplacé dans InterfaceAdmin.jsx */}
+      
+      
+
+      {/* Zone de recherche: ml-auto mr-auto pour la pousser et la centrer dans l'espace restant */}
+      <div className="flex-grow flex justify-center ml-auto mr-auto px-4"> 
         <div className="search-container relative flex items-center w-full max-w-md bg-slate-900 rounded-full px-3 py-1.5">
           <MetaAiIcon />
           <input
@@ -78,7 +84,6 @@ const NavbarAdmin = ({ onSearch }) => {
           {theme === 'dark' ? <Sun className="text-slate-300" size={20} /> : <Moon className="text-slate-600" size={20} />}
         </button>
 
-        {/* --- NOTIFICATION BUTTON AND DROPDOWN --- */}
         <div className="relative" ref={notificationDropdownRef}>
             <button onClick={handleNotificationClick} title={t('pages.navbar.notifications')} className="relative p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
                 <Bell className="text-slate-600 dark:text-slate-300" size={20} />
@@ -108,7 +113,6 @@ const NavbarAdmin = ({ onSearch }) => {
                 </div>
             )}
         </div>
-        {/* --- END NOTIFICATION SECTION --- */}
 
         <div className="relative" ref={profileDropdownRef}>
           <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="flex items-center space-x-2">

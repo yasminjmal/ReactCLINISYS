@@ -13,21 +13,18 @@ import {
   MessageSquare,
   HelpCircle,
   Phone,
-  Aperture, // Icône pour le logo
+  Aperture,
 } from 'lucide-react';
 
-// --- VOS ÉLÉMENTS DE MENU ORIGINAUX ONT ÉTÉ RESTAURÉS ---
-// J'ai ajouté un en-tête de section pour vous montrer comment les utiliser.
 const menuItems = [
-    { type: 'header', label: 'MENU PRINCIPAL' }, // En-tête de section optionnel
+    { type: 'header', label: 'MENU PRINCIPAL' },
     { id: 'home', label: 'HOME', icon: Home },
     { id: 'dashboards', label: 'DASHBOARDS', icon: LayoutDashboard },
-    { id: 'tickets_management', label: 'TICKETS', icon: Ticket}, // J'ai ajouté un badge pour l'exemple
+    { id: 'tickets_management', label: 'TICKETS', icon: Ticket},
     {
       id: 'equipes_consulter_equipes',
       label: 'EQUIPES',
       icon: Users,
-  
     },
     { id: 'utilisateurs_consulter_utilisateurs', label: 'UTILISATEURS', icon: UserCircle },
     { id: 'modules_consulter_modules', label: 'MODULES', icon: Package },
@@ -43,7 +40,7 @@ const profileBackgroundImage = 'https://images.unsplash.com/photo-1531306728370-
 const SidebarAdmin = ({
   activePage,
   setActivePage,
-  isSidebarOpen,
+  isSidebarOpen, 
   isSidebarPinned, 
   currentUser,
 }) => {
@@ -94,23 +91,18 @@ const SidebarAdmin = ({
 
   return (
     <aside
+      // Z-index de 40 pour être au-dessus de la navbar (z-20) et du bouton de bascule (z-30)
       className={`fixed top-0 left-0 h-full w-64 transition-transform transform ease-in-out duration-300 z-40 flex flex-col shadow-lg
         bg-gradient-to-b from-sky-100 to-blue-200
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        ${isSidebarPinned ? 'md:translate-x-0' : ''} 
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
       `}
     >
-        {/* --- EN-TÊTE --- */}
         <div className="flex-shrink-0">
-            {/* Logo */}
             <div className="h-16 flex items-center px-4 space-x-2 border-b border-black/10">
                 <Aperture className="text-blue-600" size={28} />
-                <h1 className="text-lg font-bold text-slate-800">CliniSYS</h1>
+                <h1 className="text-lg font-bold text-slate-800">Module de gestion des Tickets</h1>
             </div>
         </div>
-
-
-      {/* --- NAVIGATION --- */}
       <nav className="flex-grow p-2 space-y-1 overflow-y-auto">
         {menuItems.map((item, index) => {
           if (item.type === 'header') {
@@ -177,7 +169,6 @@ const SidebarAdmin = ({
         })}
       </nav>
 
-        {/* --- PIED DE PAGE --- */}
         <div className="flex-shrink-0 p-2 border-t border-black/10">
             <div className="flex items-center justify-around">
                 <button className="p-2 rounded-md text-slate-500 hover:bg-blue-500/10 hover:text-blue-700 transition-colors">
