@@ -1,10 +1,13 @@
 // --- ClientCard.jsx ---
 // NOTE: Ce composant semblait être une copie de 'EquipeCard', je l'ai adapté pour 'Client'.
 
-import { Briefcase, Mail, MapPin as MapPinIcon, Calendar, User as UserCreatorIcon } from 'lucide-react';
+import {
+    Briefcase, Mail, MapPin as MapPinIcon, Calendar, User as UserCreatorIcon,
+    Edit, Trash2 // <--- AJOUTEZ CES IMPORTATIONS
+} from 'lucide-react';
 
 const ClientCard = ({ client, onEditRequest, onDeleteRequest }) => {
-    
+
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
         const date = new Date(dateString);
@@ -38,7 +41,7 @@ const ClientCard = ({ client, onEditRequest, onDeleteRequest }) => {
                     {client.region || 'Région non définie'}
                 </p>
             </div>
-            
+
             {/* Détails supplémentaires */}
             <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 space-y-2 text-xs text-slate-600 dark:text-slate-400">
                 <div className="flex items-center">
@@ -53,7 +56,7 @@ const ClientCard = ({ client, onEditRequest, onDeleteRequest }) => {
                     <Calendar size={12} className="mr-2"/>
                     <span>Créé le {formatDate(client.dateCreation)}</span>
                 </div>
-                 <div className="flex items-center">
+                   <div className="flex items-center">
                     <UserCreatorIcon size={12} className="mr-2"/>
                     <span>par {client.userCreation || 'N/A'}</span>
                 </div>
@@ -62,4 +65,4 @@ const ClientCard = ({ client, onEditRequest, onDeleteRequest }) => {
     );
 };
 
-export default ClientCard; // Assurez-vous d'exporter le bon composant
+export default ClientCard;

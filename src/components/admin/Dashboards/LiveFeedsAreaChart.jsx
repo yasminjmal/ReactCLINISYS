@@ -1,7 +1,7 @@
 // src/pages/Admin/Dashboards/LiveFeedsAreaChart.jsx
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-// import monitoringService from '../../../services/monitoringService'; // Service pour le monitoring
+import dashboardService from '../../../services/dashboardService';
 
 const LiveFeedsAreaChart = () => {
   const [data, setData] = useState([]);
@@ -12,17 +12,11 @@ const LiveFeedsAreaChart = () => {
     const fetchLiveData = async () => {
       try {
         setLoading(true);
-        // REMPLACEZ CECI par votre véritable appel API pour les données de flux en direct
-        // Exemple: const response = await monitoringService.getLiveMetrics();
-        // const rawData = response.data;
+        const rawData = await dashboardService.getLiveMetrics();
 
-        // Simulation de données pour l'exemple:
-        const simulatedData = Array.from({ length: 180 }, (_, i) => ({
-          index: i,
-          value: Math.floor(Math.random() * 60) + 20, // Valeurs entre 20 et 80
-        }));
-
-        setData(simulatedData);
+        // Assurez-vous que rawData est un tableau d'objets comme [{hour: "HH:00", count: X}]
+        // Si votre API renvoie un format différent, ajustez ici.
+        setData(rawData);
       } catch (err) {
         console.error("Erreur lors de la récupération des données de flux:", err);
         setError("Impossible de charger les données de flux en direct.");
@@ -32,9 +26,8 @@ const LiveFeedsAreaChart = () => {
     };
 
     fetchLiveData();
-    // Tu peux aussi mettre un setInterval pour rafraîchir les données régulièrement
-    // const interval = setInterval(fetchLiveData, 5000); // Rafraîchir toutes les 5 secondes
-    // return () => clearInterval(interval); // Nettoyer l'intervalle au démontage
+    const interval = setInterval(fetchLiveData, 15000); // Rafraîchir toutes les 15 secondes
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) return <div className="text-center py-4 text-slate-600 dark:text-slate-400">Chargement des flux...</div>;
@@ -52,10 +45,10 @@ const LiveFeedsAreaChart = () => {
           }}
         >
           <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
-          <XAxis dataKey="index" />
+          <XAxis dataKey="hour" /> {/* 'hour' si l'API renvoie ce format */}
           <YAxis />
           <Tooltip />
-          <Area type="monotone" dataKey="value" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
+          <Area type="monotone" dataKey="count" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} /> {/* 'count' si l'API renvoie ce format */}
         </AreaChart>
       </ResponsiveContainer>
     </div>

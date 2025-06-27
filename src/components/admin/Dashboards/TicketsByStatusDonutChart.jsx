@@ -1,9 +1,17 @@
 // src/pages/Admin/Dashboards/TicketsByStatusDonutChart.jsx
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-// import ticketService from '../../../services/ticketService'; // Assurez-vous que ce service existe
+import dashboardService from '../../../services/dashboardService';
 
-const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00C49F', '#AF19FF']; // Couleurs pour les segments
+const COLORS_MAP = {
+    'En_attente': '#FFBB28', // Jaune
+    'En_cours': '#00C49F',   // Cyan/Turquoise
+    'Accepte': '#82CA9D',    // Vert clair
+    'Termine': '#0088FE',    // Bleu
+    'Refuse': '#FF8042',     // Orange
+    // Assurez-vous que ces clés correspondent exactement aux noms de vos enums Status du backend
+    // Ajoutez d'autres statuts si nécessaire
+};
 
 const TicketsByStatusDonutChart = () => {
   const [data, setData] = useState([]);
@@ -14,23 +22,14 @@ const TicketsByStatusDonutChart = () => {
     const fetchTicketStats = async () => {
       try {
         setLoading(true);
-        // REMPLACEZ CECI par votre véritable appel API pour les statistiques de tickets par statut
-        // Exemple: const response = await ticketService.getTicketCountByStatus();
-        // const rawData = response.data; // Assurez-vous que cela correspond à votre API
+        // Appel à votre service pour récupérer les données réelles
+        const rawData = await dashboardService.getTicketCountsByStatus(); // Attendu: { "En_attente": 10, ... }
 
-        // Simulation de données pour l'exemple:
-        const simulatedData = {
-            "OUVERT": 150,
-            "EN_COURS": 75,
-            "FERMÉ": 200,
-            "REFUSÉ": 25,
-            "EN_ATTENTE": 30
-        };
-
-        const formattedData = Object.keys(simulatedData).map((status, index) => ({
-          name: status.replace('_', ' '), // Formate les noms de statut (ex: "EN_COURS" -> "EN COURS")
-          value: simulatedData[status],
-          fill: COLORS[index % COLORS.length] // Assigne une couleur cycliquement
+        // Formater les données pour Recharts
+        const formattedData = Object.keys(rawData).map((statusKey) => ({
+          name: statusKey.replace('_', ' '), // Formate les noms (ex: "En_attente" -> "En attente")
+          value: rawData[statusKey],
+          fill: COLORS_MAP[statusKey] || '#CCCCCC' // Utilise la couleur du map, ou gris par défaut
         }));
         setData(formattedData);
       } catch (err) {
@@ -57,20 +56,19 @@ const TicketsByStatusDonutChart = () => {
             data={data}
             cx="50%"
             cy="50%"
-            innerRadius={60} // Pour un graphique en beignet
+            innerRadius={60}
             outerRadius={90}
-            fill="#8884d8"
-            paddingAngle={5} // Espace entre les segments
+            paddingAngle={5}
             dataKey="value"
-            label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`} // Affiche nom et pourcentage
+            label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
             animationDuration={500}
           >
             {data.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.fill} />
             ))}
           </Pie>
-          <Tooltip /> {/* Affiche les détails au survol */}
-          <Legend /> {/* Affiche la légende des couleurs */}
+          <Tooltip formatter={(value, name) => [`${value} tickets`, name]}/> {/* Amélioration du Tooltip */}
+          <Legend />
         </PieChart>
       </ResponsiveContainer>
     </div>

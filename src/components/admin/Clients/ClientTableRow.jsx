@@ -1,90 +1,89 @@
-    import React from 'react';
-    import { Edit, Trash2 } from 'lucide-react';
+import React from 'react';
+import { Edit, Trash2 } from 'lucide-react';
+import { formatDateFromArray } from '../../../utils/dateFormatter'; // Assurez-vous que ce fichier existe et exporte bien formatDateFromISOString
 
-    // Composant pour afficher un badge de statut (Actif/Inactif)
-    const StatusBadge = ({ isActive }) => (
-        <span className={`px-2 py-1 text-xs font-medium rounded-full inline-flex items-center ${ isActive ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' }`}>
-            <span className={`h-2 w-2 mr-2 rounded-full ${isActive ? 'bg-green-500' : 'bg-red-500'}`}></span>
-            {isActive ? 'Actif' : 'Inactif'}
-        </span>
-    );
+// Composant pour afficher un badge de statut (Actif/Inactif)
+const StatusBadge = ({ isActive }) => (
+    <span className={`px-2.5 py-0.5 text-xs font-medium rounded-md inline-flex items-center gap-2 border ${ // py-0.5 pour réduire l'espace
+        isActive
+        ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/20'
+        : 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-700/20 dark:text-slate-400 dark:border-slate-700'
+    }`}>
+        <span className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-blue-500' : 'bg-slate-400'}`}></span>
+        {isActive ? 'Actif' : 'Non actif'}
+    </span>
+);
 
-    // Fonction pour formater la date (ex: 2023-10-27T10:00:00 -> 27/10/2023)
-    const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
-        try {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('fr-FR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
-        } catch (error) {
-            console.error("Invalid date format:", dateString);
-            return 'Date invalide';
-        }
-    };
+// Ajout de highlightedClientId aux props, renommage onEditRequest/onDeleteRequest en onEdit/onDelete pour consistance
+const ClientTableRow = ({ client, onEdit, onDelete, visibleColumns, highlightedClientId }) => {
 
+    // Détermine si la ligne doit être surlignée
+    const isHighlighted = highlightedClientId === client.id;
 
-    const ClientTableRow = ({ client, onEditRequest, onDeleteRequest }) => {
-        return (
-            <tr className="bg-white dark:bg-slate-800 border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-150">
-                {/* Colonne Nom Complet et Email */}
-                <td className="px-6 py-4">
-                    <div className="font-semibold text-slate-800 dark:text-white truncate" title={client.nomComplet}>
-                        {client.nomComplet}
-                    </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 truncate" title={client.email}>
-                        {client.email || 'N/A'}
-                    </div>
+    return (
+        // Ajout conditionnel de la classe highlight-row
+        <tr className={`border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 ${isHighlighted ? 'highlight-row' : ''}`}>
+            {visibleColumns.nomComplet && (
+                <td scope="row" className="px-6 py-1 text-slate-800 dark:text-slate-100 whitespace-nowrap separateur-colonne-leger">
+                    <div className="font-medium">{client.nomComplet}</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">{client.email || 'N/A'}</div>
                 </td>
-
-                {/* Colonne Région */}
-                <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+            )}
+            {visibleColumns.region && (
+                <td className="px-6 py-1 text-slate-600 dark:text-slate-300 separateur-colonne-leger">
                     {client.region || 'N/A'}
                 </td>
-
-                {/* Colonne Adresse */}
-                <td className="px-6 py-4 text-slate-600 dark:text-slate-300 truncate" title={client.adress}>
+            )}
+            {visibleColumns.email && (
+                 <td className="px-6 py-1 text-slate-600 dark:text-slate-300 separateur-colonne-leger">
+                    {client.email || 'N/A'}
+                </td>
+            )}
+            {visibleColumns.adress && (
+                <td className="px-6 py-1 text-slate-600 dark:text-slate-300 separateur-colonne-leger truncate" title={client.adress}>
                     {client.adress || 'N/A'}
                 </td>
-                
-                {/* Colonne Date de Création */}
-                <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
-                    {formatDate(client.dateCreation)}
-                </td>
-
-                {/* Colonne Créé par */}
-                <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+            )}
+            {visibleColumns.creePar && (
+                <td className="px-6 py-1 text-slate-600 dark:text-slate-300 separateur-colonne-leger"> {/* Colonne "Créé par" */}
                     {client.userCreation || 'N/A'}
                 </td>
-                
-                {/* Colonne Statut */}
-                <td className="px-6 py-4">
+            )}
+            {visibleColumns.dateCreation && (
+                <td className="px-6 py-1 text-slate-600 dark:text-slate-300 separateur-colonne-leger"> {/* Colonne "Date de création" */}
+                    {formatDateFromArray(client.dateCreation)}
+                </td>
+            )}
+            {visibleColumns.statut && (
+                <td className="px-6 py-1 separateur-colonne-leger">
                     <StatusBadge isActive={client.actif} />
                 </td>
-                
-                {/* Colonne Actions */}
-                <td className="px-6 py-4 text-center">
-                    <div className="flex items-center justify-center space-x-1">
-                        <button 
-                            onClick={() => onEditRequest(client)} 
-                            className="p-2 text-slate-500 hover:text-sky-600 hover:bg-sky-100 dark:hover:bg-slate-700 rounded-full transition-colors" 
-                            title="Modifier"
-                        >
-                            <Edit size={16} />
-                        </button>
-                        <button 
-                            onClick={() => onDeleteRequest(client)} 
-                            className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-slate-700 rounded-full transition-colors" 
-                            title="Supprimer"
-                        >
-                            <Trash2 size={16} />
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        );
-    };
+            )}
+            <td className="px-6 py-1 text-center">
+                <div className="flex items-center justify-center space-x-2">
+                    <button
+                        onClick={() => onEdit(client)}
+                        className="p-2 text-slate-500 hover:text-blue-600 rounded-full hover:bg-blue-100 dark:hover:bg-slate-700 transition-colors"
+                        title="Modifier"
+                    >
+                        <Edit size={16} />
+                    </button>
+                    <button
+                        onClick={() => onDelete(client)}
+                        className={`p-2 rounded-full transition-colors ${
+                            client.actif // Si le client est actif, on ne peut pas le supprimer
+                                ? 'text-slate-400 cursor-not-allowed'
+                                : 'text-slate-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-slate-700'
+                        }`}
+                        title={client.actif ? "Ne peut pas supprimer un client actif" : "Supprimer le client"}
+                        disabled={client.actif}
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                </div>
+            </td>
+        </tr>
+    );
+};
 
-    export default ClientTableRow;
+export default ClientTableRow;
