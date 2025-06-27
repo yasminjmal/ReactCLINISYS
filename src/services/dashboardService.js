@@ -43,9 +43,9 @@ const dashboardService = {
     // 4. Pour EventsCalendar (endpoints à définir côté backend)
     getCalendarEvents: async () => {
         try {
-            // Remplacez par le chemin réel de votre nouvelle API TicketResource ou CalendarResource
+            // C'est maintenant le vrai endpoint
             const response = await api.get('tickets/calendar-events');
-            return response.data;
+            return response.data; // Attendu: [{"id": 1, "title": "Échéance Ticket #1: Titre", "start": "ISO_STRING", ...}, ...]
         } catch (error) {
             console.error("Erreur lors de la récupération des événements du calendrier:", error);
             throw error;
@@ -66,6 +66,15 @@ const dashboardService = {
             return response.data; // Attendu: [{"category": "Nom Employé/Module", "activeTickets": X}, ...]
         } catch (error) {
             console.error("Erreur lors de la récupération des tickets actifs par catégorie:", error);
+            throw error;
+        }
+    },
+    getPerformanceStats: async (groupBy = 'employee', period = 'current_month') => {
+        try {
+            const response = await api.get(`tickets/stats/performance?groupBy=${groupBy}&period=${period}`);
+            return response.data; // Attendu: [{"category": "Nom Employé/Équipe", "completedTickets": X}, ...]
+        } catch (error) {
+            console.error("Erreur lors de la récupération des statistiques de performance:", error);
             throw error;
         }
     }

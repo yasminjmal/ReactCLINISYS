@@ -1,58 +1,79 @@
 import React, { useState } from 'react';
-import { Save, XCircle } from 'lucide-react';
+import { Save, XCircle, ArrowLeft, Users as UsersIcon } from 'lucide-react'; // Ajout UsersIcon pour le select
 
 const AjouterEquipePage = ({ onAddEquipe, onCancel }) => {
     const [designation, setDesignation] = useState('');
-    const [actif, setActif] = useState(true); // NEW: State for 'actif' attribute, true by default
+    const [actif, setActif] = useState(true);
+    const [errors, setErrors] = useState({});
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Include 'actif' in the object sent to onAddEquipe
-        onAddEquipe({ designation, actif }); // MODIFIED
+        const newErrors = {};
+        if (!designation.trim()) {
+            newErrors.designation = "La désignation est requise.";
+        }
+        setErrors(newErrors);
+        if (Object.keys(newErrors).length > 0) return;
+
+        onAddEquipe({ designation, actif });
     };
 
     return (
-        <div className="p-4 md:p-6 space-y-6 bg-slate-50 dark:bg-slate-900 min-h-full">
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl max-w-2xl mx-auto">
-                <h2 className="text-2xl font-semibold text-slate-700 dark:text-slate-200 mb-6">Ajouter une nouvelle Équipe</h2>
+        <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
+            <div className="max-w-2xl mx-auto">
+                {/* Bouton de retour à la liste */}
+                <button
+                    onClick={onCancel}
+                    className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 hover:text-blue-600 font-semibold mb-6 transition-colors duration-200"
+                >
+                    <ArrowLeft size={16} />
+                    Retour à la liste des équipes
+                </button>
 
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    <div>
-                        <label htmlFor="designation" className="form-label">Désignation de l'équipe <span className="text-red-500">*</span></label>
-                        <input
-                            type="text"
-                            id="designation"
-                            value={designation}
-                            onChange={(e) => setDesignation(e.target.value)}
-                            className="form-input"
-                            placeholder="Ex: Équipe Alpha"
-                            required
-                        />
-                    </div>
+                {/* Conteneur principal du formulaire */}
+                <div className="bg-white dark:bg-slate-800/80 p-8 rounded-lg shadow-sm border border-slate-200/80 dark:border-slate-700">
+                    <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-6">Créer une nouvelle Équipe</h1>
 
-                    {/* NEW: Field for 'actif' attribute */}
-                    <div className="flex items-center space-x-2">
-                        <input
-                            type="checkbox"
-                            id="actif"
-                            checked={actif}
-                            onChange={(e) => setActif(e.target.checked)}
-                            className="form-checkbox h-4 w-4 text-sky-600 rounded focus:ring-sky-500"
-                        />
-                        <label htmlFor="actif" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                            Équipe active
-                        </label>
-                    </div>
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div>
+                            <label htmlFor="designation" className="form-label">Désignation de l'équipe <span className="text-red-500">*</span></label>
+                            <input
+                                type="text"
+                                id="designation"
+                                value={designation}
+                                onChange={(e) => { setDesignation(e.target.value); setErrors(prev => ({...prev, designation: null})); }}
+                                className={`form-input ${errors.designation ? 'border-red-500' : ''}`}
+                                placeholder="Ex: Équipe Alpha"
+                                required
+                            />
+                            {errors.designation && <p className="form-error-text">{errors.designation}</p>}
+                        </div>
 
-                    <div className="flex justify-end space-x-3 mt-6">
-                        <button type="button" onClick={onCancel} className="btn btn-secondary">
-                            <XCircle size={18} className="mr-2"/> Annuler
-                        </button>
-                        <button type="submit" className="btn btn-primary">
-                            <Save size={18} className="mr-2"/> Créer l'équipe
-                        </button>
-                    </div>
-                </form>
+                        <div className="pt-2">
+                            <label className="flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    id="actif"
+                                    checked={actif}
+                                    onChange={(e) => setActif(e.target.checked)}
+                                    className="form-checkbox"
+                                />
+                                <span className="ml-3 text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    Équipe active
+                                </span>
+                            </label>
+                        </div>
+
+                        <div className="pt-6 flex justify-end space-x-3 border-t border-slate-200 dark:border-slate-700">
+                            <button type="button" onClick={onCancel} className="btn btn-secondary">
+                                <XCircle size={16} className="mr-2"/> Annuler
+                            </button>
+                            <button type="submit" className="btn btn-primary">
+                                <Save size={16} className="mr-2"/> Créer l'équipe
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     );
