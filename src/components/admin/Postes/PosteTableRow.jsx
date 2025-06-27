@@ -21,6 +21,11 @@ const PosteTableRow = ({ poste, onEdit, onDelete, visibleColumns }) => {
         </span>
     );
 
+    // Détermine si le bouton de suppression doit être désactivé
+    const isDeleteDisabled = poste.actif;
+    // Message de l'infobulle pour le bouton de suppression
+    const deleteTooltip = isDeleteDisabled ? "On ne peut pas supprimer un poste actif" : "Supprimer le poste";
+
     return (
         <tr className="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
             {visibleColumns.poste && (
@@ -45,10 +50,23 @@ const PosteTableRow = ({ poste, onEdit, onDelete, visibleColumns }) => {
             )}
             <td className="px-6 py-2 text-center">
                 <div className="flex items-center justify-center space-x-2">
-                    <button onClick={() => onEdit(poste)} className="p-2 text-slate-500 hover:text-blue-600 rounded-full hover:bg-blue-100 dark:hover:bg-slate-700 transition-colors" title="Modifier">
+                    <button
+                        onClick={() => onEdit(poste)}
+                        className="p-2 text-slate-500 hover:text-blue-600 rounded-full hover:bg-blue-100 dark:hover:bg-slate-700 transition-colors"
+                        title="Modifier"
+                    >
                         <Edit size={16} />
                     </button>
-                    <button onClick={() => onDelete(poste)} className="p-2 text-slate-500 hover:text-red-600 rounded-full hover:bg-red-100 dark:hover:bg-slate-700 transition-colors" title="Supprimer">
+                    <button
+                        onClick={() => !isDeleteDisabled && onDelete(poste)} // Empêche l'appel si désactivé
+                        className={`p-2 rounded-full transition-colors ${
+                            isDeleteDisabled
+                                ? 'text-slate-400 cursor-not-allowed' // Styles pour désactivé
+                                : 'text-slate-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-slate-700' // Styles normaux
+                        }`}
+                        title={deleteTooltip} // Utilise l'infobulle dynamique
+                        disabled={isDeleteDisabled} // Désactive le bouton
+                    >
                         <Trash2 size={16} />
                     </button>
                 </div>

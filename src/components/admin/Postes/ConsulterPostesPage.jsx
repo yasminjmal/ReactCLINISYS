@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import {
     Search, Plus, X, Filter, AlertTriangle, Save, XCircle, Settings2, Eye,
     EyeOff, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, ArrowUpDown, RefreshCw, LayoutGrid, Rows3,
-    Printer, File, FileSpreadsheet // Importez les icônes nécessaires ici
+    Printer, File, FileSpreadsheet, Info, CheckCircle // Importez les icônes nécessaires ici
 } from 'lucide-react';
 import posteService from '../../../services/posteService';
 import PosteTableRow from './PosteTableRow';
@@ -18,24 +18,73 @@ import { formatDateFromArray } from '../../../utils/dateFormatter'; // Assurez-v
 // --- Composants Modaux et Dropdowns (inchangés) ---
 const Spinner = () => <div className="text-center py-20"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div></div>;
 
+// Composant de message de notification (Toast)
+const ToastMessage = ({ message, type, onClose }) => {
+    let bgColor, icon, titleColor, borderColor;
+    switch (type) {
+        case 'success':
+            bgColor = 'bg-green-500';
+            titleColor = 'text-white';
+            borderColor = 'border-green-600';
+            icon = <CheckCircle size={20} className="text-white" />;
+            break;
+        case 'error':
+            bgColor = 'bg-red-500';
+            titleColor = 'text-white';
+            borderColor = 'border-red-600';
+            icon = <AlertTriangle size={20} className="text-white" />;
+            break;
+        case 'info':
+            bgColor = 'bg-blue-500';
+            titleColor = 'text-white';
+            borderColor = 'border-blue-600';
+            icon = <Info size={20} className="text-white" />;
+            break;
+        default:
+            bgColor = 'bg-gray-500';
+            titleColor = 'text-white';
+            borderColor = 'border-gray-600';
+            icon = null;
+    }
+
+    return (
+        <div className={`fixed bottom-4 right-4 ${bgColor} ${titleColor} px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 z-50 transform transition-transform duration-300 ease-out translate-y-0 opacity-100 border-2 ${borderColor} font-semibold`}>
+            {icon}
+            <span>{message}</span>
+            <button onClick={onClose} className="ml-4 p-1 rounded-full hover:bg-white hover:bg-opacity-20 transition-colors duration-200">
+                <X size={16} />
+            </button>
+        </div>
+    );
+};
+
+
 const DeleteConfirmationModal = ({ poste, onConfirm, onCancel }) => (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl text-center max-w-md w-full">
             <AlertTriangle size={40} className="text-red-500 mx-auto mb-4" />
             <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Confirmer la suppression</h3>
             <p className="text-sm text-slate-600 dark:text-slate-300 my-2">Voulez-vous vraiment supprimer le poste <strong className="font-semibold text-slate-800 dark:text-slate-200">"{poste?.designation}"</strong>?</p>
-            <div className="flex justify-center space-x-3 mt-6"><button onClick={onCancel} className="btn btn-secondary">Annuler</button><button onClick={onConfirm} className="btn btn-danger">Supprimer</button></div>
+            <div className="flex justify-center space-x-3 mt-6">
+                <button onClick={onCancel} className="btn btn-secondary">Annuler</button>
+                <button onClick={onConfirm} className="btn btn-danger">Supprimer</button>
+            </div>
         </div>
     </div>
 );
 
+// MODAL DE MODIFICATION AMÉLIORÉ
 const EditModal = ({ poste, onUpdate, onCancel }) => {
     const [designation, setDesignation] = useState(poste?.designation || '');
     const [actif, setActif] = useState(poste?.actif === true);
     const [error, setError] = useState('');
 
-    const handleSubmit = () => {
-        if (!designation.trim()) { setError('La désignation est requise.'); return; }
+    const handleSubmit = (e) => {
+        e.preventDefault(); // Empêcher le rechargement de la page
+        if (!designation.trim()) {
+            setError('La désignation est requise.');
+            return;
+        }
         onUpdate(poste.id, { designation, actif });
     };
 
@@ -43,15 +92,52 @@ const EditModal = ({ poste, onUpdate, onCancel }) => {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-full max-w-md">
                 <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6">Modifier le Poste</h2>
-                <div className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4"> {/* Utilisation d'un formulaire ici */}
+                    {/* Champ Désignation */}
                     <div>
-                        <label htmlFor="designation" className="form-label">Désignation</label>
-                        <input type="text" id="designation" value={designation} onChange={(e) => { setDesignation(e.target.value); setError(''); }} className={`form-input ${error ? 'border-red-500' : ''}`} />
-                        {error && <p className="form-error-text">{error}</p>}
+                        <label htmlFor="edit-designation" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                            Désignation
+                        </label>
+                        <input
+                            type="text"
+                            id="edit-designation"
+                            value={designation}
+                            onChange={(e) => { setDesignation(e.target.value); setError(''); }}
+                            className={`
+                                block w-full px-3 py-2
+                                bg-white dark:bg-slate-900/50
+                                border rounded-md shadow-sm
+                                placeholder-slate-400 dark:placeholder-slate-500
+                                focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500
+                                sm:text-sm
+                                ${error ? 'border-red-500' : 'border-slate-300 dark:border-slate-600'}
+                            `}
+                        />
+                        {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
                     </div>
-                    <div className="flex items-center"><input type="checkbox" id="actif" checked={actif} onChange={(e) => setActif(e.target.checked)} className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" /><label htmlFor="actif" className="ml-3 block text-sm font-medium text-slate-700 dark:text-slate-300">Actif</label></div>
-                </div>
-                <div className="pt-8 flex justify-end space-x-2"><button type="button" onClick={onCancel} className="btn btn-secondary"><XCircle size={16} className="mr-1.5" /> Annuler</button><button type="button" onClick={handleSubmit} className="btn btn-primary"><Save size={16} className="mr-1.5" /> Confirmer</button></div>
+                    {/* Champ Actif (Checkbox) */}
+                    <div className="flex items-center pt-2">
+                        <input
+                            type="checkbox"
+                            id="edit-actif"
+                            checked={actif}
+                            onChange={(e) => setActif(e.target.checked)}
+                            className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-500 dark:bg-slate-700 dark:checked:bg-blue-600 dark:checked:border-transparent"
+                        />
+                        <label htmlFor="edit-actif" className="ml-3 block text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                            Actif
+                        </label>
+                    </div>
+                    {/* Boutons d'action */}
+                    <div className="pt-6 flex justify-end space-x-2 border-t border-slate-200 dark:border-slate-700"> {/* Ajout de la bordure et padding */}
+                        <button type="button" onClick={onCancel} className="btn btn-secondary">
+                            <XCircle size={16} className="mr-1.5" /> Annuler
+                        </button>
+                        <button type="submit" className="btn btn-primary"> {/* Type submit pour déclencher le handleSubmit du formulaire */}
+                            <Save size={16} className="mr-1.5" /> Confirmer
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     );
@@ -122,7 +208,7 @@ const PaginationControls = ({ currentPage, totalPages, setCurrentPage, processed
 };
 
 
-const ConsulterPostesPage = ({ initialPostes }) => { 
+const ConsulterPostesPage = ({ initialPostes }) => {
     // --- STATE MANAGEMENT COMPLET ---
     const [view, setView] = useState('list');
     const [viewMode, setViewMode] = useState('table');
@@ -136,10 +222,15 @@ const ConsulterPostesPage = ({ initialPostes }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [entriesPerPage, setEntriesPerPage] = useState(10);
     const [visibleColumns, setVisibleColumns] = useState({ poste: true, statut: true, creePar: true, dateCreation: true });
-    const [openDropdown, setOpenDropdown] = useState(null); 
-    const dropdownsRef = useRef(null); 
+    const [openDropdown, setOpenDropdown] = useState(null);
+    const dropdownsRef = useRef(null);
+    // NOUVEAU: États pour le surlignage et les messages de notification
+    const [highlightedPostId, setHighlightedPostId] = useState(null);
+    const [pendingHighlightId, setPendingHighlightId] = useState(null); // Nouveau state pour l'ID en attente de surlignage
+    const [toast, setToast] = useState(null); // { message: string, type: 'success' | 'error' | 'info' }
+
     // Récupérer les fonctions d'exportation depuis le contexte (toujours nécessaire pour les appeler)
-    const { setExportFunctions, currentExportPdfFunction, currentExportExcelFunction, currentPrintFunction } = useExport(); 
+    const { setExportFunctions, currentExportPdfFunction, currentExportExcelFunction, currentPrintFunction } = useExport();
 
     // --- LOGIQUE DE DONNÉES ET D'EFFETS ---
     const fetchPostes = useCallback(async () => {
@@ -147,8 +238,8 @@ const ConsulterPostesPage = ({ initialPostes }) => {
         try {
             const response = await posteService.getAllPostes();
             setPostes(Array.isArray(response.data) ? response.data : []);
-        } catch (err) { 
-            console.error("Erreur lors de la récupération des postes:", err); 
+        } catch (err) {
+            console.error("Erreur lors de la récupération des postes:", err);
         }
         finally { setIsLoading(false); }
     }, []);
@@ -178,28 +269,108 @@ const ConsulterPostesPage = ({ initialPostes }) => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    // Effet pour gérer le surlignage (disparaît après 3 secondes)
+    useEffect(() => {
+        if (highlightedPostId) {
+            const timer = setTimeout(() => {
+                setHighlightedPostId(null);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [highlightedPostId]);
+
+    // Effet pour gérer l'affichage et la disparition du toast
+    useEffect(() => {
+        if (toast) {
+            const timer = setTimeout(() => {
+                setToast(null);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast]);
+
+    // Effet pour appliquer le surlignage et définir la page APRES que les données 'postes' sont confirmées d'inclure l'ID cible
+    useEffect(() => {
+        if (pendingHighlightId && postes.length > 0) {
+            // Assurez-vous que processedPostes est à jour pour trouver l'index correct
+            const currentProcessedPostes = (postes) => {
+                let filtered = [...postes];
+                if (filterStatus !== 'tous') {
+                    filtered = filtered.filter(p => (p.actif ? 'actif' : 'inactif') === filterStatus);
+                }
+                if (searchTerm) {
+                    filtered = filtered.filter(p => p.designation.toLowerCase().includes(searchTerm.toLowerCase()));
+                }
+                if (sortConfig.key) {
+                    filtered.sort((a, b) => {
+                        let valA = a[sortConfig.key];
+                        let valB = b[b[sortConfig.key]];
+                        if (sortConfig.key === 'dateCreation') {
+                            const dateA = Array.isArray(a.dateCreation) ? new Date(a.dateCreation[0], a.dateCreation[1] - 1, a.dateCreation[2]) : new Date(a.dateCreation);
+                            const dateB = Array.isArray(b.dateCreation) ? new Date(b.dateCreation[0], b.dateCreation[1] - 1, b.dateCreation[2]) : new Date(b.dateCreation);
+                            valA = dateA.getTime();
+                            valB = dateB.getTime();
+                        }
+                        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+                        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+                }
+                return filtered;
+            };
+
+            const targetPostIndex = currentProcessedPostes(postes).findIndex(p => p.id === pendingHighlightId);
+
+            if (targetPostIndex !== -1) {
+                const targetPage = Math.ceil((targetPostIndex + 1) / entriesPerPage);
+                setCurrentPage(targetPage);
+                setHighlightedPostId(pendingHighlightId);
+                setPendingHighlightId(null); // Clear pending ID after successful highlight/pagination
+            }
+        }
+    }, [pendingHighlightId, postes, entriesPerPage, setCurrentPage, filterStatus, searchTerm, sortConfig]); // processedPostes est une dépendance car il dépend de 'postes' et des filtres/tris
+
+
     // --- HANDLERS POUR LES ACTIONS CRUD ---
     const handleAddPoste = async (posteData) => {
         try {
-            await posteService.createPoste(posteData);
+            const response = await posteService.createPoste(posteData);
             setView('list');
-            fetchPostes(); 
-        } catch (err) { console.error("Erreur lors de l'ajout du poste."); }
+            const newPosteId = response.data?.id; // Assurez-vous que l'API retourne l'ID du nouveau poste
+            await fetchPostes(); // Attendre la mise à jour des postes
+            if (newPosteId) {
+                setPendingHighlightId(newPosteId); // Déclencher l'effet de surlignage et pagination
+            }
+            setToast({ message: "Poste ajouté avec succès !", type: 'success' });
+        } catch (err) {
+            console.error("Erreur lors de l'ajout du poste:", err);
+            setToast({ message: "Erreur lors de l'ajout du poste.", type: 'error' });
+        }
     };
     const handleUpdatePoste = async (id, posteData) => {
         try {
             await posteService.updatePoste(id, posteData);
             setPosteToEdit(null);
-            fetchPostes();
-        } catch (err) { console.error('Erreur de mise à jour'); }
+            await fetchPostes(); // Attendre la mise à jour des postes
+            setPendingHighlightId(id); // Déclencher l'effet de surlignage et pagination
+            setToast({ message: "Poste modifié avec succès !", type: 'success' });
+        } catch (err) {
+            console.error('Erreur de mise à jour:', err);
+            setToast({ message: "Erreur lors de la modification du poste.", type: 'error' });
+        }
     };
     const handleDeletePoste = async () => {
         if (!posteToDelete) return;
         try {
             await posteService.deletePoste(posteToDelete.id);
             setPosteToDelete(null);
-            fetchPostes();
-        } catch (err) { console.error('Erreur de suppression'); setPosteToDelete(null); }
+            fetchPostes(); // Pas besoin d'attendre pour la suppression si l'ID n'est pas surligné
+            setToast({ message: "Poste supprimé avec succès !", type: 'success' });
+        } catch (err) {
+            console.error('Erreur de suppression:', err);
+            setPosteToDelete(null);
+            setToast({ message: "Erreur lors de la suppression du poste.", type: 'error' });
+        }
     };
 
     // --- LOGIQUE D'AFFICHAGE (FILTRE, TRI, PAGINATION) ---
@@ -231,7 +402,7 @@ const ConsulterPostesPage = ({ initialPostes }) => {
     }, [postes, searchTerm, filterStatus, sortConfig]);
 
     const totalPages = Math.ceil(processedPostes.length / entriesPerPage);
-    
+
     const paginatedPostes = useMemo(() => {
         const startIndex = (currentPage - 1) * entriesPerPage;
         return processedPostes.slice(startIndex, startIndex + entriesPerPage);
@@ -240,7 +411,7 @@ const ConsulterPostesPage = ({ initialPostes }) => {
     useEffect(() => { setCurrentPage(1); }, [entriesPerPage, filterStatus, searchTerm]);
 
     // --- HANDLERS POUR LES CONTRÔLES UI ---
-    const handleSort = useCallback((key) => { 
+    const handleSort = useCallback((key) => {
         setSortConfig(p => ({ key, direction: p.key === key && p.direction === 'asc' ? 'desc' : 'asc' }));
     }, []);
     const handleToggleColumn = useCallback((key) => setVisibleColumns(p => ({ ...p, [key]: !p[key] })), []);
@@ -259,7 +430,7 @@ const ConsulterPostesPage = ({ initialPostes }) => {
         // Utilisation de poste.userCreation (si c'est un objet {nom, prenom}) ou poste.creePar (si c'est juste un nom)
         poste.userCreation ? `${poste.userCreation.nom} ${poste.userCreation.prenom}` : (poste.creePar || 'N/A'),
         formatDateFromArray(poste.dateCreation) // Utilisation de la fonction formatDateFromArray
-    ]), [processedPostes]); 
+    ]), [processedPostes]);
 
     const excelData = useMemo(() => {
         return processedPostes.map(poste => ({
@@ -312,14 +483,14 @@ const ConsulterPostesPage = ({ initialPostes }) => {
     useEffect(() => {
         setExportFunctions(handleExportPdfPostes, handleExportExcelPostes, handlePrintPostes);
         return () => {
-            setExportFunctions(null, null, null); 
+            setExportFunctions(null, null, null);
         };
     }, [setExportFunctions, handleExportPdfPostes, handleExportExcelPostes, handlePrintPostes]);
 
 
     // --- RENDU PRINCIPAL ---
     if (view === 'add') {
-        return <AjouterPostePage onAddPoste={handleAddPoste} onCancel={() => setView('list')} />;
+        return <AjouterPostePage onAddPoste={handleAddPoste} onCancel={() => { setView('list'); setToast({ message: "Ajout de poste annulé.", type: 'info' }); }} />;
     }
 
     return (
@@ -334,18 +505,30 @@ const ConsulterPostesPage = ({ initialPostes }) => {
                 .form-input { @apply block w-full px-3 py-2 bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm; }
                 .pagination-btn { @apply p-2 rounded-md text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed; }
                 .separateur-colonne-leger:not(:last-child) {
-                    box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.05); 
+                    box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.05);
                 }
                 .dark .separateur-colonne-leger:not(:last-child) {
-                    box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.05); 
+                    box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.05);
+                }
+                /* Styles pour le surlignage des lignes ajoutées/modifiées */
+                .highlight-row {
+                    background-color: #e0f2fe !important; /* Bleu très clair */
+                    transition: background-color 0.5s ease-out; /* Transition douce */
+                }
+                .dark .highlight-row {
+                    background-color: #0b2f4f !important; /* Couleur plus sombre pour le mode sombre */
                 }
             `}</style>
 
+            {/* Modals */}
             {posteToDelete && <DeleteConfirmationModal poste={posteToDelete} onConfirm={handleDeletePoste} onCancel={() => setPosteToDelete(null)} />}
-            {posteToEdit && <EditModal poste={posteToEdit} onUpdate={handleUpdatePoste} onCancel={() => setPosteToEdit(null)} />}
+            {posteToEdit && <EditModal poste={posteToEdit} onUpdate={handleUpdatePoste} onCancel={() => { setPosteToEdit(null); setToast({ message: "Modification de poste annulée.", type: 'info' }); }} />}
+
+            {/* Message de notification */}
+            {toast && <ToastMessage message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
             {/* Titre de la page */}
-            <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-2">Gestion des Postes</h1> 
+            <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-2">Gestion des Postes</h1>
 
             {/* Barre de contrôles */}
             <div className="bg-white dark:bg-slate-800/80 px-4 py-0 rounded-lg shadow-sm border border-slate-200/80 dark:border-slate-700 mb-0">
@@ -357,8 +540,18 @@ const ConsulterPostesPage = ({ initialPostes }) => {
                     <div className="flex items-center gap-2 flex-wrap" ref={dropdownsRef}>
                         <button onClick={() => setView('add')} className="btn btn-primary h-full px-3"><Plus size={20} /></button>
                         <button onClick={fetchPostes} className="btn btn-secondary h-full px-3" title="Rafraîchir"><RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} /></button>
-                        <div className="relative"><button onClick={() => toggleDropdownGlobal('filter')} className="btn btn-secondary"><Filter size={16} className="mr-2" />{filterStatus === 'tous' ? 'Filtre' : `Filtre: ${filterStatus}`}</button>
-                            {openDropdown === 'filter' && <DropdownMenu><DropdownMenuItem isSelected={filterStatus === 'tous'} onClick={() => { setFilterStatus('tous'); toggleDropdownGlobal('filter'); }}>Tous</DropdownMenuItem><DropdownMenuItem isSelected={filterStatus === 'actif'} onClick={() => { setFilterStatus('actif'); toggleDropdownGlobal('filter'); }}>Actifs</DropdownMenuItem><DropdownMenuItem isSelected={filterStatus === 'inactif'} onClick={() => { setFilterStatus('inactif'); toggleDropdownGlobal('filter'); }}>Inactifs</DropdownMenuItem></DropdownMenu>}
+                        <div className="relative">
+                            <button onClick={() => toggleDropdownGlobal('filter')} className="btn btn-secondary">
+                                <Filter size={16} className="mr-2" />
+                                {filterStatus === 'tous' ? 'Filtre' : `Filtre: ${filterStatus === 'actif' ? 'Actifs' : 'Non actifs'}`} {/* Texte dynamique */}
+                            </button>
+                            {openDropdown === 'filter' &&
+                                <DropdownMenu>
+                                    <DropdownMenuItem isSelected={filterStatus === 'tous'} onClick={() => { setFilterStatus('tous'); toggleDropdownGlobal('filter'); }}>Tous</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filterStatus === 'actif'} onClick={() => { setFilterStatus('actif'); toggleDropdownGlobal('filter'); }}>Actifs</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filterStatus === 'inactif'} onClick={() => { setFilterStatus('inactif'); toggleDropdownGlobal('filter'); }}>Non actifs</DropdownMenuItem> {/* Changé 'Inactifs' en 'Non actifs' ici */}
+                                </DropdownMenu>
+                            }
                         </div>
                         <div className="relative"><button onClick={() => toggleDropdownGlobal('columns')} className="btn btn-secondary"><Eye size={16} className="mr-2" />Colonnes</button>
                             {openDropdown === 'columns' && <DropdownMenu>{Object.keys(visibleColumns).map(key => (<DropdownMenuItem key={key} onClick={() => handleToggleColumn(key)}>{visibleColumns[key] ? <Eye size={16} className="mr-2 text-blue-500" /> : <EyeOff size={16} className="mr-2 text-slate-400" />}<span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span></DropdownMenuItem>))}</DropdownMenu>}
@@ -367,8 +560,8 @@ const ConsulterPostesPage = ({ initialPostes }) => {
                             {openDropdown === 'entries' && <DropdownMenu>{[10, 25, 50].map(num => (<DropdownMenuItem isSelected={entriesPerPage === num} key={num} onClick={() => { setEntriesPerPage(num); toggleDropdownGlobal('entries'); }}>{num} lignes</DropdownMenuItem>))}</DropdownMenu>}
                         </div>
                         {/* NOUVELLE POSITION : Boutons Imprimer et Exporter */}
-                        <button 
-                            onClick={handlePrintPostes} 
+                        <button
+                            onClick={handlePrintPostes}
                             className={`btn btn-secondary h-full px-3 ${!currentPrintFunction ? 'opacity-50 cursor-not-allowed' : ''}`}
                             disabled={!currentPrintFunction}
                             title="Imprimer la page"
@@ -376,7 +569,7 @@ const ConsulterPostesPage = ({ initialPostes }) => {
                             <Printer size={18} />
                         </button>
                         <div className="relative">
-                            <button 
+                            <button
                                 onClick={() => toggleDropdownGlobal('export')} // Nouveau dropdown pour l'export
                                 className={`btn btn-secondary h-full px-3 ${(!currentExportPdfFunction && !currentExportExcelFunction) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 disabled={!currentExportPdfFunction && !currentExportExcelFunction}
@@ -412,27 +605,25 @@ const ConsulterPostesPage = ({ initialPostes }) => {
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm text-left">
                                     <TableHeader // Appel du composant TableHeader
-                                        visibleColumns={visibleColumns} 
-                                        handleSort={handleSort} 
-                                        sortConfig={sortConfig} 
-                                        // currentExportPdfFunction={currentExportPdfFunction} // Plus nécessaire ici
-                                        // currentExportExcelFunction={currentExportExcelFunction} // Plus nécessaire ici
-                                        // currentPrintFunction={currentPrintFunction} // Plus nécessaire ici
+                                        visibleColumns={visibleColumns}
+                                        handleSort={handleSort}
+                                        sortConfig={sortConfig}
                                     />
                                     <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                                         {paginatedPostes.map(poste => (
-                                            <PosteTableRow 
-                                                key={poste.id} 
-                                                poste={poste} 
-                                                onEdit={setPosteToEdit} 
-                                                onDelete={setPosteToDelete} 
-                                                visibleColumns={visibleColumns} 
+                                            <PosteTableRow
+                                                key={poste.id}
+                                                poste={poste}
+                                                onEdit={setPosteToEdit}
+                                                onDelete={setPosteToDelete}
+                                                visibleColumns={visibleColumns}
+                                                highlightedPostId={highlightedPostId} // Passe l'ID du poste à surligner
                                             />
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
-                            {processedPostes.length > 0 && 
+                            {processedPostes.length > 0 &&
                                 <PaginationControls // Appel du composant PaginationControls
                                     currentPage={currentPage}
                                     totalPages={totalPages}

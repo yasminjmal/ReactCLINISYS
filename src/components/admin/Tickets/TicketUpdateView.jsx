@@ -1,6 +1,8 @@
+// src/components/admin/Tickets/TicketUpdateView.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ticketService from '../../../services/ticketService';
 import moduleService from '../../../services/moduleService';
+import documentService from '../../../services/documentService'; // Importez le nouveau service de documents
 
 // Utilisation de la fonction de formatage de date universelle
 const formatDate = (dateInput) => {
@@ -264,6 +266,8 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
 
 
 // --- VUE PRINCIPALE DE MODIFICATION ---
+import DocumentManager from './DocumentManager'; // Importez le nouveau composant
+
 const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
     const [ticket, setTicket] = useState(null);
     const [allModules, setAllModules] = useState([]);
@@ -393,18 +397,18 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
     const renderActions = () => {
         if (!ticket) return null;
         switch (ticket.statue) {
-            case 'En_attente':
+            case 'EN_ATTENTE': // Utilisez les valeurs d'énumération exactes de votre backend
                 return (
                     <div className="flex items-center space-x-3">
-                        <button onClick={() => handleDirectStatusUpdate('Refuse')} className="btn btn-danger">
+                        <button onClick={() => handleDirectStatusUpdate('REFUSE')} className="btn btn-danger">
                             <X size={18} className="mr-2"/> Refuser
                         </button>
-                        <button onClick={() => handleDirectStatusUpdate('Accepte')} className="btn btn-success">
+                        <button onClick={() => handleDirectStatusUpdate('ACCEPTE')} className="btn btn-success">
                             <Check size={18} className="mr-2"/> Accepter
                         </button>
                     </div>
                 );
-            case 'Accepte':
+            case 'ACCEPTE': // Utilisez les valeurs d'énumération exactes de votre backend
                 if (!ticket.childTickets || ticket.childTickets.length === 0) {
                     return (
                         <button onClick={() => setIsDiffractionModalOpen(true)} className="btn btn-primary">
@@ -469,8 +473,37 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
                      </div>
                  </div>
             </div>
-            {hasSubTickets && (<div className="mt-8"><SubTicketsTable subTickets={ticket.childTickets} onDelete={handleDeleteSubTicket} onAdd={() => setIsDiffractionModalOpen(true)} onSaveSubTicket={handleSaveSubTicket} allModules={allModules} onRemoveModule={handleRemoveSubTicketModule} /></div>)}
-            {isDiffractionModalOpen && (<DiffractionForm parentTicket={ticket} onClose={() => setIsDiffractionModalOpen(false)} onSuccess={handleDiffractionSuccess} showTemporaryMessage={showTemporaryMessage} />)}
+
+            {/* Zone des documents joints - Toujours présente */}
+            <DocumentManager
+                ticketId={ticket.id}
+                documents={ticket.documentJointesList}
+                onDocumentChange={fetchInitialData} // Re-fetch les données du ticket pour mettre à jour les documents
+                showTemporaryMessage={showTemporaryMessage}
+            />
+
+            {/* Tableau des sous-tickets - Conditionnel si présence de sous-tickets */}
+            {hasSubTickets && (
+                <div className="mt-8">
+                    <SubTicketsTable
+                        subTickets={ticket.childTickets}
+                        onDelete={handleDeleteSubTicket}
+                        onAdd={() => setIsDiffractionModalOpen(true)}
+                        onSaveSubTicket={handleSaveSubTicket}
+                        allModules={allModules}
+                        onRemoveModule={handleRemoveSubTicketModule}
+                    />
+                </div>
+            )}
+
+            {isDiffractionModalOpen && (
+                <DiffractionForm
+                    parentTicket={ticket}
+                    onClose={() => setIsDiffractionModalOpen(false)}
+                    onSuccess={handleDiffractionSuccess}
+                    showTemporaryMessage={showTemporaryMessage}
+                />
+            )}
         </div>
     );
 };
