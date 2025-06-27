@@ -19,6 +19,7 @@ import { formatDateFromArray } from '../../../utils/dateFormatter'; // Assurez-v
 const Spinner = () => <div className="text-center py-20"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div></div>;
 
 // Composant de message de notification (Toast)
+// NOUVEAU COMPOSANT
 const ToastMessage = ({ message, type, onClose }) => {
     let bgColor, icon, titleColor, borderColor;
     switch (type) {
@@ -564,7 +565,7 @@ const ConsulterPostesPage = ({ initialPostes }) => {
                         <div className="relative">
                             <button
                                 onClick={() => toggleDropdownGlobal('export')} // Nouveau dropdown pour l'export
-                                className={`btn btn-secondary h-full px-3 ${(!currentExportPdfFunction && !currentExportExcelFunction) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`btn btn-secondary h-full px-3 btn-export-dropdown ${(!currentExportPdfFunction && !currentExportExcelFunction) ? 'opacity-50 cursor-not-allowed' : ''}`} // Ajout de la classe btn-export-dropdown
                                 disabled={!currentExportPdfFunction && !currentExportExcelFunction}
                                 title="Exporter"
                             >

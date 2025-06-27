@@ -1,7 +1,8 @@
 import React from 'react';
 import { Edit, Trash2 } from 'lucide-react';
 
-const PosteTableRow = ({ poste, onEdit, onDelete, visibleColumns }) => {
+// Ajout de highlightedPostId aux props
+const PosteTableRow = ({ poste, onEdit, onDelete, visibleColumns, highlightedPostId }) => {
 
     const formatDate = (dateArray) => {
         if (!Array.isArray(dateArray) || dateArray.length < 3) return 'N/A';
@@ -26,8 +27,12 @@ const PosteTableRow = ({ poste, onEdit, onDelete, visibleColumns }) => {
     // Message de l'infobulle pour le bouton de suppression
     const deleteTooltip = isDeleteDisabled ? "On ne peut pas supprimer un poste actif" : "Supprimer le poste";
 
+    // Détermine si la ligne doit être surlignée
+    const isHighlighted = highlightedPostId === poste.id;
+
     return (
-        <tr className="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+        // Ajout conditionnel de la classe highlight-row
+        <tr className={`border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 ${isHighlighted ? 'highlight-row' : ''}`}>
             {visibleColumns.poste && (
                 <td scope="row" className="px-6 py-2 font-medium text-slate-800 dark:text-slate-100 whitespace-nowrap separateur-colonne-leger">
                     {poste.designation}

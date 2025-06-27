@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, PlusCircle, Edit, Trash2, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
 import commentService from '../../../services/commentService';
-import { formatDate } from '../../../utils/dateFormatter'; // Assurez-vous que le chemin est correct
+import { formatDateFromArray } from '../../../utils/dateFormatter'; // Assurez-vous que le chemin est correct
 
 // Composant utilitaire pour le spinner (si non déjà globalement défini)
 const Spinner = () => <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-sky-500"></div>;
@@ -116,7 +116,7 @@ const CommentManager = ({ ticketId, comments: initialComments, onCommentChange, 
 
             {!isCollapsed && (
                 <>
-                    {/* Zone d'ajout de commentaire */}
+                    {/* Zone d'ajout de commentaire (TOUJOURS visible si non repliée) */}
                     <div className="mb-6 p-4 border border-slate-300 dark:border-slate-700 rounded-lg">
                         <textarea
                             ref={newCommentTextAreaRef}
@@ -170,7 +170,7 @@ const CommentManager = ({ ticketId, comments: initialComments, onCommentChange, 
                                                 {comment.utilisateur?.prenom} {comment.utilisateur?.nom}
                                             </td>
                                             <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
-                                                {formatDate(comment.dateCommentaire)}
+                                                {formatDateFromArray(comment.dateCommentaire)}
                                             </td>
                                             <td className="px-3 py-2">
                                                 <div className="flex items-center justify-center space-x-1">

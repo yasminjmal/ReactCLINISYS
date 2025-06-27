@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ticketService from '../../../services/ticketService';
 import moduleService from '../../../services/moduleService';
 import documentService from '../../../services/documentService';
-import commentService from '../../../services/commentService'; // Importez le nouveau service de commentaires
+import commentService from '../../../services/commentService';
 
 // Utilisation de la fonction de formatage de date universelle
 const formatDate = (dateInput) => {
@@ -25,8 +25,8 @@ const formatDate = (dateInput) => {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
-        hour: '2-digit', // Ajout de l'heure
-        minute: '2-digit' // Ajout des minutes
+        hour: '2-digit',
+        minute: '2-digit'
     });
 };
 
@@ -47,7 +47,7 @@ const useAutosizeTextArea = (textAreaRef, value) => {
     }, [textAreaRef, value]);
 };
 
-// --- MODAL DE DIFFRACTION --- (Pas de changement ici, conservé pour le contexte)
+// --- MODAL DE DIFFRACTION ---
 const DiffractionForm = ({ parentTicket, onClose, onSuccess, showTemporaryMessage }) => {
     const [subTickets, setSubTickets] = useState([{ titre: '', description: '', priorite: 'Moyenne' }]);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,7 +60,7 @@ const DiffractionForm = ({ parentTicket, onClose, onSuccess, showTemporaryMessag
         const ticketsToCreate = subTickets.filter(t => t.titre.trim() !== '');
         if (ticketsToCreate.length === 0) { if (showTemporaryMessage) showTemporaryMessage('error', 'Veuillez renseigner au moins un sous-ticket.'); return; }
         setIsSubmitting(true);
-        const creationPromises = ticketsToCreate.map(subTicket => ticketService.createTicket({ ...subTicket, idParentTicket: parentTicket.id, idClient: parentTicket.idClient?.id, statue: 'ACCEPTE', actif: true, })); // Utilisation de ACCEPTE
+        const creationPromises = ticketsToCreate.map(subTicket => ticketService.createTicket({ ...subTicket, idParentTicket: parentTicket.id, idClient: parentTicket.idClient?.id, statue: 'Accepte', actif: true, }));
         try { await Promise.all(creationPromises); onSuccess(); } catch (error) { console.error("Erreur:", error); if (showTemporaryMessage) showTemporaryMessage('error', error.response?.data?.message || "Une erreur est survenue."); } finally { setIsSubmitting(false); }
     };
     return (
@@ -88,14 +88,14 @@ const DiffractionForm = ({ parentTicket, onClose, onSuccess, showTemporaryMessag
     );
 };
 
-// --- COMPOSANTS D'ÉDITION --- (Pas de changement ici, conservé pour le contexte)
+// --- COMPOSANTS D'ÉDITION ---
 const EditableField = ({ initialValue, onSave, fieldName, isTextarea = false }) => {const [isEditing, setIsEditing] = useState(false); const [value, setValue] = useState(initialValue); const handleSave = () => { onSave(fieldName, value); setIsEditing(false); }; if (isEditing) { return ( <div className="flex items-center gap-2 w-full">{isTextarea ? (<textarea value={value} onChange={(e) => setValue(e.target.value)} className="form-textarea flex-grow" rows={5} />) : (<input type="text" value={value} onChange={(e) => setValue(e.target.value)} className="form-input flex-grow" />)}<button onClick={handleSave} className="btn btn-success-icon"><Check size={18} /></button><button onClick={() => setIsEditing(false)} className="btn btn-danger-icon"><X size={18} /></button></div> ); } return ( <div className="flex items-start gap-2">{isTextarea ? (<p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap bg-slate-50 dark:bg-slate-800/50 p-4 rounded-md w-full">{initialValue || <span className="italic">Aucune description.</span>}</p>) : (<h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{initialValue}</h1>)}<button onClick={() => setIsEditing(true)} className="p-2 text-slate-400 hover:text-sky-500"><Edit size={16} /></button></div> );};
 const DetailItem = ({ icon, label, value, children }) => (<div><dt className="text-xs text-slate-500 dark:text-slate-400 flex items-center mb-0.5">{icon}{label}</dt><dd className="text-sm font-medium text-slate-800 dark:text-slate-100 break-words">{children || value || <span className="italic text-slate-400">N/A</span>}</dd></div>);
 const ModuleEditor = ({ ticket, onUpdate, onRemove, allModules }) => { const [isEditing, setIsEditing] = useState(false); const [searchTerm, setSearchTerm] = useState(''); if (isEditing) { return ( <div className="p-2 border rounded-md bg-white dark:bg-slate-900 w-48 shadow-lg"><input type="text" placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="form-input w-full mb-2 text-sm" /><div className="max-h-40 overflow-y-auto">{allModules.filter(m => m.designation.toLowerCase().includes(searchTerm.toLowerCase())).map(module => (<div key={module.id} onClick={() => { onUpdate('idModule', module.id); setIsEditing(false);}} className="p-2 rounded-md hover:bg-sky-100 dark:hover:bg-sky-800 cursor-pointer text-sm">{module.designation}</div>))}</div><button onClick={() => setIsEditing(false)} className="btn btn-secondary btn-xs w-full mt-2">Annuler</button></div> ); } return ( <div className="flex items-center gap-2 min-h-[38px]"><span className="text-sm font-medium">{ticket.idModule?.designation || <span className="italic">Aucun module</span>}</span><button onClick={() => setIsEditing(true)} className="p-1 text-slate-400 hover:text-sky-500"><Edit size={14} /></button>{ticket.idModule && <button onClick={onRemove} className="p-1 text-slate-400 hover:text-red-500"><Trash2 size={14} /></button>}</div> );};
 const PriorityEditor = ({ ticket, onUpdate }) => {const priorities = ["Basse", "Moyenne", "Haute"]; return (<select value={ticket.priorite} onChange={(e) => onUpdate('priorite', e.target.value)} className="form-select text-sm font-medium bg-transparent border-0 focus:ring-0 p-0">{priorities.map(p => <option key={p} value={p}>{p}</option>)}</select>);};
 
 
-// Composant pour la gestion des commentaires dans les sous-tickets (NOUVEAU)
+// Composant pour la gestion des commentaires dans les sous-tickets
 const SubTicketCommentRow = ({ subTicket, onCommentChange, showTemporaryMessage }) => {
     const [comments, setComments] = useState(subTicket.commentaireList || []);
     const [newCommentText, setNewCommentText] = useState('');
@@ -105,10 +105,6 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, showTemporaryMessage 
 
     const newCommentTextAreaRef = useRef(null);
     useAutosizeTextArea(newCommentTextAreaRef, newCommentText);
-
-    // NOTE: Pour simuler l'utilisateur connecté. Dans une vraie application,
-    // vous obtiendriez cela de votre contexte d'authentification ou d'un hook.
-    const getCurrentUserId = () => 1; // Exemple: renvoie l'ID 1. À remplacer par votre logique d'authentification.
 
     useEffect(() => {
         setComments(subTicket.commentaireList || []);
@@ -121,13 +117,10 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, showTemporaryMessage 
         }
         setIsAdding(true);
         try {
-            await commentService.addComment(
-                { commentaire: newCommentText, idTicket: subTicket.id },
-                getCurrentUserId()
-            );
+            await commentService.addComment({ commentaire: newCommentText, idTicket: subTicket.id });
             if (showTemporaryMessage) showTemporaryMessage('success', 'Commentaire ajouté avec succès.');
             setNewCommentText('');
-            onCommentChange(subTicket.id); // Demande au parent de rafraîchir le sous-ticket spécifique
+            onCommentChange(subTicket.id);
         } catch (error) {
             console.error("Erreur lors de l'ajout du commentaire:", error);
             const errorMessage = error.response?.data?.message || "Erreur lors de l'ajout du commentaire.";
@@ -148,11 +141,7 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, showTemporaryMessage 
             return;
         }
         try {
-            await commentService.updateComment(
-                commentId,
-                { commentaire: editingCommentText, idTicket: subTicket.id }, // Passe idTicket si votre PUT le requiert
-                getCurrentUserId()
-            );
+            await commentService.updateComment(commentId, { commentaire: editingCommentText, idTicket: subTicket.id });
             if (showTemporaryMessage) showTemporaryMessage('success', 'Commentaire modifié avec succès.');
             setEditingCommentId(null);
             setEditingCommentText('');
@@ -365,7 +354,7 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModul
 
     return (
         <tr className="bg-sky-50 dark:bg-sky-900/50 align-top">
-            <td className="px-2 py-2"><input type="text" value={editableData.titre} onChange={(e) => handleChange('titre', e.target.value)} className="form-input text-sm"/></td>
+            <td className="px-2 py-2">{editableData.titre}</td>
             <td className="px-2 py-2">
                 <textarea ref={textAreaRef} value={editableData.description || ''} onChange={(e) => handleChange('description', e.target.value)} className="form-textarea text-sm w-full overflow-hidden resize-none" rows={1} placeholder="Ajouter une description..."></textarea>
             </td>
@@ -441,7 +430,7 @@ const DisplaySubTicketRow = ({ sub, onEdit, onDelete, allModules, isDescriptionE
 const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModules, onRemoveModule, onRefreshTicketData, showTemporaryMessage }) => {
     const [editingTicketId, setEditingTicketId] = useState(null);
     const [expandedDescriptions, setExpandedDescriptions] = useState(new Set());
-    const [expandedComments, setExpandedComments] = useState(new Set()); // Nouveau état pour les commentaires des sous-tickets
+    const [expandedComments, setExpandedComments] = useState(new Set());
 
     const toggleDescriptionExpansion = (subTicketId) => {
         setExpandedDescriptions(prevSet => {
@@ -480,8 +469,8 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
                                         onSave={handleSaveAndClose}
                                         onCancel={() => setEditingTicketId(null)}
                                         onRemoveModule={onRemoveModule}
-                                        onToggleComments={toggleCommentExpansion} // Passer la fonction
-                                        isCommentsExpanded={expandedComments.has(sub.id)} // Passer l'état
+                                        onToggleComments={toggleCommentExpansion}
+                                        isCommentsExpanded={expandedComments.has(sub.id)}
                                     />
                                     : <DisplaySubTicketRow
                                         sub={sub}
@@ -490,15 +479,15 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
                                         allModules={allModules}
                                         isDescriptionExpanded={expandedDescriptions.has(sub.id)}
                                         onToggleDescription={toggleDescriptionExpansion}
-                                        onToggleComments={toggleCommentExpansion} // Passer la fonction
-                                        isCommentsExpanded={expandedComments.has(sub.id)} // Passer l'état
+                                        onToggleComments={toggleCommentExpansion}
+                                        isCommentsExpanded={expandedComments.has(sub.id)}
                                     />
                                 }
                                 {/* Ligne des commentaires du sous-ticket, rendue conditionnellement */}
                                 {expandedComments.has(sub.id) && (
                                     <SubTicketCommentRow
                                         subTicket={sub}
-                                        onCommentChange={onRefreshTicketData} // Rafraîchir toutes les données du ticket parent
+                                        onCommentChange={onRefreshTicketData}
                                         showTemporaryMessage={showTemporaryMessage}
                                     />
                                 )}
@@ -514,7 +503,7 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
 
 // --- VUE PRINCIPALE DE MODIFICATION ---
 import DocumentManager from './DocumentManager';
-import CommentManager from './CommentManager'; // Importez le nouveau composant CommentManager
+import CommentManager from './CommentManager';
 
 const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
     const [ticket, setTicket] = useState(null);
@@ -546,13 +535,10 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
         delete cleanedPayload.documentJointesList;
         delete cleanedPayload.commentaireList;
         delete cleanedPayload.childTickets;
-        delete cleanedPayload.parentTicket; // S'assurer que l'objet parent n'est pas envoyé
-        delete cleanedPayload.userCreation; // Ne pas envoyer userCreation si le backend le gère automatiquement
-        delete cleanedPayload.dateCreation; // Ne pas envoyer dateCreation si le backend le gère automatiquement
+        delete cleanedPayload.parentTicket;
+        delete cleanedPayload.userCreation;
+        delete cleanedPayload.dateCreation;
 
-        // Assurez-vous que les champs requis par le backend DTO de requête sont présents et du bon type
-        // Exemple: si votre backend attend un ID d'utilisateur pour l'affectation, il doit être là.
-        // Si 'statue' est un enum, assurez-vous que la valeur est en majuscules si c'est ce que le backend attend.
         return cleanedPayload;
     };
 
@@ -572,14 +558,11 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
         try {
             await _updateField(ticketId, ticket, fieldName, value);
             if (showTemporaryMessage) showTemporaryMessage('success', 'Mise à jour réussie.');
-            await fetchInitialData(); // Recharger les données après la mise à jour
+            await fetchInitialData();
         } catch (err) { if (showTemporaryMessage) showTemporaryMessage('error', 'La mise à jour a échoué.'); console.error(err); }
     };
 
     const handleUpdateLocalSubTicketState = (updatedSubTicket) => {
-        // Cette fonction n'est plus strictement nécessaire si fetchInitialData est appelé
-        // après chaque modification de sous-ticket ou de commentaire de sous-ticket,
-        // car fetchInitialData rafraîchira le ticket complet depuis le backend.
         setTicket(currentParentTicket => {
             if (!currentParentTicket) return null;
             const newChildTickets = currentParentTicket.childTickets.map(sub => sub.id === updatedSubTicket.id ? updatedSubTicket : sub);
@@ -590,14 +573,14 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
     const handleSaveSubTicket = async (originalSubTicket, editedSubTicket) => {
         const payload = cleanTicketPayload({
             ...originalSubTicket,
-            ...editedSubTicket, // Appliquer les modifications du sous-ticket
-            id: originalSubTicket.id // S'assurer que l'ID du sous-ticket est dans le payload
+            ...editedSubTicket,
+            id: originalSubTicket.id
         });
         
         try {
             await ticketService.updateTicket(originalSubTicket.id, payload);
             if (showTemporaryMessage) showTemporaryMessage('success', 'Sous-ticket mis à jour.');
-            await fetchInitialData(); // Recharger les données pour que les commentaires soient à jour
+            await fetchInitialData();
         } catch(err) {
             console.error(err);
             if (showTemporaryMessage) showTemporaryMessage('error', 'Une erreur est survenue lors de la mise à jour du sous-ticket.');
@@ -618,7 +601,7 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
             try {
                 await ticketService.deleteTicket(subTicketId);
                 if (showTemporaryMessage) showTemporaryMessage('success', 'Sous-ticket supprimé.');
-                await fetchInitialData(); // Recharger les données pour s'assurer que la liste est à jour
+                await fetchInitialData();
             } catch (error) {
                 if (showTemporaryMessage) showTemporaryMessage('error', 'La suppression a échoué.');
                 console.error("Erreur lors de la suppression du sous-ticket:", error);
@@ -634,13 +617,13 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
             try {
                 const payload = cleanTicketPayload({
                     ...subTicketToUpdate,
-                    idModule: null, // Mettre le module à null
-                    id: subTicketToUpdate.id // Assurez-vous que l'ID est là pour l'update
+                    idModule: null,
+                    id: subTicketToUpdate.id
                 });
                 
                 await ticketService.updateTicket(subTicketToUpdate.id, payload);
                 if (showTemporaryMessage) showTemporaryMessage('success', 'Module du sous-ticket supprimé.');
-                await fetchInitialData(); // Recharger toutes les données du ticket pour rafraîchir l'UI
+                await fetchInitialData();
             } catch (err) {
                 if (showTemporaryMessage) showTemporaryMessage('error', 'La suppression du module a échoué.');
                 console.error("Erreur lors de la suppression du module du sous-ticket:", err);
@@ -651,18 +634,18 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
     const renderActions = () => {
         if (!ticket) return null;
         switch (ticket.statue) {
-            case 'EN_ATTENTE':
+            case 'En_attente': // Utilisez la casse exacte de votre enum Java
                 return (
                     <div className="flex items-center space-x-3">
-                        <button onClick={() => handleDirectStatusUpdate('REFUSE')} className="btn btn-danger">
+                        <button onClick={() => handleDirectStatusUpdate('Refuse')} className="btn btn-danger">
                             <X size={18} className="mr-2"/> Refuser
                         </button>
-                        <button onClick={() => handleDirectStatusUpdate('ACCEPTE')} className="btn btn-success">
+                        <button onClick={() => handleDirectStatusUpdate('Accepte')} className="btn btn-success">
                             <Check size={18} className="mr-2"/> Accepter
                         </button>
                     </div>
                 );
-            case 'ACCEPTE':
+            case 'Accepte': // Utilisez la casse exacte de votre enum Java
                 if (!ticket.childTickets || ticket.childTickets.length === 0) {
                     return (
                         <button onClick={() => setIsDiffractionModalOpen(true)} className="btn btn-primary">
@@ -681,12 +664,8 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
     if (!ticket) return null;
     const hasSubTickets = ticket.childTickets && ticket.childTickets.length > 0;
 
-    // Conditions pour afficher le bloc de commentaires du ticket parent
-    const showParentComments = !hasSubTickets && (
-        ticket.statue === 'EN_COURS' ||
-        ticket.statue === 'TERMINE' ||
-        (ticket.statue === 'ACCEPTE' && ticket.idModule)
-    );
+    // Nouvelle condition pour afficher le bloc de commentaires du ticket parent : toujours visible si pas de sous-tickets
+    const showParentComments = !hasSubTickets;
 
     let affectedToValue;
     if (hasSubTickets && !ticket.idUtilisateur) {
@@ -739,16 +718,16 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
             <DocumentManager
                 ticketId={ticket.id}
                 documents={ticket.documentJointesList}
-                onDocumentChange={fetchInitialData} // Re-fetch les données du ticket pour mettre à jour les documents
+                onDocumentChange={fetchInitialData}
                 showTemporaryMessage={showTemporaryMessage}
             />
 
-            {/* Zone des commentaires du ticket parent (conditionnelle) */}
+            {/* Zone des commentaires du ticket parent (conditionnelle: seulement si pas de sous-tickets) */}
             {showParentComments && (
                 <CommentManager
                     ticketId={ticket.id}
                     comments={ticket.commentaireList}
-                    onCommentChange={fetchInitialData} // Re-fetch les données du ticket pour mettre à jour les commentaires
+                    onCommentChange={fetchInitialData}
                     showTemporaryMessage={showTemporaryMessage}
                 />
             )}
@@ -763,7 +742,7 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
                         onSaveSubTicket={handleSaveSubTicket}
                         allModules={allModules}
                         onRemoveModule={handleRemoveSubTicketModule}
-                        onRefreshTicketData={fetchInitialData} // Passer la fonction de rafraîchissement global
+                        onRefreshTicketData={fetchInitialData}
                         showTemporaryMessage={showTemporaryMessage}
                     />
                 </div>
