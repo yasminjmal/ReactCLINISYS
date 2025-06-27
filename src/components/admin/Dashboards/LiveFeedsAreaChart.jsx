@@ -13,10 +13,7 @@ const LiveFeedsAreaChart = () => {
       try {
         setLoading(true);
         const rawData = await dashboardService.getLiveMetrics();
-
-        // Assurez-vous que rawData est un tableau d'objets comme [{hour: "HH:00", count: X}]
-        // Si votre API renvoie un format différent, ajustez ici.
-        setData(rawData);
+        setData(rawData); // rawData est déjà dans le bon format [{hour: "HH:00", count: X}]
       } catch (err) {
         console.error("Erreur lors de la récupération des données de flux:", err);
         setError("Impossible de charger les données de flux en direct.");
@@ -45,10 +42,10 @@ const LiveFeedsAreaChart = () => {
           }}
         >
           <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
-          <XAxis dataKey="hour" /> {/* 'hour' si l'API renvoie ce format */}
+          <XAxis dataKey="hour" /> {/* dataKey correspond à la clé 'hour' dans les données */}
           <YAxis />
           <Tooltip />
-          <Area type="monotone" dataKey="count" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} /> {/* 'count' si l'API renvoie ce format */}
+          <Area type="monotone" dataKey="count" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} /> {/* dataKey correspond à la clé 'count' */}
         </AreaChart>
       </ResponsiveContainer>
     </div>

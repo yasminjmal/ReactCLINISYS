@@ -17,11 +17,11 @@ const dashboardService = {
     },
 
     // 2. Pour LiveFeedsAreaChart (endpoints à définir côté backend si pas déjà fait)
-   getLiveMetrics: async () => {
+    getLiveMetrics: async () => {
         try {
-            // Remplacez par le chemin réel de votre nouvelle API MonitoringResource
+            // C'est maintenant le vrai endpoint que nous avons défini dans MonitoringResource
             const response = await api.get('monitoring/activity-by-hour');
-            return response.data;
+            return response.data; // Attendu: [{"hour": "08:00", "count": 75}, ...]
         } catch (error) {
             console.error("Erreur lors de la récupération des métriques en direct:", error);
             throw error;
@@ -57,6 +57,15 @@ const dashboardService = {
             return response.data; // Attendu: { totalTickets: 500, ticketsEnAttente: 50, ... }
         } catch (error) {
             console.error("Erreur lors de la récupération des statistiques globales des tickets:", error);
+            throw error;
+        }
+    },
+    getActiveTicketsByCategory: async (groupBy = 'employee') => { // Définit 'employee' comme défaut
+        try {
+            const response = await api.get(`tickets/stats/active-by-category?groupBy=${groupBy}`);
+            return response.data; // Attendu: [{"category": "Nom Employé/Module", "activeTickets": X}, ...]
+        } catch (error) {
+            console.error("Erreur lors de la récupération des tickets actifs par catégorie:", error);
             throw error;
         }
     }

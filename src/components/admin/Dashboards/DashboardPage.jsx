@@ -5,6 +5,7 @@ import SubscriptionsHourlyBarChart from './SubscriptionsHourlyBarChart';
 import LiveFeedsAreaChart from './LiveFeedsAreaChart';
 import EventsCalendar from './EventsCalendar';
 import GlobalTicketStatsWidget from './GlobalTicketStatsWidget';
+import ActiveTicketsByCategoryBarChart from './ActiveTicketsByCategoryBarChart'; // Assurez-vous que ce composant est correctement importé
 const DashboardPage = () => {
   return (
     <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
@@ -26,6 +27,10 @@ const DashboardPage = () => {
       <div className="grid grid-cols-1 gap-6">
         {/* Exemple d'intégration du calendrier */}
         <EventsCalendar />
+      </div>
+      <div className="grid grid-cols-1 gap-6 mb-6">
+        {/* Utilisation du composant renommé */}
+        <ActiveTicketsByCategoryBarChart />
       </div>
 
       {/* Tu peux ajouter d'autres métriques comme dans la capture (My Tasks, Transferred, etc.) ici */}

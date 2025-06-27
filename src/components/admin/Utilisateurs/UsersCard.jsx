@@ -1,43 +1,142 @@
-import React from 'react';
-import { Edit, Trash2 } from 'lucide-react';
+// src/components/admin/Users/EditUserModal.jsx
+import React, { useState, useEffect } from 'react';
+import { User, Mail, Phone, Key, Eye, EyeOff, Save, XCircle, Image as ImageIcon, Briefcase } from 'lucide-react';
 import defaultProfilePic from '../../../assets/images/default-profile.png';
 
-const UsersCard = ({ user, onEdit, onDelete }) => {
-    const photoUrl = user.photo ? `data:image/jpeg;base64,${user.photo}` : defaultProfilePic;
+const InputField = ({ label, name, type = "text", value, onChange, error, icon: Icon, hasToggle, onToggle, show }) => (
+    <div>
+        <label htmlFor={name} className="form-label">{label}</label>
+        <div className="form-icon-wrapper">
+            <Icon size={16} className="form-icon" />
+            <input type={type} name={name} id={name} value={value} onChange={onChange} className={`form-input-icon ${error ? 'border-red-500' : ''}`} />
+            {hasToggle && (
+                <button type="button" onClick={onToggle} className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500">
+                    {show ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+            )}
+        </div>
+        {error && <p className="form-error-text">{error}</p>}
+    </div>
+);
 
-    const roleMap = {
-        'A': { text: 'Admin', color: 'text-red-500' },
-        'C': { text: 'Chef d\'équipe', color: 'text-yellow-600' },
-        'E': { text: 'Utilisateur', color: 'text-sky-600' }
+
+const EditUserModal = ({ user, onUpdateUser, onCancel, showTemporaryMessage }) => {
+    const [formData, setFormData] = useState({
+        prenom: user?.prenom || '',
+        nom: user?.nom || '',
+        login: user?.login || '',
+        email: user?.email || '',
+        motDePasse: '',
+        numTelephone: user?.numTelephone || '',
+        role: user?.role || 'E',
+        actif: user?.actif ?? true,
+    });
+    const [photoFile, setPhotoFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState(defaultProfilePic);
+    const [showPassword, setShowPassword] = useState(false);
+    const [errors, setErrors] = useState({});
+
+    useEffect(() => {
+        if (user?.photo) {
+            const detectMime = (b64) => {
+                if (b64.startsWith("/9j/")) return "image/jpeg";
+                if (b64.startsWith("iVBOR")) return "image/png";
+                return "image/jpeg";
+            };
+            const mimeType = detectMime(user.photo);
+            setImagePreview(`data:${mimeType};base64,${user.photo}`);
+        } else {
+            setImagePreview(defaultProfilePic);
+        }
+    }, [user.photo]);
+
+    const handleInputChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+        setErrors(prev => ({ ...prev, [name]: null }));
     };
-    const { text: roleText, color: roleColor } = roleMap[user.role] || { text: user.role, color: 'text-slate-500' };
+
+    const handleImageChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setPhotoFile(file);
+            if (imagePreview && imagePreview.startsWith('blob:')) {
+                URL.revokeObjectURL(imagePreview);
+            }
+            setImagePreview(URL.createObjectURL(file));
+        }
+    };
+
+    const validateForm = () => {
+        const newErrors = {};
+        if (!formData.nom.trim()) newErrors.nom = "Le nom est requis.";
+        if (!formData.prenom.trim()) newErrors.prenom = "Le prénom est requis.";
+        if (!formData.login.trim()) newErrors.login = "Le login est requis.";
+        if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "L'email n'est pas valide.";
+        if (formData.motDePasse && formData.motDePasse.length < 4) newErrors.motDePasse = "Mot de passe de 4 caractères min. requis.";
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (validateForm()) {
+            const dataToSubmit = { ...formData };
+            if (dataToSubmit.motDePasse === '') {
+                delete dataToSubmit.motDePasse;
+            }
+            await onUpdateUser(user.id, dataToSubmit, photoFile);
+        } else {
+            console.error('Veuillez corriger les erreurs dans le formulaire.');
+        }
+    };
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-4 flex flex-col relative transition-all duration-300 hover:shadow-xl min-h-[200px]">
-            <div className="absolute top-3 right-3 flex items-center space-x-1">
-                <button onClick={() => onEdit(user)} className="p-2 text-slate-500 hover:text-sky-600 rounded-full hover:bg-slate-100" title="Modifier"><Edit size={16}/></button>
-                <button onClick={() => onDelete(user)} className="p-2 text-slate-500 hover:text-red-500 rounded-full hover:bg-slate-100" title="Supprimer"><Trash2 size={16}/></button>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <div className="w-full max-w-4xl bg-white dark:bg-slate-800/80 p-3 md:p-6 rounded-xl shadow-2xl overflow-y-auto max-h-[95vh]">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="text-center mb-6">
+                        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Modifier Utilisateur</h1>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                        <div className="md:col-span-1 flex flex-col items-center space-y-2">
+                            <div className="w-28 h-28 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center bg-slate-50 dark:bg-slate-700 overflow-hidden">
+                                <img src={imagePreview} alt="Aperçu" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultProfilePic; }}/>
+                            </div>
+                            <label htmlFor="photo" className="inline-flex items-center px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-xs font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150">
+                                <ImageIcon size={14} className="mr-1.5"/> Changer l'image
+                            </label>
+                            <input type="file" id="photo" name="photo" accept="image/*" onChange={handleImageChange} className="hidden" />
+                        </div>
+                        <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <InputField label="Prénom" name="prenom" value={formData.prenom} onChange={handleInputChange} error={errors.prenom} icon={User} />
+                            <InputField label="Nom" name="nom" value={formData.nom} onChange={handleInputChange} error={errors.nom} icon={User} />
+                            <InputField label="Login" name="login" value={formData.login} onChange={handleInputChange} error={errors.login} icon={User} />
+                            <InputField label="Email" name="email" type="email" value={formData.email} onChange={handleInputChange} error={errors.email} icon={Mail} />
+                            <InputField label="Mot de passe (Laisser vide pour ne pas changer)" name="motDePasse" type={showPassword ? "text" : "password"} value={formData.motDePasse} onChange={handleInputChange} error={errors.motDePasse} icon={Key} hasToggle={true} onToggle={() => setShowPassword(!showPassword)} show={showPassword} />
+                            <InputField label="N° Téléphone" name="numTelephone" value={formData.numTelephone} onChange={handleInputChange} icon={Phone} />
+                            <div>
+                                <label className="form-label">Rôle</label>
+                                <select name="role" value={formData.role} onChange={handleInputChange} className="form-select">
+                                    <option value="E">Utilisateur</option>
+                                    <option value="A">Administrateur</option>
+                                    <option value="C">Chef d'équipe</option>
+                                </select>
+                            </div>
+                            <div className="flex items-center pt-6">
+                                <input type="checkbox" id="actif" name="actif" checked={formData.actif} onChange={handleInputChange} className="form-checkbox" />
+                                <label htmlFor="actif" className="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300">Actif</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="pt-4 flex justify-end space-x-2 border-t border-slate-200 dark:border-slate-700">
+                        <button type="button" onClick={onCancel} className="btn btn-secondary"><XCircle size={16} className="mr-1.5"/> Annuler</button>
+                        <button type="submit" className="btn btn-primary"><Save size={16} className="mr-1.5"/> Sauvegarder</button>
+                    </div>
+                </form>
             </div>
-            <div className="flex items-center space-x-4 mb-3">
-                <img src={photoUrl} alt={`${user.prenom} ${user.nom}`} className="h-16 w-16 rounded-full object-cover border-2 border-slate-200" onError={(e) => { e.currentTarget.src = defaultProfilePic; }}/>
-                <div>
-                    <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{user.prenom} {user.nom}</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate w-40">{user.email}</p>
-                    <p className={`text-sm font-medium ${roleColor}`}>{roleText}</p>
-                </div>
-            </div>
-            <div className="mb-3 flex-grow">
-                <h4 className="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Équipes / Postes :</h4>
-                <div className="flex flex-wrap gap-1">
-                    {user.equipePosteSet?.length > 0 ? user.equipePosteSet.map(ep => (
-                        <span key={`${ep.equipe?.id}-${ep.poste?.id}`} className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs px-2 py-0.5 rounded-full">
-                            {ep.equipe?.designation}
-                        </span>
-                    )) : <span className="text-xs italic text-slate-400">Aucune équipe</span>}
-                </div>
-            </div>
-            <div className={`absolute bottom-3 right-3 h-3 w-3 rounded-full ${user.actif ? 'bg-green-500' : 'bg-red-500'}`} title={user.actif ? 'Actif' : 'Inactif'}></div>
         </div>
     );
 };
-export default UsersCard;
+
+export default EditUserModal;
