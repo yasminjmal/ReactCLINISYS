@@ -2,26 +2,26 @@ import React from 'react';
 import { Package as PackageIconCard, Edit, Trash2, Users, User as UserIcon } from 'lucide-react';
 
 const CardStatusBadge = ({ isActive }) => (
-    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${isActive ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'}`}>
+    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${isActive ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' : 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-300'}`}>
+        {/* Changé les couleurs pour correspondre au thème général (bleu/gris au lieu de vert/rouge) */}
         {isActive ? 'Actif' : 'Inactif'}
     </span>
 );
-
 
 const ModuleCard = ({ module, onEdit, onDelete }) => {
   const ticketCount = module.ticketList ? module.ticketList.length : 0;
   const equipeNom = module.equipe ? module.equipe.designation : 'Non assignée';
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-5 flex flex-col relative transition-all hover:shadow-xl min-h-[180px]">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-5 flex flex-col relative transition-all hover:shadow-xl hover:-translate-y-1">
       <div className="absolute top-3 right-3 flex items-center space-x-1">
-          <button onClick={onEdit} className="p-2 text-slate-500 hover:text-sky-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700" title="Modifier"><Edit size={16}/></button>
-          <button onClick={onDelete} className="p-2 text-slate-500 hover:text-red-500 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700" title="Supprimer"><Trash2 size={16}/></button>
+          <button onClick={() => onEdit(module)} className="p-2 text-slate-500 hover:text-blue-600 rounded-full hover:bg-blue-100 dark:hover:bg-slate-700 transition-colors" title="Modifier"><Edit size={16}/></button>
+          <button onClick={() => onDelete(module)} className="p-2 text-slate-500 hover:text-red-600 rounded-full hover:bg-red-100 dark:hover:bg-slate-700 transition-colors" title="Supprimer"><Trash2 size={16}/></button>
       </div>
       
       <div className="mb-2 pr-10">
         <div className="flex items-center mb-1">
-            <div className="p-2 bg-indigo-100 dark:bg-indigo-700/30 rounded-lg mr-3"><PackageIconCard className="text-indigo-600 dark:text-indigo-400" size={20} /></div>
+            <div className="p-2 bg-blue-100 dark:bg-blue-700/30 rounded-lg mr-3"><PackageIconCard className="text-blue-600 dark:text-blue-400" size={20} /></div> {/* Changé couleur icône */}
             <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-100 truncate" title={module.designation}>{module.designation}</h3>
         </div>
         <p className="text-xs text-slate-400 dark:text-slate-500 ml-12">ID: {module.id}</p>

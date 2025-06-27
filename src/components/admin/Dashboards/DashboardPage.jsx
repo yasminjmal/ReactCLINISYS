@@ -4,12 +4,12 @@ import TicketsByStatusDonutChart from './TicketsByStatusDonutChart';
 import SubscriptionsHourlyBarChart from './SubscriptionsHourlyBarChart';
 import LiveFeedsAreaChart from './LiveFeedsAreaChart';
 import EventsCalendar from './EventsCalendar';
-
+import GlobalTicketStatsWidget from './GlobalTicketStatsWidget';
 const DashboardPage = () => {
   return (
     <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
       <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Tableau de Bord Global</h1>
-
+      <GlobalTicketStatsWidget />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Exemple d'intégration du graphique en beignet */}
         <TicketsByStatusDonutChart />

@@ -50,7 +50,19 @@ const dashboardService = {
             console.error("Erreur lors de la récupération des événements du calendrier:", error);
             throw error;
         }
+    },
+    getGlobalTicketCounts: async () => {
+        try {
+            const response = await api.get('tickets/stats/global-counts');
+            return response.data; // Attendu: { totalTickets: 500, ticketsEnAttente: 50, ... }
+        } catch (error) {
+            console.error("Erreur lors de la récupération des statistiques globales des tickets:", error);
+            throw error;
+        }
     }
+
+    
+    
 };
 
 export default dashboardService;    
