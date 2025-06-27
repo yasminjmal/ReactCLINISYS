@@ -11,6 +11,8 @@ import './index.css';
 import { WebSocketProvider } from './context/WebSocketContext';
 
 
+
+
 const normalizeRoleApp = (roleFromServer) => {
   if (!roleFromServer) return '';
   let normalized = String(roleFromServer).toLowerCase();

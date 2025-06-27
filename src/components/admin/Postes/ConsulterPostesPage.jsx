@@ -1,7 +1,9 @@
+// src/pages/Admin/Postes/ConsulterPostesPage.jsx
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
     Search, Plus, X, Filter, AlertTriangle, Save, XCircle, Settings2, Eye,
-    EyeOff, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, ArrowUpDown, RefreshCw, LayoutGrid, Rows3
+    EyeOff, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, ArrowUpDown, RefreshCw, LayoutGrid, Rows3,
+    Printer, File, FileSpreadsheet // Importez les icônes nécessaires ici
 } from 'lucide-react';
 import posteService from '../../../services/posteService';
 import PosteTableRow from './PosteTableRow';
@@ -10,9 +12,10 @@ import AjouterPostePage from './AjouterPostePage';
 import { exportToPdf } from '../../../utils/exportPdf';
 import { exportTableToExcel } from '../../../utils/exportExcel';
 import { printHtmlContent } from '../../../utils/printContent';
-import { useExport } from '../../../context/ExportContext';
+import { useExport } from '../../../context/ExportContext'; // Importer useExport
+import { formatDateFromArray } from '../../../utils/dateFormatter'; // Assurez-vous que ce fichier existe et exporte bien formatDateFromArray
 
-// --- Composants Modaux et Dropdowns (inchangés, mais positionnés ici pour clarté) ---
+// --- Composants Modaux et Dropdowns (inchangés) ---
 const Spinner = () => <div className="text-center py-20"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div></div>;
 
 const DeleteConfirmationModal = ({ poste, onConfirm, onCancel }) => (
@@ -59,35 +62,37 @@ const DropdownMenu = ({ children, align = 'right' }) => (
         {children}
     </div>
 );
-const DropdownMenuItem = ({ children, onClick, isSelected }) => (
-    <button onClick={onClick} className={`w-full text-left flex items-center px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 ${isSelected ? 'font-bold text-blue-600' : ''}`}>
+const DropdownMenuItem = ({ children, onClick, isSelected, disabled }) => ( // Ajout de disabled
+    <button onClick={onClick} disabled={disabled} className={`w-full text-left flex items-center px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 ${isSelected ? 'font-bold text-blue-600' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
         {children}
     </button>
 );
 
 // --- NOUVEAU: Composant TableHeader extrait de ConsulterPostesPage ---
-// Il reçoit les props nécessaires directement
-const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => (
-    <thead className="text-sm text-black bg-sky-100 dark:bg-blue-200">
-        <tr>
-            {visibleColumns.poste && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Poste</th>}
-            {visibleColumns.statut && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Statut</th>}
-            {visibleColumns.creePar && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Créé par</th>}
-            {visibleColumns.dateCreation && (
-                <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">
-                    <button onClick={() => handleSort('dateCreation')} className="flex items-center justify-between w-full hover:text-blue-200">
-                        <span>Date de création</span>
-                        <ArrowUpDown size={16} className="opacity-70" />
-                    </button>
-                </th>
-            )}
-            <th scope="col" className="px-6 py-3 font-sans text-center">Actions</th>
-        </tr>
-    </thead>
-);
+// Il reçoit les props nécessaires directement, SANS les fonctions d'exportation
+const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => {
+    return (
+        <thead className="text-sm text-black bg-sky-100 dark:bg-blue-200">
+            <tr>
+                {visibleColumns.poste && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Poste</th>}
+                {visibleColumns.statut && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Statut</th>}
+                {visibleColumns.creePar && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Créé par</th>}
+                {visibleColumns.dateCreation && (
+                    <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">
+                        <button onClick={() => handleSort('dateCreation')} className="flex items-center justify-between w-full hover:text-blue-200">
+                            <span>Date de création</span>
+                            <ArrowUpDown size={16} className="opacity-70" />
+                        </button>
+                    </th>
+                )}
+                {/* La colonne Actions a maintenant les boutons ici */}
+                <th scope="col" className="px-6 py-3 font-sans text-center">Actions</th>
+            </tr>
+        </thead>
+    );
+};
 
-// --- NOUVEAU: Composant PaginationControls extrait de ConsulterPostesPage ---
-// Il reçoit les props nécessaires directement
+// --- Composant PaginationControls (inchangé) ---
 const PaginationControls = ({ currentPage, totalPages, setCurrentPage, processedPostes, entriesPerPage }) => {
     const pageNumbers = [];
     for (let i = 1; i <= totalPages; i++) {
@@ -131,9 +136,10 @@ const ConsulterPostesPage = ({ initialPostes }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [entriesPerPage, setEntriesPerPage] = useState(10);
     const [visibleColumns, setVisibleColumns] = useState({ poste: true, statut: true, creePar: true, dateCreation: true });
-    const [openDropdown, setOpenDropdown] = useState(null);
-    const dropdownsRef = useRef(null);
-    const { setExportFunctions } = useExport();
+    const [openDropdown, setOpenDropdown] = useState(null); 
+    const dropdownsRef = useRef(null); 
+    // Récupérer les fonctions d'exportation depuis le contexte (toujours nécessaire pour les appeler)
+    const { setExportFunctions, currentExportPdfFunction, currentExportExcelFunction, currentPrintFunction } = useExport(); 
 
     // --- LOGIQUE DE DONNÉES ET D'EFFETS ---
     const fetchPostes = useCallback(async () => {
@@ -156,9 +162,17 @@ const ConsulterPostesPage = ({ initialPostes }) => {
         }
     }, [view, fetchPostes, initialPostes]);
 
+    // Gère le clic en dehors des dropdowns (général)
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (dropdownsRef.current && !dropdownsRef.current.contains(event.target)) setOpenDropdown(null);
+            // S'assurer que le clic n'est pas sur le bouton "Exporter" lui-même
+            if (dropdownsRef.current && !dropdownsRef.current.contains(event.target)) {
+                 // Sauf si l'élément cliqué est l'un des boutons d'exportation
+                const isExportButton = event.target.closest('.btn-export-dropdown'); // Ajout d'une classe pour les boutons d'exportation
+                if (!isExportButton) {
+                    setOpenDropdown(null);
+                }
+            }
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -202,8 +216,11 @@ const ConsulterPostesPage = ({ initialPostes }) => {
                 let valA = a[sortConfig.key];
                 let valB = b[sortConfig.key];
                 if (sortConfig.key === 'dateCreation') {
-                    valA = new Date(a.dateCreation).getTime();
-                    valB = new Date(b.dateCreation).getTime();
+                    // S'assurer que les dates sont des objets Date pour la comparaison
+                    const dateA = Array.isArray(a.dateCreation) ? new Date(a.dateCreation[0], a.dateCreation[1] - 1, a.dateCreation[2]) : new Date(a.dateCreation);
+                    const dateB = Array.isArray(b.dateCreation) ? new Date(b.dateCreation[0], b.dateCreation[1] - 1, b.dateCreation[2]) : new Date(b.dateCreation);
+                    valA = dateA.getTime();
+                    valB = dateB.getTime();
                 }
                 if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
                 if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
@@ -223,11 +240,14 @@ const ConsulterPostesPage = ({ initialPostes }) => {
     useEffect(() => { setCurrentPage(1); }, [entriesPerPage, filterStatus, searchTerm]);
 
     // --- HANDLERS POUR LES CONTRÔLES UI ---
-    const handleSort = useCallback((key) => { // useCallback ajouté
+    const handleSort = useCallback((key) => { 
         setSortConfig(p => ({ key, direction: p.key === key && p.direction === 'asc' ? 'desc' : 'asc' }));
     }, []);
-    const handleToggleColumn = useCallback((key) => setVisibleColumns(p => ({ ...p, [key]: !p[key] })), []); // useCallback ajouté
-    const toggleDropdown = useCallback((name) => setOpenDropdown(p => p === name ? null : name), []); // useCallback ajouté
+    const handleToggleColumn = useCallback((key) => setVisibleColumns(p => ({ ...p, [key]: !p[key] })), []);
+    // Le toggleDropdown doit aussi gérer la fermeture du dropdown d'exportation
+    const toggleDropdownGlobal = useCallback((name) => {
+        setOpenDropdown(prev => (prev === name ? null : name));
+    }, []);
 
 
     // --- PRÉPARATION DES DONNÉES ET FONCTIONS D'EXPORTATION POUR LE CONTEXTE ---
@@ -235,9 +255,10 @@ const ConsulterPostesPage = ({ initialPostes }) => {
     const pdfData = useMemo(() => processedPostes.map(poste => [
         poste.id,
         poste.designation,
-        poste.actif ? 'Actif' : 'Inactif',
-        poste.creePar || 'N/A',
-        new Date(poste.dateCreation).toLocaleDateString()
+        poste.actif ? 'Actif' : 'Non actif',
+        // Utilisation de poste.userCreation (si c'est un objet {nom, prenom}) ou poste.creePar (si c'est juste un nom)
+        poste.userCreation ? `${poste.userCreation.nom} ${poste.userCreation.prenom}` : (poste.creePar || 'N/A'),
+        formatDateFromArray(poste.dateCreation) // Utilisation de la fonction formatDateFromArray
     ]), [processedPostes]); 
 
     const excelData = useMemo(() => {
@@ -245,17 +266,19 @@ const ConsulterPostesPage = ({ initialPostes }) => {
             ID: poste.id,
             'Poste': poste.designation,
             'Statut': poste.actif ? 'Actif' : 'Inactif',
-            'Créé par': poste.creePar || 'N/A',
-            'Date Création': new Date(poste.dateCreation).toLocaleDateString()
+            'Créé par': poste.userCreation ? `${poste.userCreation.nom} ${poste.userCreation.prenom}` : (poste.creePar || 'N/A'),
+            'Date Création': formatDateFromArray(poste.dateCreation)
         }));
     }, [processedPostes]);
 
     const handleExportPdfPostes = useCallback(() => {
         exportToPdf('Liste des Postes', pdfHeaders, pdfData, 'liste_postes.pdf');
+        setOpenDropdown(null); // Ferme le dropdown après l'action
     }, [pdfHeaders, pdfData]);
 
     const handleExportExcelPostes = useCallback(() => {
         exportTableToExcel(pdfHeaders, pdfData, 'liste_postes.xlsx', 'Postes');
+        setOpenDropdown(null); // Ferme le dropdown après l'action
     }, [pdfHeaders, pdfData]);
 
     const handlePrintPostes = useCallback(() => {
@@ -272,16 +295,18 @@ const ConsulterPostesPage = ({ initialPostes }) => {
                             </thead>
                             <tbody>`;
         processedPostes.forEach(poste => {
+            const creatorName = poste.userCreation ? `${poste.userCreation.nom} ${poste.userCreation.prenom}` : (poste.creePar || 'N/A');
             tableHtml += `<tr>
                             <td style="padding: 8px; border: 1px solid #ddd;">${poste.id}</td>
                             <td style="padding: 8px; border: 1px solid #ddd;">${poste.designation}</td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">${poste.actif ? 'Actif' : 'Inactif'}</td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">${poste.creePar || 'N/A'}</td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">${new Date(poste.dateCreation).toLocaleDateString()}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">${poste.actif ? 'Actif' : 'Non actif'}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">${creatorName}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">${formatDateFromArray(poste.dateCreation)}</td>
                           </tr>`;
         });
         tableHtml += `</tbody></table>`;
         printHtmlContent(tableHtml, 'Impression Liste des Postes');
+        setOpenDropdown(null); // Ferme le dropdown après l'action
     }, [processedPostes]);
 
     useEffect(() => {
@@ -298,7 +323,7 @@ const ConsulterPostesPage = ({ initialPostes }) => {
     }
 
     return (
-        <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
+        <div className="p-0 md:p-0 bg-slate-50 dark:bg-slate-900 min-h-screen">
             {/* Styles CSS personnalisés intégrés dans le composant */}
             <style>{`
                 .btn { @apply inline-flex items-center justify-center px-4 py-2 border text-sm font-semibold rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-150; }
@@ -318,8 +343,12 @@ const ConsulterPostesPage = ({ initialPostes }) => {
 
             {posteToDelete && <DeleteConfirmationModal poste={posteToDelete} onConfirm={handleDeletePoste} onCancel={() => setPosteToDelete(null)} />}
             {posteToEdit && <EditModal poste={posteToEdit} onUpdate={handleUpdatePoste} onCancel={() => setPosteToEdit(null)} />}
+
+            {/* Titre de la page */}
+            <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-2">Gestion des Postes</h1> 
+
             {/* Barre de contrôles */}
-            <div className="bg-white dark:bg-slate-800/80 px-4 py-1 rounded-lg shadow-sm border border-slate-200/80 dark:border-slate-700 mb-2">
+            <div className="bg-white dark:bg-slate-800/80 px-4 py-0 rounded-lg shadow-sm border border-slate-200/80 dark:border-slate-700 mb-0">
                 <div className="flex flex-col md:flex-row gap-4 justify-between">
                     <div className="relative flex-grow max-w-xs">
                         <Search className="h-5 w-5 text-slate-400 absolute top-1/2 left-3 -translate-y-1/2" />
@@ -328,14 +357,43 @@ const ConsulterPostesPage = ({ initialPostes }) => {
                     <div className="flex items-center gap-2 flex-wrap" ref={dropdownsRef}>
                         <button onClick={() => setView('add')} className="btn btn-primary h-full px-3"><Plus size={20} /></button>
                         <button onClick={fetchPostes} className="btn btn-secondary h-full px-3" title="Rafraîchir"><RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} /></button>
-                        <div className="relative"><button onClick={() => toggleDropdown('filter')} className="btn btn-secondary"><Filter size={16} className="mr-2" />{filterStatus === 'tous' ? 'Filtre' : `Filtre: ${filterStatus}`}</button>
-                            {openDropdown === 'filter' && <DropdownMenu><DropdownMenuItem isSelected={filterStatus === 'tous'} onClick={() => { setFilterStatus('tous'); toggleDropdown(); }}>Tous</DropdownMenuItem><DropdownMenuItem isSelected={filterStatus === 'actif'} onClick={() => { setFilterStatus('actif'); toggleDropdown(); }}>Actifs</DropdownMenuItem><DropdownMenuItem isSelected={filterStatus === 'inactif'} onClick={() => { setFilterStatus('inactif'); toggleDropdown(); }}>Inactifs</DropdownMenuItem></DropdownMenu>}
+                        <div className="relative"><button onClick={() => toggleDropdownGlobal('filter')} className="btn btn-secondary"><Filter size={16} className="mr-2" />{filterStatus === 'tous' ? 'Filtre' : `Filtre: ${filterStatus}`}</button>
+                            {openDropdown === 'filter' && <DropdownMenu><DropdownMenuItem isSelected={filterStatus === 'tous'} onClick={() => { setFilterStatus('tous'); toggleDropdownGlobal('filter'); }}>Tous</DropdownMenuItem><DropdownMenuItem isSelected={filterStatus === 'actif'} onClick={() => { setFilterStatus('actif'); toggleDropdownGlobal('filter'); }}>Actifs</DropdownMenuItem><DropdownMenuItem isSelected={filterStatus === 'inactif'} onClick={() => { setFilterStatus('inactif'); toggleDropdownGlobal('filter'); }}>Inactifs</DropdownMenuItem></DropdownMenu>}
                         </div>
-                        <div className="relative"><button onClick={() => toggleDropdown('columns')} className="btn btn-secondary"><Eye size={16} className="mr-2" />Colonnes</button>
+                        <div className="relative"><button onClick={() => toggleDropdownGlobal('columns')} className="btn btn-secondary"><Eye size={16} className="mr-2" />Colonnes</button>
                             {openDropdown === 'columns' && <DropdownMenu>{Object.keys(visibleColumns).map(key => (<DropdownMenuItem key={key} onClick={() => handleToggleColumn(key)}>{visibleColumns[key] ? <Eye size={16} className="mr-2 text-blue-500" /> : <EyeOff size={16} className="mr-2 text-slate-400" />}<span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span></DropdownMenuItem>))}</DropdownMenu>}
                         </div>
-                        <div className="relative"><button onClick={() => toggleDropdown('entries')} className="btn btn-secondary">{entriesPerPage} / page</button>
-                            {openDropdown === 'entries' && <DropdownMenu>{[10, 25, 50].map(num => (<DropdownMenuItem isSelected={entriesPerPage === num} key={num} onClick={() => { setEntriesPerPage(num); toggleDropdown(); }}>{num} lignes</DropdownMenuItem>))}</DropdownMenu>}
+                        <div className="relative"><button onClick={() => toggleDropdownGlobal('entries')} className="btn btn-secondary">{entriesPerPage} / page</button>
+                            {openDropdown === 'entries' && <DropdownMenu>{[10, 25, 50].map(num => (<DropdownMenuItem isSelected={entriesPerPage === num} key={num} onClick={() => { setEntriesPerPage(num); toggleDropdownGlobal('entries'); }}>{num} lignes</DropdownMenuItem>))}</DropdownMenu>}
+                        </div>
+                        {/* NOUVELLE POSITION : Boutons Imprimer et Exporter */}
+                        <button 
+                            onClick={handlePrintPostes} 
+                            className={`btn btn-secondary h-full px-3 ${!currentPrintFunction ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            disabled={!currentPrintFunction}
+                            title="Imprimer la page"
+                        >
+                            <Printer size={18} />
+                        </button>
+                        <div className="relative">
+                            <button 
+                                onClick={() => toggleDropdownGlobal('export')} // Nouveau dropdown pour l'export
+                                className={`btn btn-secondary h-full px-3 ${(!currentExportPdfFunction && !currentExportExcelFunction) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                disabled={!currentExportPdfFunction && !currentExportExcelFunction}
+                                title="Exporter"
+                            >
+                                <File size={18} />
+                            </button>
+                            {openDropdown === 'export' && (
+                                <DropdownMenu align="right"> {/* Alignez à droite pour ne pas dépasser */}
+                                    <DropdownMenuItem onClick={handleExportPdfPostes} disabled={!currentExportPdfFunction}>
+                                        <File size={16} className="mr-2" /> Exporter en PDF
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={handleExportExcelPostes} disabled={!currentExportExcelFunction}>
+                                        <FileSpreadsheet size={16} className="mr-2" /> Exporter en Excel
+                                    </DropdownMenuItem>
+                                </DropdownMenu>
+                            )}
                         </div>
                         <button onClick={() => setViewMode(p => p === 'table' ? 'grid' : 'table')} className="btn btn-secondary h-full px-3" title="Changer de vue">
                             {viewMode === 'table' ? <LayoutGrid size={18} /> : <Rows3 size={18} />}
@@ -357,6 +415,9 @@ const ConsulterPostesPage = ({ initialPostes }) => {
                                         visibleColumns={visibleColumns} 
                                         handleSort={handleSort} 
                                         sortConfig={sortConfig} 
+                                        // currentExportPdfFunction={currentExportPdfFunction} // Plus nécessaire ici
+                                        // currentExportExcelFunction={currentExportExcelFunction} // Plus nécessaire ici
+                                        // currentPrintFunction={currentPrintFunction} // Plus nécessaire ici
                                     />
                                     <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                                         {paginatedPostes.map(poste => (

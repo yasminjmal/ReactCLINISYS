@@ -15,6 +15,8 @@ import {
   Phone,
   Aperture,
 } from 'lucide-react';
+import logoClinisys from '../../assets/images/logoTRANSPARENT.png';
+
 
 const menuItems = [
     { type: 'header', label: 'MENU PRINCIPAL' },
@@ -99,8 +101,11 @@ const SidebarAdmin = ({
     >
         <div className="flex-shrink-0">
             <div className="h-16 flex items-center px-4 space-x-2 border-b border-black/10">
-                <Aperture className="text-blue-600" size={28} />
-                <h1 className="text-lg font-bold text-slate-800">Module de gestion des Tickets</h1>
+                <img 
+                    src={logoClinisys} 
+                    alt="Logo CliniSYS" 
+                    className="h-15 w-auto object-contain" // Ajustez la hauteur (h-X) et la largeur (w-auto) selon votre logo
+                />
             </div>
         </div>
       <nav className="flex-grow p-2 space-y-1 overflow-y-auto">

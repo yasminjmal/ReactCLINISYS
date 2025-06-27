@@ -1,55 +1,54 @@
 // src/utils/exportPdf.jsx
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+// PAS D'IMPORT DE 'jspdf-autotable' ICI, car on va utiliser le helper
+import { initializeJSPDFAutoTable } from './jspdfAutoTableHelper'; // <-- Nouveau helper
 
-// C'est l'importation clé pour jspdf-autotable.
-// Nous l'importons d'une manière qui garantit que son code d'initialisation s'exécute.
-// J'ai renommé l'importation pour éviter un conflit direct si jsPDF avait déjà une fonction autoTable non liée. // Assurez-vous que cette ligne est présente et active
 /**
  * Exporte des données de tableau dans un fichier PDF.
  * @param {string} title Le titre du document PDF.
- * @param {Array<Array<string>>} headers Les en-têtes du tableau (ex: [['ID', 'Nom']]).
+ * @param {Array<Array<string>>} headers Les en-têtes du tableau.
  * @param {Array<Array<string | number>>} data Les données du tableau.
- * @param {string} filename Le nom du fichier de sortie (ex: 'rapport.pdf').
+ * @param {string} filename Le nom du fichier de sortie.
  */
 export const exportToPdf = (title, headers, data, filename = 'document.pdf') => {
-  const doc = new jsPDF(); // Crée une nouvelle instance de jsPDF
+  const doc = new jsPDF(); 
+
+  // ******* APPEL DU HELPER ICI *******
+  initializeJSPDFAutoTable(doc); // S'assure que autoTable est attaché à 'doc'
+  // ***********************************
 
   doc.setFontSize(18);
   doc.text(title, 14, 22);
 
-  // Vérification de sécurité avant d'appeler autoTable
-  // Cette vérification est cruciale pour le débogage.
+  // La vérification de sécurité doit toujours être là.
   if (typeof doc.autoTable !== 'function') {
-    console.error("Erreur: jspdf-autotable n'a pas été chargé correctement. doc.autoTable n'est pas une fonction.");
-    console.log("Solution possible: Vérifiez l'installation de 'jspdf-autotable' et assurez-vous que 'import \"jspdf-autotable\";' est exécuté. Si le problème persiste dans Vite/React, essayez de l'importer dans un fichier de plus haut niveau comme main.jsx.");
-    // Lancer une erreur pour arrêter l'exécution et signaler clairement le problème
-    throw new Error("jsPDF-Autotable plugin non chargé. Impossible d'exporter en PDF.");
+    console.error("Erreur critique: jspdf-autotable n'a PAS été chargé correctement. doc.autoTable n'est pas une fonction.");
+    console.log("Cause probable: Le bundler (Vite) n'exécute pas l'effet de bord du plugin jspdf-autotable.");
+    console.log("Solutions: Vérifiez la configuration de Vite, les versions des librairies, et le helper initializeJSPDFAutoTable.");
+    throw new Error("jsPDF-Autotable plugin non chargé. Impossible d'exporter en PDF."); 
   }
 
-  // Utilisation de la fonction autoTable
   doc.autoTable({
     head: headers,
     body: data,
-    startY: 30, // Commence le tableau 30 unités sous le haut de la page
-    theme: 'striped', // Style de tableau (striped, grid, plain)
+    startY: 30, 
+    theme: 'striped', 
     styles: {
       fontSize: 10,
       cellPadding: 3,
     },
     headStyles: {
-      fillColor: [41, 128, 185], // Couleur de fond des en-têtes (bleu)
-      textColor: 255, // Couleur du texte des en-têtes (blanc)
+      fillColor: [41, 128, 185],
+      textColor: 255,
       fontStyle: 'bold',
     },
     alternateRowStyles: {
-      fillColor: [245, 245, 245], // Couleur de fond des lignes alternées
+      fillColor: [245, 245, 245],
     },
-    // Ajoute un footer (numéro de page)
     didDrawPage: function(data) {
       let str = 'Page ' + doc.internal.getNumberOfPages();
       doc.setFontSize(10);
-      // Positionne le numéro de page en bas à droite
       doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10);
     }
   });
@@ -60,10 +59,7 @@ export const exportToPdf = (title, headers, data, filename = 'document.pdf') => 
 
 /**
  * Exporte un élément HTML (identifié par son ID) dans un fichier PDF.
- * Nécessite 'html2canvas' installé.
- * @param {string} elementId L'ID de l'élément HTML à exporter.
- * @param {string} filename Le nom du fichier de sortie (ex: 'page.pdf').
- * @param {string} title Le titre interne du document PDF.
+ * ... (code inchangé)
  */
 export const exportHtmlElementToPdf = async (elementId, filename = 'page.pdf', title = 'Document') => {
   const input = document.getElementById(elementId);
@@ -74,14 +70,14 @@ export const exportHtmlElementToPdf = async (elementId, filename = 'page.pdf', t
 
   try {
     const canvas = await html2canvas(input, {
-      scale: 2, // Augmente la résolution pour une meilleure qualité
-      useCORS: true, // Important si des images proviennent d'autres domaines
+      scale: 2, 
+      useCORS: true, 
     });
 
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgWidth = 210; // A4 width in mm
-    const pageHeight = 297; // A4 height in mm
+    const imgWidth = 210; 
+    const pageHeight = 297; 
     const imgHeight = canvas.height * imgWidth / canvas.width;
     let heightLeft = imgHeight;
 
@@ -91,7 +87,7 @@ export const exportHtmlElementToPdf = async (elementId, filename = 'page.pdf', t
     heightLeft -= pageHeight;
 
     while (heightLeft >= 0) {
-      position = heightLeft - imgHeight;
+      position = heightLeft - imgImgHeight;
       pdf.addPage();
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;

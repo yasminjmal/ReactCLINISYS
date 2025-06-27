@@ -1,12 +1,11 @@
-// src/utils/printContent.js
+// src/utils/printContent.jsx
 
-/**
- * Ouvre une nouvelle fenêtre avec le contenu HTML spécifié et lance l'impression.
- * @param {string} contentHtml Le contenu HTML à imprimer.
- * @param {string} title Le titre de la fenêtre d'impression.
- */
 export const printHtmlContent = (contentHtml, title = 'Imprimer') => {
-  const printWindow = window.open('', '', 'height=600,width=800');
+  const printWindow = window.open('', '_blank', 'height=600,width=800'); // Utiliser '_blank'
+  if (!printWindow) {
+    alert("Impossible d'ouvrir la fenêtre d'impression. Veuillez autoriser les pop-ups.");
+    return;
+  }
   printWindow.document.write('<html><head><title>' + title + '</title>');
   printWindow.document.write('<style>');
   printWindow.document.write(`
@@ -15,7 +14,8 @@ export const printHtmlContent = (contentHtml, title = 'Imprimer') => {
     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
     th { background-color: #f2f2f2; }
     @media print {
-      body { -webkit-print-color-adjust: exact; }
+      body { -webkit-print-color-adjust: exact; } /* Pour Chrome/Safari */
+      @page { size: A4 portrait; margin: 10mm; } /* Options de page pour l'impression */
     }
   `);
   printWindow.document.write('</style>');
@@ -24,15 +24,14 @@ export const printHtmlContent = (contentHtml, title = 'Imprimer') => {
   printWindow.document.write('</body></html>');
   printWindow.document.close();
   printWindow.focus();
-  printWindow.print();
+  
+  // AJOUTER UN DÉLAI AVANT D'APPLIQUER print()
+  setTimeout(() => {
+    printWindow.print();
+    // printWindow.close(); // Décommentez si vous voulez que la fenêtre se ferme automatiquement après l'impression
+  }, 250); // Un petit délai de 250ms pour laisser le navigateur rendre le contenu
 };
 
-/**
- * Imprime directement le contenu d'un élément HTML existant sur la page par son ID.
- * Cette méthode manipule le DOM temporairement, utilisez avec prudence.
- * Pour React, 'react-to-print' est souvent une meilleure solution.
- * @param {string} elementId L'ID de l'élément HTML à imprimer.
- */
 export const printElementById = (elementId) => {
   const elementToPrint = document.getElementById(elementId);
   if (!elementToPrint) {
@@ -40,16 +39,15 @@ export const printElementById = (elementId) => {
     return;
   }
 
+  console.warn("Utiliser printElementById peut causer des problèmes de rendu. Préférez printHtmlContent ou react-to-print.");
+  
   const printContent = elementToPrint.innerHTML;
   const originalBody = document.body.innerHTML;
   
-  // Masque tout le contenu sauf l'élément à imprimer
   document.body.innerHTML = printContent;
   
-  window.print();
-  
-  // Restaure le contenu original du corps après l'impression (peut nécessiter un léger délai)
-  // Une solution plus robuste serait d'utiliser une iframe ou 'react-to-print'
-  document.body.innerHTML = originalBody;
-  console.log(`Element ID '${elementId}' envoyé à l'impression.`);
+  setTimeout(() => {
+    window.print();
+    document.body.innerHTML = originalBody;
+  }, 100); 
 };

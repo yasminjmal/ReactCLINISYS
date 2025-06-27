@@ -18,6 +18,7 @@ import ConsulterClientPage from './Clients/ConsulterClientPage';
 import GoodbyePage from '../shared/GoodbyePage';
 import FloatingActionButton from '../../components/FloatingActionButton';
 import { ExportProvider } from '../../context/ExportContext';
+import DashboardPage from './Dashboards/DashboardPage';
 
 const LoadingIndicator = () => (
   <div className="loading-indicator-container">
@@ -206,7 +207,7 @@ const AdminInterface = () => {
                 const pageId = typeof activePage === 'object' ? activePage.id : activePage;
                 const filter = typeof activePage === 'object' ? activePage.filter : null;
                 switch (pageId) {
-                  case 'home': return <div className="p-6 text-3xl font-bold text-slate-800 dark:text-slate-100">Tableau de bord</div>;
+                  case 'home': return <DashboardPage />;
                   case 'utilisateurs_consulter_utilisateurs': return <ConsulterUsersPage initialUsers={searchEntityType === 'utilisateur' ? searchResults : null} />;
                   case 'equipes_consulter_equipes': return <ConsulterEquipesPage users={usersData} initialEquipes={searchEntityType === 'equipe' ? searchResults : null} />;
                   case 'modules_consulter_modules': return <ConsulterModulesPage initialModules={searchEntityType === 'module' ? searchResults : null} />;
