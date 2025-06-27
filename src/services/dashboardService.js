@@ -87,6 +87,16 @@ const dashboardService = {
             console.error("Erreur lors de la récupération des tickets en retard:", error);
             throw error;
         }
+    },
+    getClientStatsByRegion: async () => {
+        try {
+            const response = await api.get('clients/stats/by-region');
+            // Attendu: [{"regionName": "Tunis", "totalClients": 10, "activeClients": 8, "ticketsByStatus": {"En_attente": 2, ...}}, ...]
+            return response.data;
+        } catch (error) {
+            console.error("Erreur lors de la récupération des statistiques clients par région:", error);
+            throw error;
+        }
     }
 
     

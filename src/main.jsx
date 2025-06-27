@@ -19,6 +19,9 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 
 
+import { createRoot } from 'react-dom/client'; // <-- Importez createRoot
+
+
 
 // import { jsPDF } from 'jspdf'; 
 // import 'jspdf-autotable';
