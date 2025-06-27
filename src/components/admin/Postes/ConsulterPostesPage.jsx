@@ -226,7 +226,8 @@ const ConsulterPostesPage = ({ initialPostes }) => {
     const dropdownsRef = useRef(null);
     // NOUVEAU: États pour le surlignage et les messages de notification
     const [highlightedPostId, setHighlightedPostId] = useState(null);
-    const [pendingHighlightId, setPendingHighlightId] = useState(null); // Nouveau state pour l'ID en attente de surlignage
+    // REMPLACÉ pendingHighlightId par une ref pour un meilleur contrôle du timing
+    const highlightPostRef = useRef(null); // Ref pour l'ID du poste à surligner
     const [toast, setToast] = useState(null); // { message: string, type: 'success' | 'error' | 'info' }
 
     // Récupérer les fonctions d'exportation depuis le contexte (toujours nécessaire pour les appeler)
@@ -269,12 +270,12 @@ const ConsulterPostesPage = ({ initialPostes }) => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // Effet pour gérer le surlignage (disparaît après 3 secondes)
+    // Effet pour gérer le surlignage (disparaît après 4 secondes)
     useEffect(() => {
         if (highlightedPostId) {
             const timer = setTimeout(() => {
                 setHighlightedPostId(null);
-            }, 3000);
+            }, 4000); // 4 secondes comme demandé
             return () => clearTimeout(timer);
         }
     }, [highlightedPostId]);
@@ -284,94 +285,10 @@ const ConsulterPostesPage = ({ initialPostes }) => {
         if (toast) {
             const timer = setTimeout(() => {
                 setToast(null);
-            }, 3000);
+            }, 3000); // Les messages toast disparaissent après 3 secondes (peut être ajusté)
             return () => clearTimeout(timer);
         }
     }, [toast]);
-
-    // Effet pour appliquer le surlignage et définir la page APRES que les données 'postes' sont confirmées d'inclure l'ID cible
-    useEffect(() => {
-        if (pendingHighlightId && postes.length > 0) {
-            // Assurez-vous que processedPostes est à jour pour trouver l'index correct
-            const currentProcessedPostes = (postes) => {
-                let filtered = [...postes];
-                if (filterStatus !== 'tous') {
-                    filtered = filtered.filter(p => (p.actif ? 'actif' : 'inactif') === filterStatus);
-                }
-                if (searchTerm) {
-                    filtered = filtered.filter(p => p.designation.toLowerCase().includes(searchTerm.toLowerCase()));
-                }
-                if (sortConfig.key) {
-                    filtered.sort((a, b) => {
-                        let valA = a[sortConfig.key];
-                        let valB = b[b[sortConfig.key]];
-                        if (sortConfig.key === 'dateCreation') {
-                            const dateA = Array.isArray(a.dateCreation) ? new Date(a.dateCreation[0], a.dateCreation[1] - 1, a.dateCreation[2]) : new Date(a.dateCreation);
-                            const dateB = Array.isArray(b.dateCreation) ? new Date(b.dateCreation[0], b.dateCreation[1] - 1, b.dateCreation[2]) : new Date(b.dateCreation);
-                            valA = dateA.getTime();
-                            valB = dateB.getTime();
-                        }
-                        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
-                        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
-                        return 0;
-                    });
-                }
-                return filtered;
-            };
-
-            const targetPostIndex = currentProcessedPostes(postes).findIndex(p => p.id === pendingHighlightId);
-
-            if (targetPostIndex !== -1) {
-                const targetPage = Math.ceil((targetPostIndex + 1) / entriesPerPage);
-                setCurrentPage(targetPage);
-                setHighlightedPostId(pendingHighlightId);
-                setPendingHighlightId(null); // Clear pending ID after successful highlight/pagination
-            }
-        }
-    }, [pendingHighlightId, postes, entriesPerPage, setCurrentPage, filterStatus, searchTerm, sortConfig]); // processedPostes est une dépendance car il dépend de 'postes' et des filtres/tris
-
-
-    // --- HANDLERS POUR LES ACTIONS CRUD ---
-    const handleAddPoste = async (posteData) => {
-        try {
-            const response = await posteService.createPoste(posteData);
-            setView('list');
-            const newPosteId = response.data?.id; // Assurez-vous que l'API retourne l'ID du nouveau poste
-            await fetchPostes(); // Attendre la mise à jour des postes
-            if (newPosteId) {
-                setPendingHighlightId(newPosteId); // Déclencher l'effet de surlignage et pagination
-            }
-            setToast({ message: "Poste ajouté avec succès !", type: 'success' });
-        } catch (err) {
-            console.error("Erreur lors de l'ajout du poste:", err);
-            setToast({ message: "Erreur lors de l'ajout du poste.", type: 'error' });
-        }
-    };
-    const handleUpdatePoste = async (id, posteData) => {
-        try {
-            await posteService.updatePoste(id, posteData);
-            setPosteToEdit(null);
-            await fetchPostes(); // Attendre la mise à jour des postes
-            setPendingHighlightId(id); // Déclencher l'effet de surlignage et pagination
-            setToast({ message: "Poste modifié avec succès !", type: 'success' });
-        } catch (err) {
-            console.error('Erreur de mise à jour:', err);
-            setToast({ message: "Erreur lors de la modification du poste.", type: 'error' });
-        }
-    };
-    const handleDeletePoste = async () => {
-        if (!posteToDelete) return;
-        try {
-            await posteService.deletePoste(posteToDelete.id);
-            setPosteToDelete(null);
-            fetchPostes(); // Pas besoin d'attendre pour la suppression si l'ID n'est pas surligné
-            setToast({ message: "Poste supprimé avec succès !", type: 'success' });
-        } catch (err) {
-            console.error('Erreur de suppression:', err);
-            setPosteToDelete(null);
-            setToast({ message: "Erreur lors de la suppression du poste.", type: 'error' });
-        }
-    };
 
     // --- LOGIQUE D'AFFICHAGE (FILTRE, TRI, PAGINATION) ---
     const processedPostes = useMemo(() => {
@@ -401,6 +318,33 @@ const ConsulterPostesPage = ({ initialPostes }) => {
         return filtered;
     }, [postes, searchTerm, filterStatus, sortConfig]);
 
+    // NOUVEL EFFET pour gérer le surlignage et la pagination après la mise à jour de 'postes'
+    useEffect(() => {
+        // Exécuter seulement si il y a un ID en attente et que les postes sont chargés
+        if (highlightPostRef.current && Array.isArray(processedPostes) && processedPostes.length > 0) {
+            const targetId = highlightPostRef.current;
+            highlightPostRef.current = null; // Effacer la ref immédiatement
+
+            const targetPostIndex = processedPostes.findIndex(p => p.id === targetId);
+
+            if (targetPostIndex !== -1) {
+                const calculatedTargetPage = Math.ceil((targetPostIndex + 1) / entriesPerPage);
+
+                // Mettre à jour la page si nécessaire
+                if (currentPage !== calculatedTargetPage) {
+                    setCurrentPage(calculatedTargetPage);
+                }
+
+                // Surligner le poste après le prochain rafraîchissement du cadre d'animation
+                // Ceci permet à React de mettre à jour le DOM avec la bonne page et les postes
+                requestAnimationFrame(() => {
+                    setHighlightedPostId(targetId);
+                });
+            }
+        }
+    }, [processedPostes, entriesPerPage, currentPage, setCurrentPage]); // Déclencheur : postes (via processedPostes) ou changements de pagination
+
+
     const totalPages = Math.ceil(processedPostes.length / entriesPerPage);
 
     const paginatedPostes = useMemo(() => {
@@ -408,7 +352,56 @@ const ConsulterPostesPage = ({ initialPostes }) => {
         return processedPostes.slice(startIndex, startIndex + entriesPerPage);
     }, [processedPostes, currentPage, entriesPerPage]);
 
-    useEffect(() => { setCurrentPage(1); }, [entriesPerPage, filterStatus, searchTerm]);
+    // Ce useEffect doit réinitialiser la page courante seulement si les filtres ou entriesPerPage changent
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [entriesPerPage, filterStatus, searchTerm]);
+
+    // --- HANDLERS POUR LES ACTIONS CRUD ---
+    const handleAddPoste = async (posteData) => {
+        try {
+            const response = await posteService.createPoste(posteData);
+            setView('list'); // Retour à la liste
+            
+            await fetchPostes(); // Rafraîchit les données pour inclure le nouveau poste
+            const newPosteId = response.data?.id; // Récupère l'ID du nouveau poste
+            if (newPosteId) {
+                highlightPostRef.current = newPosteId; // Stocke l'ID dans la ref
+            }
+            setToast({ message: "Poste ajouté avec succès !", type: 'success' });
+        } catch (err) {
+            console.error("Erreur lors de l'ajout du poste:", err);
+            setToast({ message: "Erreur lors de l'ajout du poste.", type: 'error' });
+        }
+    };
+
+    const handleUpdatePoste = async (id, posteData) => {
+        try {
+            await posteService.updatePoste(id, posteData);
+            setPosteToEdit(null); // Ferme le modal de modification
+            
+            await fetchPostes(); // Rafraîchit les données pour refléter la modification
+            highlightPostRef.current = id; // Stocke l'ID dans la ref
+            setToast({ message: "Poste modifié avec succès !", type: 'success' });
+        } catch (err) {
+            console.error('Erreur de mise à jour:', err);
+            setToast({ message: "Erreur lors de la modification du poste.", type: 'error' });
+        }
+    };
+
+    const handleDeletePoste = async () => {
+        if (!posteToDelete) return;
+        try {
+            await posteService.deletePoste(posteToDelete.id);
+            setPosteToDelete(null); // Ferme le modal de suppression
+            fetchPostes(); // Rafraîchit la liste
+            setToast({ message: "Poste supprimé avec succès !", type: 'success' });
+        } catch (err) {
+            console.error('Erreur de suppression:', err);
+            setPosteToDelete(null);
+            setToast({ message: "Erreur lors de la suppression du poste.", type: 'error' });
+        }
+    };
 
     // --- HANDLERS POUR LES CONTRÔLES UI ---
     const handleSort = useCallback((key) => {
