@@ -77,6 +77,16 @@ const dashboardService = {
             console.error("Erreur lors de la récupération des statistiques de performance:", error);
             throw error;
         }
+    },
+    getOverdueTickets: async () => {
+        try {
+            const response = await api.get('tickets/overdue');
+            // Attendu: List<TicketResponseDTO> (version légère)
+            return response.data;
+        } catch (error) {
+            console.error("Erreur lors de la récupération des tickets en retard:", error);
+            throw error;
+        }
     }
 
     

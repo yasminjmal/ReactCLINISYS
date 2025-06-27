@@ -13,7 +13,7 @@ const TeamPerformanceChart = () => {
   const periods = [
     { value: 'current_month', label: 'Mois Actuel' },
     { value: 'last_7_days', label: '7 Derniers Jours' },
-    // Ajoutez d'autres périodes si votre backend les supporte
+    // Ajoutez d'autres périodes si votre backend les supporte (ex: 'last_30_days', 'current_year')
   ];
 
   useEffect(() => {
@@ -44,6 +44,7 @@ const TeamPerformanceChart = () => {
           Tickets Terminés par {groupBy === 'employee' ? 'Employé' : 'Équipe'}
         </h3>
         <div className="flex items-center space-x-2">
+          {/* Sélecteur pour changer le regroupement (Employé/Équipe) */}
           <select
             value={groupBy}
             onChange={(e) => setGroupBy(e.target.value)}
@@ -52,6 +53,7 @@ const TeamPerformanceChart = () => {
             <option value="employee">Employé</option>
             <option value="team">Équipe</option>
           </select>
+          {/* Sélecteur pour la période */}
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
@@ -71,11 +73,11 @@ const TeamPerformanceChart = () => {
           }}
         >
           <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
-          <XAxis dataKey="category" /> {/* 'category' sera le nom de l'employé/équipe */}
+          <XAxis dataKey="category" />
           <YAxis />
           <Tooltip />
           <Legend />
-          <Bar dataKey="completedTickets" fill="#4CAF50" name="Tickets Terminés" /> {/* 'completedTickets' sera le nombre */}
+          <Bar dataKey="completedTickets" fill="#4CAF50" name="Tickets Terminés" />
         </BarChart>
       </ResponsiveContainer>
     </div>

@@ -7,6 +7,7 @@ import EventsCalendar from './EventsCalendar';
 import GlobalTicketStatsWidget from './GlobalTicketStatsWidget';
 import ActiveTicketsByCategoryBarChart from './ActiveTicketsByCategoryBarChart';
 import TeamPerformanceChart from './TeamPerformanceChart';
+import OverdueTicketsList from './OverdueTicketsList';
 
 
 const DashboardPage = () => {
@@ -37,6 +38,9 @@ const DashboardPage = () => {
       </div>
       <div className="grid grid-cols-1 gap-6 mb-6">
         <TeamPerformanceChart />
+      </div>
+      <div className="grid grid-cols-1 gap-6 mb-6">
+        <OverdueTicketsList />
       </div>
 
       {/* Tu peux ajouter d'autres métriques comme dans la capture (My Tasks, Transferred, etc.) ici */}
