@@ -34,26 +34,26 @@ const PosteTableRow = ({ poste, onEdit, onDelete, visibleColumns, highlightedPos
         // Ajout conditionnel de la classe highlight-row
         <tr className={`border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 ${isHighlighted ? 'highlight-row' : ''}`}>
             {visibleColumns.poste && (
-                <td scope="row" className="px-6 py-2 font-medium text-slate-800 dark:text-slate-100 whitespace-nowrap separateur-colonne-leger">
+                <td scope="row" className="px-6 py-1 font-medium text-slate-800 dark:text-slate-100 whitespace-nowrap separateur-colonne-leger">
                     {poste.designation}
                 </td>
             )}
             {visibleColumns.statut && (
-                <td className="px-6 py-2 separateur-colonne-leger">
+                <td className="px-6 py-1 separateur-colonne-leger">
                     <StatusBadge isActive={poste.actif} />
                 </td>
             )}
             {visibleColumns.creePar && (
-                <td className="px-6 py-2 text-slate-600 dark:text-slate-300 separateur-colonne-leger">
+                <td className="px-6 py-1 text-slate-600 dark:text-slate-300 separateur-colonne-leger">
                     {poste.userCreation || 'N/A'}
                 </td>
             )}
             {visibleColumns.dateCreation && (
-                <td className="px-6 py-2 text-slate-600 dark:text-slate-300 separateur-colonne-leger">
+                <td className="px-6 py-1 text-slate-600 dark:text-slate-300 separateur-colonne-leger">
                     {formatDate(poste.dateCreation)}
                 </td>
             )}
-            <td className="px-6 py-2 text-center">
+            <td className="px-6 py-1 text-center">
                 <div className="flex items-center justify-center space-x-2">
                     <button
                         onClick={() => onEdit(poste)}
