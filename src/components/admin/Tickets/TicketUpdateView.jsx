@@ -102,7 +102,7 @@ const DiffractionForm = ({ parentTicket, onClose, onSuccess, setToast }) => { //
         const ticketsToCreate = subTickets.filter(t => t.titre.trim() !== '');
         if (ticketsToCreate.length === 0) { setToast({ type: 'error', message: 'Veuillez renseigner au moins un sous-ticket.' }); return; }
         setIsSubmitting(true);
-        const creationPromises = ticketsToCreate.map(subTicket => ticketService.createTicket({ ...subTicket, idParentTicket: parentTicket.id, idClient: parentTicket.idClient?.id, statue: 'EN_ATTENTE', actif: true, })); // Statue 'EN_ATTENTE' par défaut
+        const creationPromises = ticketsToCreate.map(subTicket => ticketService.createTicket({ ...subTicket, idParentTicket: parentTicket.id, idClient: parentTicket.idClient?.id, statue: 'Accepte', actif: true, })); // Statue 'EN_ATTENTE' par défaut
         try { await Promise.all(creationPromises); onSuccess(); } catch (error) { console.error("Erreur:", error); setToast({ type: 'error', message: error.response?.data?.message || "Une erreur est survenue lors de la création d'un ou plusieurs sous-tickets." }); } finally { setIsSubmitting(false); }
     };
     return (
@@ -874,18 +874,18 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => { // setToast ajout
     const renderActions = () => {
         if (!ticket) return null;
         switch (ticket.statue) {
-            case 'EN_ATTENTE':
+            case 'En_attente':
                 return (
                     <div className="flex items-center space-x-3">
-                        <button onClick={() => handleDirectStatusUpdate('REFUSE')} className="btn btn-danger" disabled={isActionLoading}>
+                        <button onClick={() => handleDirectStatusUpdate('Refuse')} className="btn btn-danger" disabled={isActionLoading}>
                             {isActionLoading ? <Spinner /> : <X size={18} className="mr-2"/>} Refuser
                         </button>
-                        <button onClick={() => handleDirectStatusUpdate('ACCEPTE')} className="btn btn-success" disabled={isActionLoading}>
+                        <button onClick={() => handleDirectStatusUpdate('Accepte')} className="btn btn-success" disabled={isActionLoading}>
                             {isActionLoading ? <Spinner /> : <Check size={18} className="mr-2"/>} Accepter
                         </button>
                     </div>
                 );
-            case 'ACCEPTE':
+            case 'Accepte':
                 if (!ticket.childTickets || ticket.childTickets.length === 0) {
                     return (
                         <button onClick={() => setIsDiffractionModalOpen(true)} className="btn btn-primary" disabled={isActionLoading}>
