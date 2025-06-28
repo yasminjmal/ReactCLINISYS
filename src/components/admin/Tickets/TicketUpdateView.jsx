@@ -753,6 +753,8 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => { // setToast ajout
     const [isActionLoading, setIsActionLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isDiffractionModalOpen, setIsDiffractionModalOpen] = useState(false);
+        const subTicketStatuses = ["En_attente", "En_cours", "Termine", "Accepte", "Refuse"];
+
 
     const fetchInitialData = useCallback(async () => {
         try {
@@ -871,7 +873,14 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => { // setToast ajout
         }
     };
 
+
+    const isSubTicket = ticket && ticket.parentTicket;
+
     const renderActions = () => {
+        if (!ticket || isActionLoading) return <Spinner />;
+        if (isSubTicket) {
+            return null; // Pas d'actions de haut niveau (Accepter/Refuser/Diffracter) pour un sous-ticket
+        }
         if (!ticket) return null;
         switch (ticket.statue) {
             case 'En_attente':
@@ -921,6 +930,8 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => { // setToast ajout
     } else {
         dueDateValue = formatDate(ticket.date_echeance);
     }
+    const showSubTicketsTable = !isSubTicket && ticket.childTickets && ticket.childTickets.length > 0;
+
 
     return (
         <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
@@ -973,17 +984,12 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => { // setToast ajout
             )}
 
             {/* Tableau des sous-tickets - Conditionnel si présence de sous-tickets */}
-            {hasSubTickets && (
+            {showSubTicketsTable && (
                 <div className="mt-8">
                     <SubTicketsTable
                         subTickets={ticket.childTickets}
-                        onDelete={handleDeleteSubTicket}
                         onAdd={() => setIsDiffractionModalOpen(true)}
-                        onSaveSubTicket={handleSaveSubTicket}
-                        allModules={allModules}
-                        onRemoveModule={handleRemoveSubTicketModule}
-                        onRefreshTicketData={fetchInitialData}
-                        setToast={setToast} // Passer setToast
+                        onDelete={(subTicketId) => console.log("Supprimer", subTicketId)} // Logique de suppression à implémenter
                     />
                 </div>
             )}

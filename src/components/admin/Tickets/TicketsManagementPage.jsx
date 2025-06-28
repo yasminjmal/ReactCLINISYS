@@ -546,6 +546,8 @@ const TicketsManagementPage = () => {
                  ticketId={currentView.ticketId}
                  onBack={handleBackToList}
                  setToast={setToast}
+                onNavigateToParent={(parentId) => setCurrentView({ view: 'update', ticketId: parentId })}
+
                />;
     }
 
