@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Save, XCircle, ArrowLeft } from 'lucide-react';
 import Select from 'react-select'; // NOUVEAU: Import de react-select
 import geoService from '../../../services/geoService';
+import { useAuth } from '../../../context/AuthContext'; 
 
 const AjouterClientPage = ({ onAddClient, onCancel }) => {
     // État pour les champs de formulaire simples
@@ -15,6 +16,8 @@ const AjouterClientPage = ({ onAddClient, onCancel }) => {
     // États séparés pour les sélecteurs, c'est une meilleure pratique avec react-select
     const [selectedCountry, setSelectedCountry] = useState(null);
     const [selectedRegion, setSelectedRegion] = useState(null);
+    const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+
 
     const [errors, setErrors] = useState({});
     
@@ -25,6 +28,10 @@ const AjouterClientPage = ({ onAddClient, onCancel }) => {
 
     // Étape 1: Charger les pays au premier rendu du composant
     useEffect(() => {
+        if (isAuthLoading || !isAuthenticated) {
+            return; // On attend que l'utilisateur soit bien authentifié.
+        }
+
         const fetchCountries = async () => {
             setIsLoadingCountries(true);
             try {
@@ -50,7 +57,7 @@ const AjouterClientPage = ({ onAddClient, onCancel }) => {
             }
         };
         fetchCountries();
-    }, []);
+    }, [isAuthLoading, isAuthenticated]);
 
     // Étape 2: Mettre à jour la liste des régions quand le pays change
     useEffect(() => {
@@ -100,6 +107,13 @@ const AjouterClientPage = ({ onAddClient, onCancel }) => {
         menu: (styles) => ({ ...styles, backgroundColor: document.documentElement.classList.contains('dark') ? '#334155' : 'white' }),
         option: (styles, { isFocused, isSelected }) => ({ ...styles, backgroundColor: isSelected ? '#3b82f6' : isFocused ? (document.documentElement.classList.contains('dark') ? '#475569' : '#f1f5f9') : 'transparent', color: document.documentElement.classList.contains('dark') ? 'white' : '#334155' }),
     };
+    if (isAuthLoading) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <p className="text-slate-500">Vérification de l'authentification...</p>
+            </div>
+        );
+    }   
 
     return (
         <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
