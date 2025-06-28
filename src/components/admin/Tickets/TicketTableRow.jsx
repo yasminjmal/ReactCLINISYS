@@ -1,39 +1,81 @@
 // src/components/admin/Tickets/TicketTableRow.jsx
 import React, { Fragment } from 'react';
 import { Edit, Trash2, Info, ChevronDown, ChevronUp, CheckCircle, XCircle } from 'lucide-react';
-import { formatDateFromArray } from '../../../utils/dateFormatter';
+import { formatDateFromArray } from '../../../utils/dateFormatterTicket';
 
 // --- Petits composants pour les badges ---
 const PriorityBadge = ({ priority }) => {
-  const styles = {
-    Haute: { className: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/50 dark:text-red-300 dark:border-red-600/50', dotColor: 'bg-red-500' },
-    Moyenne: { className: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-600/50', dotColor: 'bg-blue-500' },
-    Basse: { className: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/50 dark:text-green-300 dark:border-green-600/50', dotColor: 'bg-green-500' },
-  };
-  const info = styles[priority?.toUpperCase()] || { className: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700/20 dark:text-slate-400 dark:border-slate-700', dotColor: 'bg-slate-400' };
+  const normalizedPriority = priority?.toUpperCase();
+  let dotColors = ['bg-slate-300', 'bg-slate-300', 'bg-slate-300']; // Tous gris par défaut (vides)
+
+  switch (normalizedPriority) {
+    case 'HAUTE':
+      dotColors = ['bg-red-500', 'bg-red-500', 'bg-red-500']; // Trois cercles rouges
+      break;
+    case 'MOYENNE':
+      dotColors = ['bg-blue-500', 'bg-blue-500', 'bg-slate-300']; // Deux cercles bleus, un gris
+      break;
+    case 'BASSE':
+      dotColors = ['bg-green-500', 'bg-slate-300', 'bg-slate-300']; // Un cercle vert, deux gris
+      break;
+    default:
+      dotColors = ['bg-slate-300', 'bg-slate-300', 'bg-slate-300'];
+  }
+
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-md gap-1 border ${info.className}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${info.dotColor}`}></span>
-      {priority || 'N/A'}
+    // MODIFICATION: Suppression de 'inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-md gap-1 border'
+    // et de `colorClass` pour n'afficher que les points.
+    // Ajout de 'flex' et 'justify-center' pour centrer les points dans la cellule.
+    <span className="flex items-center justify-center gap-1"> {/* Simplification du style */}
+      {dotColors.map((dotColor, index) => (
+        <span key={index} className={`h-1.5 w-1.5 rounded-full ${dotColor}`}></span>
+      ))}
+      {/* MODIFICATION: Suppression du texte de la priorité */}
+      {/* <span>{priority || 'N/A'}</span> */}
     </span>
   );
 };
 
-const StatusBadge = ({ status }) => {
-  const statusInfo = {
-    En_attente: { text: 'En attente', className: 'text-yellow-600 dark:text-yellow-400' },
-    En_cours: { text: 'En cours', className: 'text-orange-600 dark:text-orange-400' },
-    Accepte: { text: 'Accepté', className: 'text-green-600 dark:text-green-400' },
-    Termine: { text: 'Terminé', className: 'text-blue-600 dark:text-blue-400' }, // Changé de sky à blue pour cohérence
-    Refuse: { text: 'Refusé', className: 'text-red-600 dark:text-red-400' },
-    // Nouveaux statuts possibles
-    RESOLU: { text: 'Résolu', className: 'text-teal-600 dark:text-teal-400' },
-    FERME: { text: 'Fermé', className: 'text-gray-600 dark:text-gray-400' },
-  };
-  const info = statusInfo[status?.toUpperCase()] || { text: status, className: 'text-slate-500' };
-  return <span className={`text-xs font-semibold ${info.className}`}>{info.text}</span>;
-};
 
+const StatusBadge = ({ status }) => {
+  const normalizedStatus = status?.toUpperCase();
+  let text = status || 'N/A';
+  let className = 'text-slate-500'; // Couleur par défaut
+
+  switch (normalizedStatus) {
+    case 'EN_COURS':
+      text = 'En cours';
+      className = 'text-orange-600 dark:text-orange-400'; // Orange
+      break;
+    case 'EN_ATTENTE':
+      text = 'En attente';
+      className = 'text-gray-600 dark:text-gray-400'; // Gris (utilisé grey pour une meilleure visibilité)
+      break;
+    case 'ACCEPTE':
+      text = 'Accepté';
+      className = 'text-green-600 dark:text-green-400'; // Vert
+      break;
+    case 'REFUSE':
+      text = 'Refusé';
+      className = 'text-red-600 dark:text-red-400'; // Rouge
+      break;
+    case 'TERMINE':
+      text = 'Terminé';
+      className = 'text-blue-600 dark:text-blue-400'; // Bleu
+      break;
+    // Les autres statuts comme RESOLU, FERME conserveront leurs couleurs existantes si déjà définies,
+    // sinon ils prendront le style par défaut ou pourront être ajoutés ici si nécessaire.
+    case 'RESOLU':
+      text = 'Résolu';
+      className = 'text-teal-600 dark:text-teal-400';
+      break;
+    case 'FERME':
+      text = 'Fermé';
+      className = 'text-slate-600 dark:text-slate-400'; // Gris légèrement plus foncé pour Fermé
+      break;
+  }
+  return <span className={`text-xs font-semibold ${className}`}>{text}</span>;
+};
 const ActifBadge = ({ actif }) => {
     const isActif = actif === true;
     return (
@@ -68,23 +110,33 @@ const TicketTableRow = ({
     // Ligne pour le ticket parent
     const parentRow = (
         <tr className={`bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-200 dark:border-slate-700 ${isHighlighted ? 'highlight-row' : ''}`}>
-            {visibleColumns.clientDemandeur && (
-                <td className="px-4 py-1 text-sm separateur-colonne-leger"> {/* py-1 pour réduire l'espace */}
+            {/* Colonne ST (Sous-tickets) */}
+            <td className="px-1 py-1 text-sm separateur-colonne-leger text-center" style={{ width: '40px' }}> {/* Très petite colonne */}
+                <button
+                    onClick={() => hasSubTickets && onToggleExpand(ticket.id)}
+                    disabled={!hasSubTickets}
+                    className={`flex items-center justify-center space-x-0.5 p-1 rounded-md text-xs transition-colors ${!hasSubTickets ? 'text-slate-400 dark:text-slate-600 cursor-not-allowed' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                    title={hasSubTickets ? "Afficher/Masquer les sous-tickets" : "Aucun sous-ticket"}
+                >
+                    <span className={`font-bold text-xs px-1 py-0.5 rounded-sm ${!hasSubTickets ? 'bg-slate-200 dark:bg-slate-700' : 'bg-slate-300 dark:bg-slate-600'}`}>{ticket.childTickets?.length || 0}</span>
+                    {hasSubTickets && (isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+                </button>
+            </td>
+            {/* Colonne Client */}
+            {visibleColumns.client && ( // Nouvelle colonne client
+                <td className="px-4 py-1 text-sm separateur-colonne-leger">
                     <div className="font-semibold text-slate-800 dark:text-slate-100">{clientNom}</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">Par: {demandeurNom}</div>
+                </td>
+            )}
+            {/* Colonne Demandeur */}
+            {visibleColumns.demandeur && ( // Nouvelle colonne demandeur
+                <td className="px-3 py-1 text-sm separateur-colonne-leger">
+                    <div className="text-xs text-slate-500 dark:text-slate-400">{demandeurNom}</div>
                 </td>
             )}
             {visibleColumns.titre && (
                 <td className="px-4 py-1 text-sm text-slate-600 dark:text-slate-300 max-w-xs truncate separateur-colonne-leger" title={ticket.titre}>
                     {ticket.titre}
-                </td>
-            )}
-            {visibleColumns.prioriteStatut && (
-                <td className="px-4 py-1 text-sm separateur-colonne-leger">
-                    <div className="flex flex-col space-y-1 items-start"> {/* space-y-1 */}
-                        <PriorityBadge priority={ticket.priorite} />
-                        <StatusBadge status={ticket.statue} />
-                    </div>
                 </td>
             )}
             {visibleColumns.module && (
@@ -98,31 +150,33 @@ const TicketTableRow = ({
                 </td>
             )}
             {visibleColumns.dateEcheance && (
-                <td className="px-4 py-1 text-sm text-slate-500 separateur-colonne-leger">
+                <td className="px-2 py-1 text-sm text-slate-500 separateur-colonne-leger">
                     {formatDateFromArray(ticket.date_echeance)}
                 </td>
             )}
             {visibleColumns.dateCreation && (
-                <td className="px-4 py-1 text-sm text-slate-500 separateur-colonne-leger">
+                <td className="px-2 py-1 text-sm text-slate-500 separateur-colonne-leger">
                     {formatDateFromArray(ticket.dateCreation)}
                 </td>
             )}
+            {visibleColumns.priorite &&(
+                <td className="px-2 py-1 text-sm separateur-colonne-leger">
+                    <PriorityBadge priority={ticket.priorite} />
+                </td>
+            )}
+            {visibleColumns.statut && ( 
+                <td className="px-2 py-1 text-sm separateur-colonne-leger">
+                    <StatusBadge status={ticket.statue} />
+                </td>
+            )}
             {visibleColumns.actif && (
-                <td className="px-4 py-1 separateur-colonne-leger">
+                <td className="px-2 py-1 separateur-colonne-leger">
                     <ActifBadge actif={ticket.actif} />
                 </td>
             )}
             <td className="px-4 py-1">
                 <div className="flex items-center space-x-1">
-                    <button
-                        onClick={() => hasSubTickets && onToggleExpand(ticket.id)}
-                        disabled={!hasSubTickets}
-                        className={`flex items-center space-x-1 p-1.5 rounded-md text-xs transition-colors ${!hasSubTickets ? 'text-slate-400 dark:text-slate-600 cursor-not-allowed' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
-                        title={hasSubTickets ? "Afficher/Masquer les sous-tickets" : "Aucun sous-ticket"}
-                    >
-                        <span className={`font-bold px-1 py-0.5 rounded-sm ${!hasSubTickets ? 'bg-slate-200 dark:bg-slate-700' : 'bg-slate-300 dark:bg-slate-600'}`}>{ticket.childTickets?.length || 0}</span>
-                        {hasSubTickets && (isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />)}
-                    </button>
+                    {/* Les actions de la ligne */}
                     <button onClick={() => onNavigateToUpdate(ticket.id)} className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-100 dark:hover:bg-slate-700 rounded-full" title="Modifier/Gérer"><Edit size={16}/></button>
                     <button onClick={() => alert("Logique de suppression à implémenter")} className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-slate-700 rounded-full" title="Supprimer"><Trash2 size={16}/></button>
                     <button onClick={() => onNavigateToDetails(ticket.id)} className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-100 dark:hover:bg-slate-700 rounded-full" title="Détails"><Info size={16}/></button>
@@ -136,22 +190,21 @@ const TicketTableRow = ({
         const subEmployeNom = subTicket.idUtilisateur ? `${subTicket.idUtilisateur.prenom || ''} ${subTicket.idUtilisateur.nom || ''}`.trim() : 'N/A';
         return (
              <tr key={subTicket.id} className="bg-slate-50 dark:bg-slate-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-b border-slate-200 dark:border-slate-700">
-                {visibleColumns.clientDemandeur && (
-                    <td className="px-4 py-1 text-sm separateur-colonne-leger" style={{ paddingLeft: '3rem' }}> {/* Indentation */}
-                        <div className="font-semibold text-slate-800 dark:text-slate-100">Sous-ticket</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">Client: {subTicket.idClient?.nomComplet || 'N/A'}</div>
+                <td className="px-1 py-1 text-sm separateur-colonne-leger">
+                    <span className="ml-4 text-slate-400">↳</span> {/* Indentation visuelle */}
+                </td>
+                {visibleColumns.client && (
+                    <td className="px-4 py-1 text-sm separateur-colonne-leger">
+                        <div className="font-semibold text-slate-800 dark:text-slate-100">{subTicket.idClient?.nomComplet || 'N/A'}</div>
+                    </td>
+                )}
+                {visibleColumns.demandeur && (
+                    <td className="px-3 py-1 text-sm separateur-colonne-leger">
+                        <div className="text-xs text-slate-500 dark:text-slate-400">Sous-ticket</div> {/* Indication visuelle */}
                     </td>
                 )}
                 {visibleColumns.titre && (
                     <td className="px-4 py-1 text-sm text-slate-600 dark:text-slate-300 max-w-xs truncate separateur-colonne-leger" title={subTicket.titre}>{subTicket.titre}</td>
-                )}
-                {visibleColumns.prioriteStatut && (
-                    <td className="px-4 py-1 text-sm separateur-colonne-leger">
-                        <div className="flex flex-col space-y-1 items-start">
-                            <PriorityBadge priority={subTicket.priorite} />
-                            <StatusBadge status={subTicket.statue} />
-                        </div>
-                    </td>
                 )}
                 {visibleColumns.module && (
                     <td className="px-4 py-1 text-sm separateur-colonne-leger">{subTicket.idModule?.designation || 'N/A'}</td>
@@ -160,13 +213,23 @@ const TicketTableRow = ({
                     <td className="px-4 py-1 text-sm separateur-colonne-leger">{subEmployeNom === 'N/A' ? 'Non assigné' : subEmployeNom}</td>
                 )}
                 {visibleColumns.dateEcheance && (
-                    <td className="px-4 py-1 text-sm text-slate-500 separateur-colonne-leger">{formatDateFromArray(subTicket.date_echeance)}</td>
+                    <td className="px-2 py-1 text-sm text-slate-500 separateur-colonne-leger">{formatDateFromArray(subTicket.date_echeance)}</td>
                 )}
                 {visibleColumns.dateCreation && (
-                    <td className="px-4 py-1 text-sm text-slate-500 separateur-colonne-leger">{formatDateFromArray(subTicket.dateCreation)}</td>
+                    <td className="px-2 py-1 text-sm text-slate-500 separateur-colonne-leger">{formatDateFromArray(subTicket.dateCreation)}</td>
+                )}
+                {visibleColumns.priorite && (
+                    <td className="px-2 py-1 text-sm separateur-colonne-leger">
+                        <PriorityBadge priority={subTicket.priorite} />
+                    </td>
+                )}
+                {visibleColumns.statut && (
+                    <td className="px-2 py-1 text-sm separateur-colonne-leger">
+                        <StatusBadge status={subTicket.statue} />
+                    </td>
                 )}
                 {visibleColumns.actif && (
-                    <td className="px-4 py-1 separateur-colonne-leger">
+                    <td className="px-2 py-1 separateur-colonne-leger">
                         <ActifBadge actif={subTicket.actif} />
                     </td>
                 )}
@@ -174,6 +237,8 @@ const TicketTableRow = ({
                     <div className="flex items-center justify-center space-x-1">
                         <button onClick={() => onNavigateToUpdate(subTicket.id)} className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-100 dark:hover:bg-slate-700 rounded-full" title="Modifier/Gérer"><Edit size={16}/></button>
                         <button onClick={() => alert(`Suppression pour sous-ticket ${subTicket.id}`)} className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-slate-700 rounded-full" title="Supprimer"><Trash2 size={16}/></button>
+                        <button onClick={() => onNavigateToDetails(subTicket.id)} className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-100 dark:hover:bg-slate-700 rounded-full" title="Détails du sous-ticket"><Info size={16}/></button>
+
                     </div>
                 </td>
             </tr>

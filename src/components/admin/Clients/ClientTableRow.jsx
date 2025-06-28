@@ -29,9 +29,9 @@ const ClientTableRow = ({ client, onEdit, onDelete, visibleColumns, highlightedC
                     <div className="text-xs text-slate-500 dark:text-slate-400">{client.email || 'N/A'}</div>
                 </td>
             )}
-            {visibleColumns.region && (
+            {visibleColumns.regionName && (
                 <td className="px-6 py-1 text-slate-600 dark:text-slate-300 separateur-colonne-leger">
-                    {client.region || 'N/A'}
+                    {client.regionName || 'N/A'}
                 </td>
             )}
             {visibleColumns.email && (

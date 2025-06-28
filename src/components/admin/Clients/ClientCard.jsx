@@ -38,7 +38,7 @@ const ClientCard = ({ client, onEditRequest, onDeleteRequest }) => {
                 <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 truncate" title={client.nomComplet}>{client.nomComplet}</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center mt-1">
                     <MapPinIcon size={14} className="mr-1.5 flex-shrink-0" />
-                    {client.region || 'Région non définie'}
+                    {client.regionName || 'Région non définie'}
                 </p>
             </div>
 

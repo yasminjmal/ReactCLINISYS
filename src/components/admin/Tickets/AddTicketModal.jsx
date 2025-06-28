@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Save, XCircle, PlusCircle, Calendar, User, Building, Package as ModuleIcon, Tag } from 'lucide-react';
-import { formatDateFromArray } from '../../../utils/dateFormatter'; // Assurez-vous que cette fonction existe et est correcte
+import { formatDateFromArray } from '../../../utils/dateFormatterTicket'; // Assurez-vous que cette fonction existe et est correcte
 
 const AddTicketModal = ({ onAddTicket, onCancel, availableClients, availableUsers, availableModules, setToast }) => {
     const [formData, setFormData] = useState({

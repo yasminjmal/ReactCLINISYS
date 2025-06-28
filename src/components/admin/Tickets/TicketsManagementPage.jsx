@@ -16,7 +16,7 @@ import { exportToPdf } from '../../../utils/exportPdf';
 import { exportTableToExcel } from '../../../utils/exportExcel';
 import { printHtmlContent } from '../../../utils/printContent';
 import { useExport } from '../../../context/ExportContext';
-import { formatDateFromArray } from '../../../utils/dateFormatter';
+import { formatDateFromArray } from '../../../utils/dateFormatterTicket';
 
 // --- Sous-composants ---
 import TicketTableRow from './TicketTableRow';
@@ -87,9 +87,22 @@ const DropdownMenuItem = ({ children, onClick, isSelected, disabled }) => (
 
 const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => {
     return (
-        <thead className="text-sm text-black bg-sky-100 dark:bg-blue-200">
+         <thead className="text-sm text-black bg-sky-100 dark:bg-blue-200"> {/* */}
             <tr>
-                {visibleColumns.clientDemandeur && <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger">Client/Demandeur</th>}
+                {/* Colonne ST - toujours visible */}
+                <th scope="col" className="px-1 py-3 font-sans text-center separateur-colonne-leger">ST</th>
+                {visibleColumns.client && (
+                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger">
+                        {/* Supprimer le tri pour la colonne Client */}
+                        <span>Client</span>
+                    </th>
+                )}
+                {visibleColumns.demandeur && (
+                    <th scope="col" className="px-3 py-3 font-sans text-left separateur-colonne-leger">
+                        {/* Supprimer le tri pour la colonne Demandeur */}
+                        <span>Demandeur</span>
+                    </th>
+                )}
                 {visibleColumns.titre && (
                     <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger">
                         <button onClick={() => handleSort('titre')} className="flex items-center justify-between w-full hover:text-blue-200">
@@ -98,32 +111,20 @@ const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => {
                         </button>
                     </th>
                 )}
-                {visibleColumns.prioriteStatut && (
-                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger">
-                        <button onClick={() => handleSort('priorite')} className="flex items-center justify-between w-full hover:text-blue-200">
-                            <span>Priorité/Statut</span>
-                            <ArrowUpDown size={16} className="opacity-70" />
-                        </button>
-                    </th>
-                )}
                 {visibleColumns.module && (
                     <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger">
-                        <button onClick={() => handleSort('module')} className="flex items-center justify-between w-full hover:text-blue-200">
-                            <span>Module</span>
-                            <ArrowUpDown size={16} className="opacity-70" />
-                        </button>
+                        <span>Module</span>
                     </th>
                 )}
                 {visibleColumns.affecteA && (
                     <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger">
-                        <button onClick={() => handleSort('affecteA')} className="flex items-center justify-between w-full hover:text-blue-200">
+                        
                             <span>Affecté à</span>
-                            <ArrowUpDown size={16} className="opacity-70" />
-                        </button>
+                          
                     </th>
                 )}
                 {visibleColumns.dateEcheance && (
-                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger">
+                    <th scope="col" className="px-2 py-3 font-sans text-left separateur-colonne-leger">
                         <button onClick={() => handleSort('date_echeance')} className="flex items-center justify-between w-full hover:text-blue-200">
                             <span>Date Échéance</span>
                             <ArrowUpDown size={16} className="opacity-70" />
@@ -131,19 +132,29 @@ const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => {
                     </th>
                 )}
                 {visibleColumns.dateCreation && (
-                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger">
+                    <th scope="col" className="px-2 py-3 font-sans text-left separateur-colonne-leger">
                         <button onClick={() => handleSort('dateCreation')} className="flex items-center justify-between w-full hover:text-blue-200">
-                            <span>Créé le</span>
+                            <span>Date de Création</span>
                             <ArrowUpDown size={16} className="opacity-70" />
                         </button>
                     </th>
                 )}
+                {visibleColumns.priorite && (
+                    <th scope="col" className="px-2 py-3 font-sans text-left separateur-colonne-leger">
+                            <span>Priorité</span>
+                            
+                    </th>
+                )}
+                {visibleColumns.statut && (
+                    <th scope="col" className="px-2 py-3 font-sans text-left separateur-colonne-leger">
+                            <span>Statut</span>
+                            
+                    </th>
+                )}
                 {visibleColumns.actif && (
-                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger">
-                        <button onClick={() => handleSort('actif')} className="flex items-center justify-between w-full hover:text-blue-200">
+                    <th scope="col" className="px-2 py-3 font-sans text-left separateur-colonne-leger">
                             <span>Actif</span>
-                            <ArrowUpDown size={16} className="opacity-70" />
-                        </button>
+                            
                     </th>
                 )}
                 <th scope="col" className="px-4 py-3 font-sans text-center">Actions</th>
@@ -204,7 +215,19 @@ const TicketsManagementPage = () => {
     const [sortConfig, setSortConfig] = useState({ key: 'dateCreation', direction: 'desc' });
     const [currentPage, setCurrentPage] = useState(1);
     const [entriesPerPage, setEntriesPerPage] = useState(10);
-    const [visibleColumns, setVisibleColumns] = useState({ clientDemandeur: true, titre: true, prioriteStatut: true, module: true, affecteA: true, dateEcheance: true, dateCreation: true, actif: true });
+    // Mise à jour des colonnes visibles pour correspondre au nouvel ordre et ajout/séparation
+    const [visibleColumns, setVisibleColumns] = useState({ 
+        client: true, 
+        demandeur: true, 
+        titre: true, 
+        module: true, 
+        affecteA: true, 
+        dateEcheance: true, 
+        dateCreation: true, 
+        priorite: true,
+        statut: true, 
+        actif: true 
+    });
     const [openDropdown, setOpenDropdown] = useState(null);
     const dropdownsRef = useRef(null);
     const [highlightedTicketId, setHighlightedTicketId] = useState(null);
@@ -330,9 +353,14 @@ const TicketsManagementPage = () => {
                         valA = a[sortConfig.key];
                         valB = b[sortConfig.key];
                         break;
-                    case 'clientDemandeur':
-                        valA = (a.idClient?.nomComplet || a.userCreation || '').toLowerCase();
-                        valB = (b.idClient?.nomComplet || b.userCreation || '').toLowerCase();
+                    // Nouveaux cas pour les colonnes Client et Demandeur
+                    case 'client':
+                        valA = (a.idClient?.nomComplet || '').toLowerCase();
+                        valB = (b.idClient?.nomComplet || '').toLowerCase();
+                        break;
+                    case 'demandeur':
+                        valA = (a.userCreation || (a.demandeur ? `${a.demandeur.prenom} ${a.demandeur.nom}` : '')).toLowerCase();
+                        valB = (b.userCreation || (b.demandeur ? `${b.demandeur.prenom} ${b.demandeur.nom}` : '')).toLowerCase();
                         break;
                     default:
                         valA = (a[sortConfig.key] || '').toLowerCase();
@@ -415,34 +443,40 @@ const TicketsManagementPage = () => {
         setOpenDropdown(prev => (prev === name ? null : name));
     }, []);
 
-    const pdfHeaders = useMemo(() => [['ID', 'Client', 'Demandeur', 'Titre', 'Priorité', 'Statut', 'Module', 'Affecté à', 'Date Échéance', 'Créé le', 'Actif']], []);
+    // Mise à jour des en-têtes et données pour l'exportation et l'impression
+    const pdfHeaders = useMemo(() => [[
+        'ST', 'Client', 'Demandeur', 'Titre', 'Module', 'Affecté à', 
+        'Date Échéance', 'Date de Création', 'Priorité', 'Statut', 'Actif', 'Actions'
+    ]], []);
+
     const pdfData = useMemo(() => processedTickets.map(ticket => [
-        ticket.id,
+        (ticket.childTickets?.length || 0), // ST column
         ticket.idClient?.nomComplet || 'N/A',
         ticket.userCreation || (ticket.demandeur ? `${ticket.demandeur.prenom} ${ticket.demandeur.nom}` : 'N/A'),
         ticket.titre,
-        ticket.priorite,
-        ticket.statue,
         ticket.idModule?.designation || 'N/A',
         ticket.idUtilisateur ? `${ticket.idUtilisateur.prenom} ${ticket.idUtilisateur.nom}` : 'N/A',
         formatDateFromArray(ticket.date_echeance),
         formatDateFromArray(ticket.dateCreation),
-        ticket.actif ? 'Actif' : 'Inactif'
+        ticket.priorite,
+        ticket.statue,
+        ticket.actif ? 'Actif' : 'Non actif',
+        '' // Actions column (empty for export)
     ]), [processedTickets]);
 
     const excelData = useMemo(() => {
         return processedTickets.map(ticket => ({
-            ID: ticket.id,
+            'ST': (ticket.childTickets?.length || 0),
             'Client': ticket.idClient?.nomComplet || 'N/A',
             'Demandeur': ticket.userCreation || (ticket.demandeur ? `${ticket.demandeur.prenom} ${ticket.demandeur.nom}` : 'N/A'),
             'Titre': ticket.titre,
-            'Priorité': ticket.priorite,
-            'Statut': ticket.statue,
             'Module': ticket.idModule?.designation || 'N/A',
             'Affecté à': ticket.idUtilisateur ? `${ticket.idUtilisateur.prenom} ${ticket.idUtilisateur.nom}` : 'N/A',
             'Date Échéance': formatDateFromArray(ticket.date_echeance),
-            'Créé le': formatDateFromArray(ticket.dateCreation),
-            'Actif': ticket.actif ? 'Actif' : 'Inactif'
+            'Date de Création': formatDateFromArray(ticket.dateCreation),
+            'Priorité': ticket.priorite,
+            'Statut': ticket.statue,
+            'Actif': ticket.actif ? 'Actif' : 'Non actif'
         }));
     }, [processedTickets]);
 
@@ -452,42 +486,44 @@ const TicketsManagementPage = () => {
     }, [pdfHeaders, pdfData]);
 
     const handleExportExcelTickets = useCallback(() => {
-        exportTableToExcel(pdfHeaders, pdfData, 'liste_tickets.xlsx', 'Tickets');
+        exportTableToExcel(pdfHeaders[0], excelData, 'liste_tickets.xlsx', 'Tickets'); // Use pdfHeaders[0] for Excel headers
         setOpenDropdown(null);
-    }, [pdfHeaders, pdfData]);
+    }, [pdfHeaders, excelData]); // Modified to use excelData
 
     const handlePrintTickets = useCallback(() => {
         let tableHtml = `<h2 style="text-align:center; font-size: 24px; margin-bottom: 20px;">Liste des Tickets</h2>
                          <table style="width:100%; border-collapse: collapse; margin-top: 20px;">
                             <thead>
                                 <tr style="background-color:#f2f2f2;">
-                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">ID</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">ST</th>
                                     <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Client</th>
                                     <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Demandeur</th>
                                     <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Titre</th>
-                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Priorité</th>
-                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Statut</th>
                                     <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Module</th>
                                     <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Affecté à</th>
                                     <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Date Échéance</th>
-                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Créé le</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Date de Création</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Priorité</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Statut</th>
                                     <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Actif</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>`;
         processedTickets.forEach(ticket => {
             tableHtml += `<tr>
-                            <td style="padding: 8px; border: 1px solid #ddd;">${ticket.id}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd; text-align:center;">${(ticket.childTickets?.length || 0)}</td>
                             <td style="padding: 8px; border: 1px solid #ddd;">${ticket.idClient?.nomComplet || 'N/A'}</td>
                             <td style="padding: 8px; border: 1px solid #ddd;">${ticket.userCreation || (ticket.demandeur ? `${ticket.demandeur.prenom} ${ticket.demandeur.nom}` : 'N/A')}</td>
                             <td style="padding: 8px; border: 1px solid #ddd;">${ticket.titre}</td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">${ticket.priorite}</td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">${ticket.statue}</td>
                             <td style="padding: 8px; border: 1px solid #ddd;">${ticket.idModule?.designation || 'N/A'}</td>
                             <td style="padding: 8px; border: 1px solid #ddd;">${ticket.idUtilisateur ? `${ticket.idUtilisateur.prenom} ${ticket.idUtilisateur.nom}` : 'N/A'}</td>
                             <td style="padding: 8px; border: 1px solid #ddd;">${formatDateFromArray(ticket.date_echeance)}</td>
                             <td style="padding: 8px; border: 1px solid #ddd;">${formatDateFromArray(ticket.dateCreation)}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">${ticket.priorite}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">${ticket.statue}</td>
                             <td style="padding: 8px; border: 1px solid #ddd;">${ticket.actif ? 'Actif' : 'Non actif'}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;"></td>
                           </tr>`;
         });
         tableHtml += `</tbody></table>`;
@@ -577,7 +613,7 @@ const TicketsManagementPage = () => {
                                     {/* Section Priorité */}
                                     <DropdownSectionTitle>Priorité</DropdownSectionTitle>
                                     <DropdownMenuItem isSelected={filters.priorite === 'tous'} onClick={() => { setFilters(f => ({...f, priorite: 'tous'})); toggleDropdownGlobal('mainFilter'); }}>Toutes</DropdownMenuItem>
-                                    <DropdownMenuItem isSelected={filters.priorite === 'Haute'} onClick={() => { setFilters(f => ({...f, priorite: 'Heute'})); toggleDropdownGlobal('mainFilter'); }}>Haute</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.priorite === 'Haute'} onClick={() => { setFilters(f => ({...f, priorite: 'Haute'})); toggleDropdownGlobal('mainFilter'); }}>Haute</DropdownMenuItem>
                                     <DropdownMenuItem isSelected={filters.priorite === 'Moyenne'} onClick={() => { setFilters(f => ({...f, priorite: 'Moyenne'})); toggleDropdownGlobal('mainFilter'); }}>Moyenne</DropdownMenuItem>
                                     <DropdownMenuItem isSelected={filters.priorite === 'Basse'} onClick={() => { setFilters(f => ({...f, priorite: 'Basse'})); toggleDropdownGlobal('mainFilter'); }}>Basse</DropdownMenuItem>
                                     
@@ -617,11 +653,25 @@ const TicketsManagementPage = () => {
                         {/* Groupe 3: Colonnes, Lignes par page */}
                         <div className="flex items-center gap-2 shrink-0">
                             <div className="relative"><button onClick={() => toggleDropdownGlobal('columns')} className="btn btn-secondary"><Eye size={16} className="mr-2" />Colonnes</button>
-                                {openDropdown === 'columns' && <DropdownMenu>{Object.keys(visibleColumns).map(key => (<DropdownMenuItem key={key} onClick={() => handleToggleColumn(key)}>{visibleColumns[key] ? <Eye size={16} className="mr-2 text-blue-500" /> : <EyeOff size={16} className="mr-2 text-slate-400" />}<span className="capitalize">{key.replace(/([A-Z])/g, ' $1').replace('Clientdemandeur', 'Client/Demandeur').replace('Prioritestatut', 'Priorité/Statut').replace('Dateecheance', 'Date Échéance').replace('Datecreation', 'Créé le').replace('Affectea', 'Affecté à')}</span></DropdownMenuItem>))}</DropdownMenu>}
+                                {openDropdown === 'columns' && 
+                                    <DropdownMenu>
+                                        {/* Nouvelle colonne ST - non désactivable */}
+                                        <DropdownMenuItem disabled={true}>
+                                            <Eye size={16} className="mr-2 text-blue-500" />
+                                            <span>ST</span>
+                                        </DropdownMenuItem>
+                                        {Object.keys(visibleColumns).map(key => (
+                                            <DropdownMenuItem key={key} onClick={() => handleToggleColumn(key)}>
+                                                {visibleColumns[key] ? <Eye size={16} className="mr-2 text-blue-500" /> : <EyeOff size={16} className="mr-2 text-slate-400" />}
+                                                <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').replace('Priorite', 'Priorité').replace('Status', 'Statut').replace('Dateecheance', 'Date Échéance').replace('Datecreation', 'Date de Création').replace('Affectea', 'Affecté à')}</span>
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenu>
+                                }
                             </div>
-                            <div className="relative"><button onClick={() => toggleDropdownGlobal('entries')} className="btn btn-secondary">{entriesPerPage} / page</button>
+                            {/* <div className="relative"><button onClick={() => toggleDropdownGlobal('entries')} className="btn btn-secondary">{entriesPerPage} / page</button>
                                 {openDropdown === 'entries' && <DropdownMenu>{[10, 25, 50].map(num => (<DropdownMenuItem isSelected={entriesPerPage === num} key={num} onClick={() => { setEntriesPerPage(num); toggleDropdownGlobal('entries'); }}>{num} lignes</DropdownMenuItem>))}</DropdownMenu>}
-                            </div>
+                            </div> */}
                         </div>
 
                         {/* Groupe 4: Impression et Export */}

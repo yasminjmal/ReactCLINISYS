@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, PlusCircle, Edit, Trash2, Check, X, ChevronDown, ChevronUp, AlertTriangle, CheckCircle } from 'lucide-react'; // Ajout AlertTriangle, CheckCircle pour ToastMessage
 import commentService from '../../../services/commentService';
-import { formatDateFromArray } from '../../../utils/dateFormatter';
+import { formatDateFromArray } from '../../../utils/dateFormatterTicket';
 
 // Composant utilitaire pour le spinner
 const Spinner = () => <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>; // Couleur ajustée
