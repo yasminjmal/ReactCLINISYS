@@ -32,7 +32,7 @@ const formatDate = (dateInput) => {
 import {
     ArrowLeft, Check, X, GitFork, Loader, Send, PlusCircle, User, Tag, Info, Calendar,
     Package as ModuleIcon, UserCheck, Shield, Edit, Trash2, Eye, EyeOff, MessageSquare, ChevronDown, ChevronUp,
-    AlertTriangle // Pour ToastMessage
+    AlertTriangle, CheckCircle // Ajout de CheckCircle ici
 } from 'lucide-react';
 
 // --- COMPOSANTS UTILITAIRES ---
@@ -90,55 +90,15 @@ const useAutosizeTextArea = (textAreaRef, value) => {
 };
 
 // --- MODAL DE DIFFRACTION (avec styles unifiés) ---
-const DiffractionForm = ({ parentTicket, onClose, onSuccess, setToast }) => { // showTemporaryMessage remplacé par setToast
-    const [subTickets, setSubTickets] = useState([{ titre: '', description: '', priorite: 'Moyenne' }]);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const priorities = ["Basse", "Moyenne", "Haute"]; // Utiliser les majuscules pour correspondre à l'enum si c'est le cas
-    const handleAddSubTicket = () => setSubTickets([...subTickets, { titre: '', description: '', priorite: 'Moyenne' }]);
-    const handleRemoveSubTicket = (indexToRemove) => setSubTickets(prev => prev.filter((_, index) => index !== indexToRemove));
-    const handleSubTicketChange = (index, field, value) => { const newSubTickets = [...subTickets]; newSubTickets[index][field] = value; setSubTickets(newSubTickets); };
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const ticketsToCreate = subTickets.filter(t => t.titre.trim() !== '');
-        if (ticketsToCreate.length === 0) { setToast({ type: 'error', message: 'Veuillez renseigner au moins un sous-ticket.' }); return; }
-        setIsSubmitting(true);
-        const creationPromises = ticketsToCreate.map(subTicket => ticketService.createTicket({ ...subTicket, idParentTicket: parentTicket.id, idClient: parentTicket.idClient?.id, statue: 'Accepte', actif: true, })); // Statue 'EN_ATTENTE' par défaut
-        try { await Promise.all(creationPromises); onSuccess(); } catch (error) { console.error("Erreur:", error); setToast({ type: 'error', message: error.response?.data?.message || "Une erreur est survenue lors de la création d'un ou plusieurs sous-tickets." }); } finally { setIsSubmitting(false); }
-    };
-    return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Ajouter des Sous-tickets</h3>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400"><X size={20}/></button>
-                </div>
-                <form onSubmit={handleSubmit} className="flex-grow overflow-y-auto space-y-4 pr-2">
-                    {subTickets.map((st, index) => (
-                        <div key={index} className="p-4 border border-slate-200 dark:border-slate-700 rounded-md space-y-3 bg-slate-50 dark:bg-slate-800/50 relative">
-                            <button type="button" onClick={() => handleRemoveSubTicket(index)} className="absolute top-2 right-2 p-1 text-red-500 hover:text-red-700 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30" title="Supprimer ce sous-ticket"><Trash2 size={16} /></button>
-                            <h4 className="font-semibold text-slate-700 dark:text-slate-200">Sous-ticket #{index + 1}</h4>
-                            <div><label className="form-label">Titre *</label><input type="text" value={st.titre} onChange={(e) => handleSubTicketChange(index, 'titre', e.target.value)} className="form-input" placeholder="Titre du sous-ticket" required /></div>
-                            <div><label className="form-label">Description</label><textarea value={st.description} onChange={(e) => handleSubTicketChange(index, 'description', e.target.value)} className="form-textarea" rows="2" placeholder="Description (optionnel)"></textarea></div>
-                            <div><label className="form-label">Priorité</label><select value={st.priorite} onChange={(e) => handleSubTicketChange(index, 'priorite', e.target.value)} className="form-select w-full">{priorities.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
-                        </div>
-                    ))}
-                    <button type="button" onClick={handleAddSubTicket} className="btn btn-secondary w-full mt-2"><PlusCircle size={18} className="mr-2"/> Ajouter un autre sous-ticket</button>
-                </form>
-                <div className="flex-shrink-0 flex justify-end space-x-3 mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
-                    <button type="button" onClick={onClose} className="btn btn-secondary" disabled={isSubmitting}>Annuler</button>
-                    <button type="submit" onClick={handleSubmit} className="btn btn-primary" disabled={isSubmitting}>{isSubmitting ? <Spinner /> : <Send size={16} className="mr-2"/>}{isSubmitting ? "Création..." : "Confirmer la Création"}</button>
-                </div>
-            </div>
-        </div>
-    );
-};
+// Utilisation du composant DiffractionForm importé directement
+import DiffractionForm from './DiffractionForm'; //
 
 // --- COMPOSANTS D'ÉDITION (Standardisés) ---
 const EditableField = ({ initialValue, onSave, fieldName, isTextarea = false }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [value, setValue] = useState(initialValue);
-    const textAreaRef = useRef(null); // Pour autosizeTextArea
-    useAutosizeTextArea(textAreaRef, value); // Appel du hook
+    const textAreaRef = useRef(null);
+    useAutosizeTextArea(textAreaRef, value);
 
     const handleSave = () => { onSave(fieldName, value); setIsEditing(false); };
     if (isEditing) {
@@ -146,11 +106,11 @@ const EditableField = ({ initialValue, onSave, fieldName, isTextarea = false }) 
             <div className="flex items-center gap-2 w-full">
                 {isTextarea ? (
                     <textarea
-                        ref={textAreaRef} // Attacher la ref
+                        ref={textAreaRef}
                         value={value}
                         onChange={(e) => setValue(e.target.value)}
-                        className="form-textarea flex-grow resize-none overflow-hidden" // Ajout de classes
-                        rows={1} // Ligne initiale
+                        className="form-textarea flex-grow resize-none overflow-hidden"
+                        rows={1}
                     />
                 ) : (
                     <input type="text" value={value} onChange={(e) => setValue(e.target.value)} className="form-input flex-grow" />
@@ -173,18 +133,16 @@ const EditableField = ({ initialValue, onSave, fieldName, isTextarea = false }) 
 };
 const DetailItem = ({ icon, label, value, children }) => (
     <div>
-        <dt className="text-xs text-slate-500 dark:text-slate-400 flex items-center mb-0.5">{icon}<span className="ml-1">{label}</span></dt> {/* Ajout ml-1 */}
+        <dt className="text-xs text-slate-500 dark:text-slate-400 flex items-center mb-0.5">{icon}<span className="ml-1">{label}</span></dt>
         <dd className="text-sm font-medium text-slate-800 dark:text-slate-100 break-words">{children || value || <span className="italic text-slate-400">N/A</span>}</dd>
     </div>
 );
 const ModuleEditor = ({ ticket, onUpdate, onRemove, allModules }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    // State pour gérer l'affichage de la barre de recherche du module si pas de module assigné
-    const [isSearchingModule, setIsSearchingModule] = useState(false); // Initialement false
+    const [isSearchingModule, setIsSearchingModule] = useState(false);
 
     useEffect(() => {
-        // Si le ticket n'a pas de module, ou si on est en mode édition, montrer la recherche
         if (!ticket.idModule) {
             setIsSearchingModule(true);
         } else {
@@ -194,13 +152,13 @@ const ModuleEditor = ({ ticket, onUpdate, onRemove, allModules }) => {
 
     const handleSelectModule = (module) => {
         onUpdate('idModule', module.id);
-        setIsEditing(false); // Ferme l'édition après la sélection
-        setIsSearchingModule(false); // Cache la barre de recherche
+        setIsEditing(false);
+        setIsSearchingModule(false);
     };
 
     if (isEditing) {
         return (
-            <div className="p-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 w-48 shadow-lg z-10"> {/* z-10 pour être au-dessus */}
+            <div className="p-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 w-48 shadow-lg z-10">
                 <input
                     type="text"
                     placeholder="Rechercher..."
@@ -227,7 +185,6 @@ const ModuleEditor = ({ ticket, onUpdate, onRemove, allModules }) => {
         );
     }
     
-    // Si pas en édition, mais qu'il faut rechercher (module non assigné)
     if (!ticket.idModule || isSearchingModule) {
         return (
             <div className="flex items-center gap-2">
@@ -256,16 +213,15 @@ const ModuleEditor = ({ ticket, onUpdate, onRemove, allModules }) => {
                         </div>
                     )}
                 </div>
-                {!ticket.idModule && ( // Bouton annuler la recherche si aucun module assigné
+                {!ticket.idModule && (
                      <button onClick={() => { setSearchTerm(''); setIsSearchingModule(false); }} className="p-1 text-slate-400 hover:text-red-500" title="Annuler la recherche">
-                        <X size={14}/>
-                    </button>
+                         <X size={14}/>
+                     </button>
                 )}
             </div>
         );
     }
 
-    // Affichage normal si un module est assigné et pas en mode recherche
     return (
         <div className="flex items-center gap-2">
             <span className="text-sm font-medium">{ticket.idModule.designation}</span>
@@ -289,7 +245,7 @@ const PriorityEditor = ({ ticket, onUpdate }) => {
 };
 
 // Composant pour la gestion des commentaires dans les sous-tickets
-const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast }) => { // showTemporaryMessage remplacé par setToast
+const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast }) => {
     const [comments, setComments] = useState(subTicket.commentaireList || []);
     const [newCommentText, setNewCommentText] = useState('');
     const [isAdding, setIsAdding] = useState(false);
@@ -313,7 +269,7 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast }) => { // s
             await commentService.addComment({ commentaire: newCommentText, idTicket: subTicket.id });
             setToast({ type: 'success', message: 'Commentaire ajouté avec succès.' });
             setNewCommentText('');
-            onCommentChange(subTicket.id); // Rafraîchit les données du sous-ticket via le parent
+            onCommentChange(subTicket.id);
         } catch (error) {
             console.error("Erreur lors de l'ajout du commentaire:", error);
             const errorMessage = error.response?.data?.message || "Erreur lors de l'ajout du commentaire.";
@@ -388,7 +344,7 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast }) => { // s
                         <div className="flex justify-end mt-2">
                             <button
                                 onClick={handleAddComment}
-                                className="btn btn-primary-sm" // Styles standardisés
+                                className="btn btn-primary-sm"
                                 disabled={isAdding}
                             >
                                 {isAdding ? <Spinner /> : <PlusCircle size={14} className="mr-1" />}
@@ -436,12 +392,12 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast }) => { // s
                                                         <>
                                                             <button
                                                                 onClick={() => handleSaveEdit(comment.id)}
-                                                                className="p-1 text-green-500 hover:text-green-700 rounded-full hover:bg-green-50 dark:hover:bg-green-900/30" // Styles standardisés
+                                                                className="p-1 text-green-500 hover:text-green-700 rounded-full hover:bg-green-50 dark:hover:bg-green-900/30"
                                                                 title="Enregistrer"
                                                             ><Check size={14}/></button>
                                                             <button
                                                                 onClick={handleCancelEdit}
-                                                                className="p-1 text-slate-500 hover:text-slate-700 rounded-full hover:bg-slate-50 dark:hover:bg-slate-900/30" // Styles standardisés
+                                                                className="p-1 text-slate-500 hover:text-slate-700 rounded-full hover:bg-slate-50 dark:hover:bg-slate-900/30"
                                                                 title="Annuler"
                                                             ><X size={14}/></button>
                                                         </>
@@ -449,12 +405,12 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast }) => { // s
                                                         <>
                                                             <button
                                                                 onClick={() => handleEditClick(comment)}
-                                                                className="p-1 text-slate-500 hover:text-blue-500 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30" // Styles standardisés
+                                                                className="p-1 text-slate-500 hover:text-blue-500 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30"
                                                                 title="Modifier"
                                                             ><Edit size={14}/></button>
                                                             <button
                                                                 onClick={() => handleDeleteComment(comment.id)}
-                                                                className="p-1 text-slate-500 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30" // Styles standardisés
+                                                                className="p-1 text-slate-500 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30"
                                                                 title="Supprimer"
                                                             ><Trash2 size={14}/></button>
                                                         </>
@@ -477,18 +433,17 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast }) => { // s
 
 
 // --- TABLEAU & LIGNES DE SOUS-TICKETS (MODIFIÉ) ---
-const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModule, onToggleComments, isCommentsExpanded, setToast }) => { // setToast ajouté
+const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModule, onToggleComments, isCommentsExpanded, setToast }) => {
     const [editableData, setEditableData] = useState({ ...sub });
     const [isSaving, setIsSaving] = useState(false);
     const textAreaRef = useRef(null);
     useAutosizeTextArea(textAreaRef, editableData.description);
     const [moduleSearchTerm, setSearchTerm] = useState('');
-    const [isSearchingModule, setIsSearchingModule] = useState(false); // Changed initial state to false
+    const [isSearchingModule, setIsSearchingModule] = useState(false);
 
-    // Effect to set initial isSearchingModule state based on whether a module is assigned
     useEffect(() => {
         if (!sub.idModule) {
-            setIsSearchingModule(true); // If no module, start in search mode
+            setIsSearchingModule(true);
         } else {
             setIsSearchingModule(false);
         }
@@ -498,7 +453,7 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModul
     const handleModuleChange = (module) => {
         setEditableData(prev => ({ ...prev, idModule: module }));
         setIsSearchingModule(false);
-        setSearchTerm(''); // Clear search term after selection
+        setSearchTerm('');
     };
     const handleSaveClick = async () => { setIsSaving(true); await onSave(sub, editableData); setIsSaving(false); };
 
@@ -507,12 +462,10 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModul
     }, [sub]);
 
     const renderModuleCell = () => {
-        // If assigned to a user, module is locked (not editable directly here)
         if (editableData.idUtilisateur && editableData.idModule) {
             return <span className="text-sm text-slate-500 dark:text-slate-400 italic">{editableData.idModule.designation} (verrouillé)</span>;
         }
 
-        // If currently in search mode or no module is assigned, show search input
         if (isSearchingModule || !editableData.idModule) {
             return (
                 <div className="relative">
@@ -523,9 +476,9 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModul
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Rechercher un module..."
                         onFocus={() => setIsSearchingModule(true)}
-                        autoFocus={true} // Auto-focus when in search mode
+                        autoFocus={true}
                     />
-                    {isSearchingModule && ( // Show dropdown only if actively searching
+                    {isSearchingModule && (
                         <div className="absolute z-10 mt-1 w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md shadow-lg max-h-48 overflow-y-auto">
                             {allModules
                                 .filter(m => m.designation.toLowerCase().includes(moduleSearchTerm.toLowerCase()))
@@ -544,7 +497,6 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModul
             );
         }
 
-        // If a module is assigned and not in search mode, show module name with edit/remove buttons
         if (editableData.idModule) {
             return (
                 <div className="flex items-center justify-between">
@@ -563,7 +515,7 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModul
     };
 
     return (
-        <tr className="bg-blue-50 dark:bg-blue-900/50 align-top border-b border-blue-200 dark:border-blue-700"> {/* Couleur pour les lignes éditables */}
+        <tr className="bg-blue-50 dark:bg-blue-900/50 align-top border-b border-blue-200 dark:border-blue-700">
             <td className="px-2 py-2">
                 <input type="text" value={editableData.titre} onChange={(e) => handleChange('titre', e.target.value)} className="form-input text-sm w-full" />
             </td>
@@ -587,8 +539,10 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModul
                     {["Basse", "Moyenne", "Haute"].map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
             </td>
-            <td className="px-2 py-2 text-sm text-slate-600 dark:text-slate-300">
-                {editableData.statue}
+            <td className="px-2 py-2">
+                <select value={editableData.statue} onChange={(e) => handleChange('statue', e.target.value)} className="form-select text-sm w-full">
+                    {["En_attente", "En_cours", "Accepte", "Termine", "Refuse", "RESOLU", "FERME"].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+                </select>
             </td>
             <td className="px-2 py-2 text-xs text-slate-600 dark:text-slate-300">
                 {formatDate(editableData.dateCreation)}
@@ -617,7 +571,7 @@ const DisplaySubTicketRow = ({ sub, onEdit, onDelete, allModules, isDescriptionE
     const descriptionIsLong = sub.description && sub.description.length > 50;
 
     return (
-        <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50 align-top border-b border-slate-200 dark:border-slate-700"> {/* Ajout de bordure */}
+        <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50 align-top border-b border-slate-200 dark:border-slate-700">
             <td className="px-3 py-2 font-medium text-slate-800 dark:text-slate-100">{sub.titre}</td>
             <td className="px-3 py-2 max-w-xs">
                 <div className="flex items-start justify-between gap-2">
@@ -650,7 +604,7 @@ const DisplaySubTicketRow = ({ sub, onEdit, onDelete, allModules, isDescriptionE
     );
 };
 
-const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModules, onRemoveModule, onRefreshTicketData, setToast }) => { // setToast ajouté
+const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModules, onRemoveModule, onRefreshTicketData, setToast }) => {
     const [editingTicketId, setEditingTicketId] = useState(null);
     const [expandedDescriptions, setExpandedDescriptions] = useState(new Set());
     const [expandedComments, setExpandedComments] = useState(new Set());
@@ -680,7 +634,7 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-200">Sous-tickets</h2>
-                <button onClick={onAdd} className="btn btn-primary-icon" title="Ajouter un sous-ticket"> {/* btn-primary-icon */}
+                <button onClick={onAdd} className="btn btn-primary-icon" title="Ajouter un sous-ticket">
                     <PlusCircle size={20} className="mr-2"/> Ajouter
                 </button>
             </div>
@@ -711,7 +665,7 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
                                         onRemoveModule={onRemoveModule}
                                         onToggleComments={toggleCommentExpansion}
                                         isCommentsExpanded={expandedComments.has(sub.id)}
-                                        setToast={setToast} // Passe setToast
+                                        setToast={setToast}
                                     />
                                     : <DisplaySubTicketRow
                                         sub={sub}
@@ -724,12 +678,11 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
                                         isCommentsExpanded={expandedComments.has(sub.id)}
                                     />
                                 }
-                                {/* Ligne des commentaires du sous-ticket, rendue conditionnellement */}
                                 {expandedComments.has(sub.id) && (
                                     <SubTicketCommentRow
                                         subTicket={sub}
                                         onCommentChange={onRefreshTicketData}
-                                        setToast={setToast} // Passe setToast
+                                        setToast={setToast}
                                     />
                                 )}
                             </React.Fragment>
@@ -743,18 +696,17 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
 
 
 // --- VUE PRINCIPALE DE MODIFICATION ---
-import DocumentManager from './DocumentManager';
-import CommentManager from './CommentManager';
+import DocumentManager from './DocumentManager'; //
+import CommentManager from './CommentManager'; //
 
-const TicketUpdateView = ({ ticketId, onBack, setToast }) => { // setToast ajouté
+const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
     const [ticket, setTicket] = useState(null);
     const [allModules, setAllModules] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isActionLoading, setIsActionLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isDiffractionModalOpen, setIsDiffractionModalOpen] = useState(false);
-        const subTicketStatuses = ["En_attente", "En_cours", "Termine", "Accepte", "Refuse"];
-
+    // Supprimé: const subTicketStatuses = ["En_attente", "En_cours", "Termine", "Accepte", "Refuse"]; car non utilisé
 
     const fetchInitialData = useCallback(async () => {
         try {
@@ -766,14 +718,23 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => { // setToast ajout
 
     useEffect(() => { setIsLoading(true); fetchInitialData(); }, [fetchInitialData]);
 
-    // Fonction d'aide pour nettoyer le payload avant d'envoyer au backend
     const cleanTicketPayload = (ticketObject) => {
         const cleanedPayload = { ...ticketObject };
-        if (cleanedPayload.idClient) cleanedPayload.idClient = cleanedPayload.idClient.id;
-        if (cleanedPayload.idModule) cleanedPayload.idModule = cleanedPayload.idModule.id;
-        if (cleanedPayload.idUtilisateur) cleanedPayload.idUtilisateur = cleanedPayload.idUtilisateur.id;
-        if (cleanedPayload.parentTicket) cleanedPayload.idParentTicket = cleanedPayload.parentTicket.id;
+        // Convertir les objets Client, Module, Utilisateur en leurs IDs si ce sont des objets
+        if (cleanedPayload.idClient && typeof cleanedPayload.idClient === 'object') cleanedPayload.idClient = cleanedPayload.idClient.id;
+        if (cleanedPayload.idModule && typeof cleanedPayload.idModule === 'object') cleanedPayload.idModule = cleanedPayload.idModule.id;
+        if (cleanedPayload.idUtilisateur && typeof cleanedPayload.idUtilisateur === 'object') cleanedPayload.idUtilisateur = cleanedPayload.idUtilisateur.id;
+        if (cleanedPayload.parentTicket && typeof cleanedPayload.parentTicket === 'object') cleanedPayload.idParentTicket = cleanedPayload.parentTicket.id;
         
+        // Assurez-vous que date_echeance est bien un tableau de nombres [year, month, day, ...] ou null
+        if (typeof cleanedPayload.date_echeance === 'string') {
+            const [year, month, day] = cleanedPayload.date_echeance.split('-').map(Number);
+            cleanedPayload.date_echeance = [year, month, day, 0, 0, 0]; // Ajoute heures, minutes, secondes
+        } else if (!Array.isArray(cleanedPayload.date_echeance)) {
+            cleanedPayload.date_echeance = null;
+        }
+
+        // Supprimer les propriétés qui ne sont pas nécessaires ou qui causent des problèmes au backend
         delete cleanedPayload.documentJointesList;
         delete cleanedPayload.commentaireList;
         delete cleanedPayload.childTickets;
@@ -804,19 +765,17 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => { // setToast ajout
         } catch (err) { setToast({ type: 'error', message: 'La mise à jour a échoué.' }); console.error(err); }
     };
 
-    const handleUpdateLocalSubTicketState = (updatedSubTicket) => {
-        setTicket(currentParentTicket => {
-            if (!currentParentTicket) return null;
-            const newChildTickets = currentParentTicket.childTickets.map(sub => sub.id === updatedSubTicket.id ? updatedSubTicket : sub);
-            return { ...currentParentTicket, childTickets: newChildTickets };
-        });
-    };
+    // handleUpdateLocalSubTicketState n'est plus strictement nécessaire car fetchInitialData() rafraîchit tout
+    // const handleUpdateLocalSubTicketState = (updatedSubTicket) => { ... };
 
     const handleSaveSubTicket = async (originalSubTicket, editedSubTicket) => {
+        // Le payload doit inclure l'id du ticket parent et l'id du client du ticket parent
         const payload = cleanTicketPayload({
             ...originalSubTicket,
             ...editedSubTicket,
-            id: originalSubTicket.id
+            id: originalSubTicket.id, // S'assurer que l'ID du sous-ticket est inclus
+            idParentTicket: ticket.id, // Assurez-vous que l'idParentTicket est celui du ticket parent actuel
+            idClient: ticket.idClient?.id // Assurez-vous que l'idClient est celui du ticket parent actuel
         });
         
         try {
@@ -826,7 +785,7 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => { // setToast ajout
         } catch(err) {
             console.error(err);
             setToast({ type: 'error', message: 'Une erreur est survenue lors de la mise à jour du sous-ticket.' });
-            throw err; // Re-jeter l'erreur pour que la modal editableField puisse la capturer
+            throw err;
         }
     };
 
@@ -839,6 +798,13 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => { // setToast ajout
     const handleDiffractionSuccess = () => { setIsDiffractionModalOpen(false); fetchInitialData(); setToast({ type: 'success', message: 'Sous-tickets créés.' }); };
 
     const handleDeleteSubTicket = async (subTicketId) => {
+        // Vérifier si le sous-ticket est affecté à un utilisateur avant de permettre la suppression
+        const subTicketToDelete = ticket.childTickets.find(sub => sub.id === subTicketId);
+        if (subTicketToDelete && subTicketToDelete.idUtilisateur) {
+            setToast({ type: 'error', message: "Impossible de supprimer un sous-ticket déjà affecté à un employé." });
+            return;
+        }
+
         if (window.confirm("Êtes-vous sûr de vouloir supprimer ce sous-ticket ?")) {
             try {
                 await ticketService.deleteTicket(subTicketId);
@@ -873,15 +839,16 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => { // setToast ajout
         }
     };
 
-
-    const isSubTicket = ticket && ticket.parentTicket;
+    // La condition pour savoir si c'est un sous-ticket doit être basée sur `idParentTicket`
+    const isSubTicket = ticket && ticket.idParentTicket !== null;
 
     const renderActions = () => {
         if (!ticket || isActionLoading) return <Spinner />;
+        // Les actions (Accepter/Refuser/Diffracter) sont uniquement pour les tickets parents
         if (isSubTicket) {
-            return null; // Pas d'actions de haut niveau (Accepter/Refuser/Diffracter) pour un sous-ticket
+            return null;
         }
-        if (!ticket) return null;
+        
         switch (ticket.statue) {
             case 'En_attente':
                 return (
@@ -895,6 +862,7 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => { // setToast ajout
                     </div>
                 );
             case 'Accepte':
+                // La diffraction est possible uniquement si le ticket est accepté et n'a pas de sous-tickets
                 if (!ticket.childTickets || ticket.childTickets.length === 0) {
                     return (
                         <button onClick={() => setIsDiffractionModalOpen(true)} className="btn btn-primary" disabled={isActionLoading}>
@@ -912,8 +880,6 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => { // setToast ajout
     if (error) return <div className="text-center text-red-500 p-8">{error}</div>;
     if (!ticket) return null;
     const hasSubTickets = ticket.childTickets && ticket.childTickets.length > 0;
-
-    const showParentComments = !hasSubTickets;
 
     let affectedToValue;
     if (hasSubTickets && !ticket.idUtilisateur) {
@@ -965,23 +931,24 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => { // setToast ajout
                  </div>
             </div>
 
-            {/* Zone des documents joints - Toujours présente */}
-            <DocumentManager
-                ticketId={ticket.id}
-                documents={ticket.documentJointesList}
-                onDocumentChange={fetchInitialData}
-                setToast={setToast} // Passer setToast
-            />
-
-            {/* Zone des commentaires du ticket parent (conditionnelle: seulement si pas de sous-tickets) */}
-            {showParentComments && (
+            {/* Nouvelle section pour Documents et Commentaires côte à côte */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {/* Zone des commentaires du ticket (toujours présente) */}
                 <CommentManager
                     ticketId={ticket.id}
                     comments={ticket.commentaireList}
                     onCommentChange={fetchInitialData}
-                    setToast={setToast} // Passer setToast
+                    setToast={setToast}
                 />
-            )}
+
+                {/* Zone des documents joints (toujours présente) */}
+                <DocumentManager
+                    ticketId={ticket.id}
+                    documents={ticket.documentJointesList}
+                    onDocumentChange={fetchInitialData}
+                    setToast={setToast}
+                />
+            </div>
 
             {/* Tableau des sous-tickets - Conditionnel si présence de sous-tickets */}
             {showSubTicketsTable && (
@@ -989,7 +956,12 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => { // setToast ajout
                     <SubTicketsTable
                         subTickets={ticket.childTickets}
                         onAdd={() => setIsDiffractionModalOpen(true)}
-                        onDelete={(subTicketId) => console.log("Supprimer", subTicketId)} // Logique de suppression à implémenter
+                        onSaveSubTicket={handleSaveSubTicket}
+                        onDelete={handleDeleteSubTicket}
+                        allModules={allModules}
+                        onRemoveModule={handleRemoveSubTicketModule}
+                        onRefreshTicketData={fetchInitialData}
+                        setToast={setToast}
                     />
                 </div>
             )}
@@ -999,7 +971,7 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => { // setToast ajout
                     parentTicket={ticket}
                     onClose={() => setIsDiffractionModalOpen(false)}
                     onSuccess={handleDiffractionSuccess}
-                    setToast={setToast} // Passer setToast
+                    setToast={setToast}
                 />
             )}
         </div>

@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, PlusCircle, Edit, Trash2, Check, X, ChevronDown, ChevronUp, AlertTriangle, CheckCircle } from 'lucide-react'; // Ajout AlertTriangle, CheckCircle pour ToastMessage
 import commentService from '../../../services/commentService';
 import { formatDateFromArray } from '../../../utils/dateFormatterTicket';
+import userService from '../../../services/userService'; // Assurez-vous que cette fonction existe et est correcte
 
 // Composant utilitaire pour le spinner
 const Spinner = () => <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>; // Couleur ajustée
@@ -66,6 +67,34 @@ const CommentManager = ({ ticketId, comments: initialComments, onCommentChange, 
     const [editingCommentId, setEditingCommentId] = useState(null);
     const [editingCommentText, setEditingCommentText] = useState('');
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const [userId, setUserId] = useState(null); // Pour stocker l'ID de l'utilisateur connecté
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const storedUser = JSON.parse(localStorage.getItem('currentUser'));
+                const login = storedUser?.login;
+
+                if (!login) {
+                    console.warn("Aucun login trouvé dans le localStorage.");
+                    return;
+                }
+
+                const user = await userService.getUserByLogin(login); // Appel backend
+                setUserId(user.id); // Stocker l'ID récupéré
+                console.log("Utilisateur récupéré:", userId);
+            } catch (error) {
+                console.error("Erreur lors de la récupération de l'utilisateur:", error);
+                setToast({
+                    type: 'error',
+                    message: "Erreur lors de la récupération de l'utilisateur.",
+                });
+            }
+        };
+
+        fetchUser(); // Très important
+    }, []);
+
 
     const newCommentTextAreaRef = useRef(null);
     useAutosizeTextArea(newCommentTextAreaRef, newCommentText);
@@ -81,7 +110,7 @@ const CommentManager = ({ ticketId, comments: initialComments, onCommentChange, 
         }
         setIsAdding(true);
         try {
-            await commentService.addComment({ commentaire: newCommentText, idTicket: ticketId });
+            await commentService.addComment({ commentaire: newCommentText, idTicket: ticketId , idUtilisateur: userId }); // Utilisation de userId
             setToast({ type: 'success', message: 'Commentaire ajouté avec succès.' }); // Utilisation de setToast
             setNewCommentText('');
             onCommentChange();
@@ -105,7 +134,7 @@ const CommentManager = ({ ticketId, comments: initialComments, onCommentChange, 
             return;
         }
         try {
-            await commentService.updateComment(commentId, { commentaire: editingCommentText, idTicket: ticketId });
+            await commentService.updateComment(commentId, { commentaire: editingCommentText, idTicket: ticketId ,idUtilisateur: userId }); // Utilisation de userId
             setToast({ type: 'success', message: 'Commentaire modifié avec succès.' }); // Utilisation de setToast
             setEditingCommentId(null);
             setEditingCommentText('');
@@ -217,12 +246,12 @@ const CommentManager = ({ ticketId, comments: initialComments, onCommentChange, 
                                                                 onClick={() => handleSaveEdit(comment.id)}
                                                                 className="p-1.5 text-green-500 hover:text-green-700 rounded-full hover:bg-green-50 dark:hover:bg-green-900/30"
                                                                 title="Enregistrer"
-                                                            ><Check size={16}/></button>
+                                                            ><Check size={16} /></button>
                                                             <button
                                                                 onClick={handleCancelEdit}
                                                                 className="p-1.5 text-slate-500 hover:text-slate-700 rounded-full hover:bg-slate-50 dark:hover:bg-slate-900/30"
                                                                 title="Annuler"
-                                                            ><X size={16}/></button>
+                                                            ><X size={16} /></button>
                                                         </>
                                                     ) : (
                                                         <>
@@ -230,12 +259,12 @@ const CommentManager = ({ ticketId, comments: initialComments, onCommentChange, 
                                                                 onClick={() => handleEditClick(comment)}
                                                                 className="p-1.5 text-slate-500 hover:text-blue-500 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30"
                                                                 title="Modifier"
-                                                            ><Edit size={16}/></button>
+                                                            ><Edit size={16} /></button>
                                                             <button
                                                                 onClick={() => handleDeleteComment(comment.id)}
                                                                 className="p-1.5 text-slate-500 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30"
                                                                 title="Supprimer"
-                                                            ><Trash2 size={16}/></button>
+                                                            ><Trash2 size={16} /></button>
                                                         </>
                                                     )}
                                                 </div>

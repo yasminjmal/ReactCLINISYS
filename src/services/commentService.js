@@ -7,7 +7,6 @@ const commentService = {
     addComment: async (commentData, userId) => { // Ajout de userId
         const payload = {
             ...commentData,
-            idUtilisateur: userId // Ajout de l'ID de l'utilisateur
         };
         const response = await api.post(BASE_URL, payload);
         return response.data;
@@ -16,7 +15,6 @@ const commentService = {
     updateComment: async (commentId, commentData, userId) => { // Ajout de userId
         const payload = {
             ...commentData,
-            idUtilisateur: userId // Ajout de l'ID de l'utilisateur
         };
         // Le backend attend seulement le 'commentaire' dans le DTO de requête pour la mise à jour
         // Adapter le payload en fonction de votre CommentaireRequestDTO pour l'update
