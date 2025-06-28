@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Save, XCircle, ArrowLeft } from 'lucide-react';
 import Select from 'react-select'; // NOUVEAU: Import de react-select
 import geoService from '../../../services/geoService';
-import { useAuth } from '../../../context/AuthContext'; 
+import { useAuth } from '../../../context/AuthContext';
 
 const AjouterClientPage = ({ onAddClient, onCancel }) => {
     // État pour les champs de formulaire simples
@@ -12,7 +12,7 @@ const AjouterClientPage = ({ onAddClient, onCancel }) => {
         email: '',
         actif: true,
     });
-    
+
     // États séparés pour les sélecteurs, c'est une meilleure pratique avec react-select
     const [selectedCountry, setSelectedCountry] = useState(null);
     const [selectedRegion, setSelectedRegion] = useState(null);
@@ -20,7 +20,7 @@ const AjouterClientPage = ({ onAddClient, onCancel }) => {
 
 
     const [errors, setErrors] = useState({});
-    
+
     // États pour les options des listes déroulantes
     const [countries, setCountries] = useState([]);
     const [regions, setRegions] = useState([]);
@@ -35,29 +35,24 @@ const AjouterClientPage = ({ onAddClient, onCancel }) => {
         const fetchCountries = async () => {
             setIsLoadingCountries(true);
             try {
-                const data = await geoService.getAllCountries();
-                // On transforme les données pour qu'elles soient compatibles avec react-select ({value, label})
-                const countryOptions = data.map(c => ({ 
-                    value: c.code, 
-                    label: c.name, 
-                    regions: c.regions // On garde les régions pour éviter un appel API plus tard
-                }));
-                setCountries(countryOptions);
+                const fetchedCountries = await geoService.getAllCountries();
 
-                // Petite amélioration : on présélectionne la Tunisie si elle existe
-                const tunisia = countryOptions.find(c => c.value === 'TN');
-                if (tunisia) {
-                    setSelectedCountry(tunisia);
-                }
-            } catch (err) {
-                console.error("Erreur lors du chargement des pays:", err);
-                setErrors({ general: "Impossible de charger les données géographiques." });
+                const formattedCountries = fetchedCountries.map(country => ({
+                    value: country.code,
+                    label: country.name,
+                    regions: country.regions,
+                }));
+                setCountries(formattedCountries);
+                console.log("Pays formatés pour le sélecteur:", formattedCountries);
+            } catch (error) {
+                console.error("Erreur lors du chargement des pays:", error);
             } finally {
                 setIsLoadingCountries(false);
             }
         };
         fetchCountries();
     }, [isAuthLoading, isAuthenticated]);
+
 
     // Étape 2: Mettre à jour la liste des régions quand le pays change
     useEffect(() => {
@@ -98,12 +93,12 @@ const AjouterClientPage = ({ onAddClient, onCancel }) => {
             onAddClient(clientData);
         }
     };
-    
+
     // Style personnalisé pour react-select pour gérer le mode sombre
     const selectStyles = {
         control: (styles) => ({ ...styles, backgroundColor: document.documentElement.classList.contains('dark') ? '#1e293b' : 'white', borderColor: document.documentElement.classList.contains('dark') ? '#475569' : '#cbd5e1' }),
         singleValue: (styles) => ({ ...styles, color: document.documentElement.classList.contains('dark') ? 'white' : 'black' }),
-        input: (styles) => ({...styles, color: document.documentElement.classList.contains('dark') ? 'white' : 'black'}),
+        input: (styles) => ({ ...styles, color: document.documentElement.classList.contains('dark') ? 'white' : 'black' }),
         menu: (styles) => ({ ...styles, backgroundColor: document.documentElement.classList.contains('dark') ? '#334155' : 'white' }),
         option: (styles, { isFocused, isSelected }) => ({ ...styles, backgroundColor: isSelected ? '#3b82f6' : isFocused ? (document.documentElement.classList.contains('dark') ? '#475569' : '#f1f5f9') : 'transparent', color: document.documentElement.classList.contains('dark') ? 'white' : '#334155' }),
     };
@@ -113,7 +108,7 @@ const AjouterClientPage = ({ onAddClient, onCancel }) => {
                 <p className="text-slate-500">Vérification de l'authentification...</p>
             </div>
         );
-    }   
+    }
 
     return (
         <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
@@ -126,7 +121,7 @@ const AjouterClientPage = ({ onAddClient, onCancel }) => {
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div>
                             <label htmlFor="nomComplet" className="form-label mb-1">Nom complet <span className="text-red-500">*</span></label>
-                            <input type="text" id="nomComplet" name="nomComplet" value={formData.nomComplet} onChange={handleInputChange} className={`form-input ${errors.nomComplet ? 'border-red-500' : ''}`} placeholder="Ex: Hôpital Central"/>
+                            <input type="text" id="nomComplet" name="nomComplet" value={formData.nomComplet} onChange={handleInputChange} className={`form-input ${errors.nomComplet ? 'border-red-500' : ''}`} placeholder="Ex: Hôpital Central" />
                             {errors.nomComplet && <p className="text-red-500 text-xs mt-1">{errors.nomComplet}</p>}
                         </div>
                         <div>
@@ -141,10 +136,10 @@ const AjouterClientPage = ({ onAddClient, onCancel }) => {
                                 options={countries}
                                 value={selectedCountry}
                                 onChange={setSelectedCountry}
-                                styles={selectStyles}
-                                placeholder="Rechercher un pays..."
-                                isLoading={isLoadingCountries}
+                                placeholder="Sélectionner un pays"
+                                isLoading={isLoadingCountries} // Use your loading state here
                                 isClearable
+                                isSearchable
                             />
                             {errors.country && <p className="text-red-500 text-xs mt-1">{errors.country}</p>}
                         </div>
@@ -163,7 +158,7 @@ const AjouterClientPage = ({ onAddClient, onCancel }) => {
                             />
                             {errors.region && <p className="text-red-500 text-xs mt-1">{errors.region}</p>}
                         </div>
-                        
+
                         <div>
                             <label htmlFor="adress" className="form-label mb-1">Adresse</label>
                             <textarea id="adress" name="adress" value={formData.adress} onChange={handleInputChange} className="form-textarea" placeholder="Ex: 123 Rue de la Santé, Tunis" rows="2"></textarea>
@@ -177,10 +172,10 @@ const AjouterClientPage = ({ onAddClient, onCancel }) => {
 
                         <div className="pt-6 flex justify-end gap-3 border-t border-slate-200 dark:border-slate-700">
                             <button type="button" onClick={onCancel} className="btn btn-secondary">
-                                <XCircle size={16} className="mr-2"/>Annuler
+                                <XCircle size={16} className="mr-2" />Annuler
                             </button>
                             <button type="submit" className="btn btn-primary">
-                                <Save size={16} className="mr-2"/>Créer le client
+                                <Save size={16} className="mr-2" />Créer le client
                             </button>
                         </div>
                     </form>
