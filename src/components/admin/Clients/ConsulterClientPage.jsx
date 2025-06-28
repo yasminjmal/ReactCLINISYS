@@ -431,6 +431,29 @@ const ConsulterClientPage = () => {
             }
         }
     }, [processedClients, entriesPerPage, currentPage, setCurrentPage]);
+    const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => {
+    return (
+        <thead className="text-sm text-black bg-sky-100 dark:bg-blue-200">
+            <tr>
+                {visibleColumns.nomComplet && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Nom Complet</th>}{/* Pas d'espace ici */}
+                {visibleColumns.region && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Région</th>}{/* Pas d'espace ici */}
+                {visibleColumns.email && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Email</th>}{/* Pas d'espace ici */}
+                {visibleColumns.adress && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Adresse</th>}{/* Pas d'espace ici */}
+                {visibleColumns.creePar && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Créé par</th>}{/* Pas d'espace ici */}
+                {visibleColumns.dateCreation && (
+                    <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">
+                        <button onClick={() => handleSort('dateCreation')} className="flex items-center justify-between w-full hover:text-blue-200">
+                            <span>Date de création</span>
+                            <ArrowUpDown size={16} className="opacity-70" />
+                        </button>
+                    </th>
+                )}{/* Pas d'espace ici */}
+                {visibleColumns.statut && <th scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">Statut</th>}
+                <th scope="col" className="px-6 py-3 font-sans text-center">Actions</th>
+            </tr>
+        </thead>
+    );
+};
 
     const totalPages = Math.ceil(processedClients.length / entriesPerPage);
 

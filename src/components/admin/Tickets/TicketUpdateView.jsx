@@ -12,11 +12,10 @@ const formatDate = (dateInput) => {
     }
     let date;
     if (Array.isArray(dateInput) && dateInput.length >= 3) {
-        // Handle LocalDateTime array from Java backend (year, month (1-based), day, hour, minute, second)
         const [year, month, day, hours = 0, minutes = 0, seconds = 0] = dateInput;
         date = new Date(year, month - 1, day, hours, minutes, seconds);
     } else {
-        date = new Date(dateInput); // Assume it's a valid date string or Date object
+        date = new Date(dateInput);
     }
     if (isNaN(date.getTime())) {
         return 'Date invalide';
@@ -33,10 +32,53 @@ const formatDate = (dateInput) => {
 import {
     ArrowLeft, Check, X, GitFork, Loader, Send, PlusCircle, User, Tag, Info, Calendar,
     Package as ModuleIcon, UserCheck, Shield, Edit, Trash2, Eye, EyeOff, MessageSquare, ChevronDown, ChevronUp,
+    AlertTriangle // Pour ToastMessage
 } from 'lucide-react';
 
 // --- COMPOSANTS UTILITAIRES ---
-const Spinner = () => <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-sky-500"></div>;
+const Spinner = () => <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>; // Couleur ajustée
+
+// Composant de message de notification (Toast) - Réutilisé
+const ToastMessage = ({ message, type, onClose }) => {
+    let bgColor, icon, titleColor, borderColor;
+    switch (type) {
+        case 'success':
+            bgColor = 'bg-green-500';
+            titleColor = 'text-white';
+            borderColor = 'border-green-600';
+            icon = <CheckCircle size={20} className="text-white" />;
+            break;
+        case 'error':
+            bgColor = 'bg-red-500';
+            titleColor = 'text-white';
+            borderColor = 'border-red-600';
+            icon = <AlertTriangle size={20} className="text-white" />;
+            break;
+        case 'info':
+            bgColor = 'bg-blue-500';
+            titleColor = 'text-white';
+            borderColor = 'border-blue-600';
+            icon = <Info size={20} className="text-white" />;
+            break;
+        default:
+            bgColor = 'bg-gray-500';
+            titleColor = 'text-white';
+            borderColor = 'border-gray-600';
+            icon = null;
+    }
+
+    return (
+        <div className={`fixed bottom-4 right-4 ${bgColor} ${titleColor} px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 z-50 transform transition-transform duration-300 ease-out translate-y-0 opacity-100 border-2 ${borderColor} font-semibold`}>
+            {icon}
+            <span>{message}</span>
+            <button onClick={onClose} className="ml-4 p-1 rounded-full hover:bg-white hover:bg-opacity-20 transition-colors duration-200">
+                <X size={16} />
+            </button>
+        </div>
+    );
+};
+
+
 const useAutosizeTextArea = (textAreaRef, value) => {
     useEffect(() => {
         if (textAreaRef.current) {
@@ -47,56 +89,207 @@ const useAutosizeTextArea = (textAreaRef, value) => {
     }, [textAreaRef, value]);
 };
 
-// --- MODAL DE DIFFRACTION ---
-const DiffractionForm = ({ parentTicket, onClose, onSuccess, showTemporaryMessage }) => {
+// --- MODAL DE DIFFRACTION (avec styles unifiés) ---
+const DiffractionForm = ({ parentTicket, onClose, onSuccess, setToast }) => { // showTemporaryMessage remplacé par setToast
     const [subTickets, setSubTickets] = useState([{ titre: '', description: '', priorite: 'Moyenne' }]);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const priorities = ["Basse", "Moyenne", "Haute"];
+    const priorities = ["Basse", "Moyenne", "Haute"]; // Utiliser les majuscules pour correspondre à l'enum si c'est le cas
     const handleAddSubTicket = () => setSubTickets([...subTickets, { titre: '', description: '', priorite: 'Moyenne' }]);
     const handleRemoveSubTicket = (indexToRemove) => setSubTickets(prev => prev.filter((_, index) => index !== indexToRemove));
     const handleSubTicketChange = (index, field, value) => { const newSubTickets = [...subTickets]; newSubTickets[index][field] = value; setSubTickets(newSubTickets); };
     const handleSubmit = async (e) => {
         e.preventDefault();
         const ticketsToCreate = subTickets.filter(t => t.titre.trim() !== '');
-        if (ticketsToCreate.length === 0) { if (showTemporaryMessage) showTemporaryMessage('error', 'Veuillez renseigner au moins un sous-ticket.'); return; }
+        if (ticketsToCreate.length === 0) { setToast({ type: 'error', message: 'Veuillez renseigner au moins un sous-ticket.' }); return; }
         setIsSubmitting(true);
-        const creationPromises = ticketsToCreate.map(subTicket => ticketService.createTicket({ ...subTicket, idParentTicket: parentTicket.id, idClient: parentTicket.idClient?.id, statue: 'Accepte', actif: true, }));
-        try { await Promise.all(creationPromises); onSuccess(); } catch (error) { console.error("Erreur:", error); if (showTemporaryMessage) showTemporaryMessage('error', error.response?.data?.message || "Une erreur est survenue."); } finally { setIsSubmitting(false); }
+        const creationPromises = ticketsToCreate.map(subTicket => ticketService.createTicket({ ...subTicket, idParentTicket: parentTicket.id, idClient: parentTicket.idClient?.id, statue: 'EN_ATTENTE', actif: true, })); // Statue 'EN_ATTENTE' par défaut
+        try { await Promise.all(creationPromises); onSuccess(); } catch (error) { console.error("Erreur:", error); setToast({ type: 'error', message: error.response?.data?.message || "Une erreur est survenue lors de la création d'un ou plusieurs sous-tickets." }); } finally { setIsSubmitting(false); }
     };
     return (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
-                <div className="flex justify-between items-center mb-4"><h3 className="text-lg font-semibold">Ajouter des Sous-tickets</h3><button onClick={onClose} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full"><X size={20}/></button></div>
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Ajouter des Sous-tickets</h3>
+                    <button onClick={onClose} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400"><X size={20}/></button>
+                </div>
                 <form onSubmit={handleSubmit} className="flex-grow overflow-y-auto space-y-4 pr-2">
                     {subTickets.map((st, index) => (
-                        <div key={index} className="p-4 border dark:border-slate-700 rounded-md space-y-3 bg-slate-50 dark:bg-slate-800/50 relative">
-                            <button type="button" onClick={() => handleRemoveSubTicket(index)} className="absolute top-2 right-2 p-1 text-red-500 hover:text-red-700" title="Supprimer"><Trash2 size={16} /></button>
-                            <h4>Sous-ticket #{index + 1}</h4>
-                            <div><label className="form-label text-xs">Titre *</label><input type="text" value={st.titre} onChange={(e) => handleSubTicketChange(index, 'titre', e.target.value)} className="form-input" required /></div>
-                            <div><label className="form-label text-xs">Description</label><textarea value={st.description} onChange={(e) => handleSubTicketChange(index, 'description', e.target.value)} className="form-textarea" rows="2"></textarea></div>
-                            <div><label className="form-label text-xs">Priorité</label><select value={st.priorite} onChange={(e) => handleSubTicketChange(index, 'priorite', e.target.value)} className="form-select w-full">{priorities.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
+                        <div key={index} className="p-4 border border-slate-200 dark:border-slate-700 rounded-md space-y-3 bg-slate-50 dark:bg-slate-800/50 relative">
+                            <button type="button" onClick={() => handleRemoveSubTicket(index)} className="absolute top-2 right-2 p-1 text-red-500 hover:text-red-700 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30" title="Supprimer ce sous-ticket"><Trash2 size={16} /></button>
+                            <h4 className="font-semibold text-slate-700 dark:text-slate-200">Sous-ticket #{index + 1}</h4>
+                            <div><label className="form-label">Titre *</label><input type="text" value={st.titre} onChange={(e) => handleSubTicketChange(index, 'titre', e.target.value)} className="form-input" placeholder="Titre du sous-ticket" required /></div>
+                            <div><label className="form-label">Description</label><textarea value={st.description} onChange={(e) => handleSubTicketChange(index, 'description', e.target.value)} className="form-textarea" rows="2" placeholder="Description (optionnel)"></textarea></div>
+                            <div><label className="form-label">Priorité</label><select value={st.priorite} onChange={(e) => handleSubTicketChange(index, 'priorite', e.target.value)} className="form-select w-full">{priorities.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
                         </div>
                     ))}
-                    <button type="button" onClick={handleAddSubTicket} className="btn btn-secondary w-full mt-2"><PlusCircle size={18} className="mr-2"/>Ajouter</button>
+                    <button type="button" onClick={handleAddSubTicket} className="btn btn-secondary w-full mt-2"><PlusCircle size={18} className="mr-2"/> Ajouter un autre sous-ticket</button>
                 </form>
-                <div className="flex-shrink-0 flex justify-end space-x-3 mt-6 pt-4 border-t dark:border-slate-700">
+                <div className="flex-shrink-0 flex justify-end space-x-3 mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
                     <button type="button" onClick={onClose} className="btn btn-secondary" disabled={isSubmitting}>Annuler</button>
-                    <button type="submit" onClick={handleSubmit} className="btn btn-primary" disabled={isSubmitting}>{isSubmitting ? <Spinner /> : <Send size={16} className="mr-2"/>}{isSubmitting ? "Création..." : "Confirmer"}</button>
+                    <button type="submit" onClick={handleSubmit} className="btn btn-primary" disabled={isSubmitting}>{isSubmitting ? <Spinner /> : <Send size={16} className="mr-2"/>}{isSubmitting ? "Création..." : "Confirmer la Création"}</button>
                 </div>
             </div>
         </div>
     );
 };
 
-// --- COMPOSANTS D'ÉDITION ---
-const EditableField = ({ initialValue, onSave, fieldName, isTextarea = false }) => {const [isEditing, setIsEditing] = useState(false); const [value, setValue] = useState(initialValue); const handleSave = () => { onSave(fieldName, value); setIsEditing(false); }; if (isEditing) { return ( <div className="flex items-center gap-2 w-full">{isTextarea ? (<textarea value={value} onChange={(e) => setValue(e.target.value)} className="form-textarea flex-grow" rows={5} />) : (<input type="text" value={value} onChange={(e) => setValue(e.target.value)} className="form-input flex-grow" />)}<button onClick={handleSave} className="btn btn-success-icon"><Check size={18} /></button><button onClick={() => setIsEditing(false)} className="btn btn-danger-icon"><X size={18} /></button></div> ); } return ( <div className="flex items-start gap-2">{isTextarea ? (<p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap bg-slate-50 dark:bg-slate-800/50 p-4 rounded-md w-full">{initialValue || <span className="italic">Aucune description.</span>}</p>) : (<h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{initialValue}</h1>)}<button onClick={() => setIsEditing(true)} className="p-2 text-slate-400 hover:text-sky-500"><Edit size={16} /></button></div> );};
-const DetailItem = ({ icon, label, value, children }) => (<div><dt className="text-xs text-slate-500 dark:text-slate-400 flex items-center mb-0.5">{icon}{label}</dt><dd className="text-sm font-medium text-slate-800 dark:text-slate-100 break-words">{children || value || <span className="italic text-slate-400">N/A</span>}</dd></div>);
-const ModuleEditor = ({ ticket, onUpdate, onRemove, allModules }) => { const [isEditing, setIsEditing] = useState(false); const [searchTerm, setSearchTerm] = useState(''); if (isEditing) { return ( <div className="p-2 border rounded-md bg-white dark:bg-slate-900 w-48 shadow-lg"><input type="text" placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="form-input w-full mb-2 text-sm" /><div className="max-h-40 overflow-y-auto">{allModules.filter(m => m.designation.toLowerCase().includes(searchTerm.toLowerCase())).map(module => (<div key={module.id} onClick={() => { onUpdate('idModule', module.id); setIsEditing(false);}} className="p-2 rounded-md hover:bg-sky-100 dark:hover:bg-sky-800 cursor-pointer text-sm">{module.designation}</div>))}</div><button onClick={() => setIsEditing(false)} className="btn btn-secondary btn-xs w-full mt-2">Annuler</button></div> ); } return ( <div className="flex items-center gap-2 min-h-[38px]"><span className="text-sm font-medium">{ticket.idModule?.designation || <span className="italic">Aucun module</span>}</span><button onClick={() => setIsEditing(true)} className="p-1 text-slate-400 hover:text-sky-500"><Edit size={14} /></button>{ticket.idModule && <button onClick={onRemove} className="p-1 text-slate-400 hover:text-red-500"><Trash2 size={14} /></button>}</div> );};
-const PriorityEditor = ({ ticket, onUpdate }) => {const priorities = ["Basse", "Moyenne", "Haute"]; return (<select value={ticket.priorite} onChange={(e) => onUpdate('priorite', e.target.value)} className="form-select text-sm font-medium bg-transparent border-0 focus:ring-0 p-0">{priorities.map(p => <option key={p} value={p}>{p}</option>)}</select>);};
+// --- COMPOSANTS D'ÉDITION (Standardisés) ---
+const EditableField = ({ initialValue, onSave, fieldName, isTextarea = false }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [value, setValue] = useState(initialValue);
+    const textAreaRef = useRef(null); // Pour autosizeTextArea
+    useAutosizeTextArea(textAreaRef, value); // Appel du hook
 
+    const handleSave = () => { onSave(fieldName, value); setIsEditing(false); };
+    if (isEditing) {
+        return (
+            <div className="flex items-center gap-2 w-full">
+                {isTextarea ? (
+                    <textarea
+                        ref={textAreaRef} // Attacher la ref
+                        value={value}
+                        onChange={(e) => setValue(e.target.value)}
+                        className="form-textarea flex-grow resize-none overflow-hidden" // Ajout de classes
+                        rows={1} // Ligne initiale
+                    />
+                ) : (
+                    <input type="text" value={value} onChange={(e) => setValue(e.target.value)} className="form-input flex-grow" />
+                )}
+                <button onClick={handleSave} className="p-2 text-green-600 hover:bg-green-100 rounded-full" title="Enregistrer"><Check size={18} /></button>
+                <button onClick={() => setIsEditing(false)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full" title="Annuler"><X size={18} /></button>
+            </div>
+        );
+    }
+    return (
+        <div className="flex items-start gap-2">
+            {isTextarea ? (
+                <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap bg-slate-50 dark:bg-slate-800/50 p-4 rounded-md w-full">{initialValue || <span className="italic">Aucune description.</span>}</p>
+            ) : (
+                <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{initialValue}</h1>
+            )}
+            <button onClick={() => setIsEditing(true)} className="p-2 text-slate-500 hover:text-blue-600 rounded-full hover:bg-blue-100 dark:hover:bg-slate-700" title="Modifier"><Edit size={16} /></button>
+        </div>
+    );
+};
+const DetailItem = ({ icon, label, value, children }) => (
+    <div>
+        <dt className="text-xs text-slate-500 dark:text-slate-400 flex items-center mb-0.5">{icon}<span className="ml-1">{label}</span></dt> {/* Ajout ml-1 */}
+        <dd className="text-sm font-medium text-slate-800 dark:text-slate-100 break-words">{children || value || <span className="italic text-slate-400">N/A</span>}</dd>
+    </div>
+);
+const ModuleEditor = ({ ticket, onUpdate, onRemove, allModules }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    // State pour gérer l'affichage de la barre de recherche du module si pas de module assigné
+    const [isSearchingModule, setIsSearchingModule] = useState(false); // Initialement false
+
+    useEffect(() => {
+        // Si le ticket n'a pas de module, ou si on est en mode édition, montrer la recherche
+        if (!ticket.idModule) {
+            setIsSearchingModule(true);
+        } else {
+            setIsSearchingModule(false);
+        }
+    }, [ticket.idModule]);
+
+    const handleSelectModule = (module) => {
+        onUpdate('idModule', module.id);
+        setIsEditing(false); // Ferme l'édition après la sélection
+        setIsSearchingModule(false); // Cache la barre de recherche
+    };
+
+    if (isEditing) {
+        return (
+            <div className="p-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 w-48 shadow-lg z-10"> {/* z-10 pour être au-dessus */}
+                <input
+                    type="text"
+                    placeholder="Rechercher..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="form-input w-full mb-2 text-sm"
+                    autoFocus
+                />
+                <div className="max-h-40 overflow-y-auto">
+                    {allModules
+                        .filter(m => m.designation.toLowerCase().includes(searchTerm.toLowerCase()))
+                        .map(module => (
+                            <div key={module.id} onClick={() => handleSelectModule(module)} className="p-2 rounded-md hover:bg-blue-100 dark:hover:bg-blue-800 cursor-pointer text-sm">
+                                {module.designation}
+                            </div>
+                        ))
+                    }
+                    {allModules.filter(m => m.designation.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 &&
+                        <p className="text-center text-xs text-slate-500 py-2">Aucun module trouvé.</p>
+                    }
+                </div>
+                <button onClick={() => setIsEditing(false)} className="btn btn-secondary w-full mt-2">Annuler</button>
+            </div>
+        );
+    }
+    
+    // Si pas en édition, mais qu'il faut rechercher (module non assigné)
+    if (!ticket.idModule || isSearchingModule) {
+        return (
+            <div className="flex items-center gap-2">
+                <div className="relative flex-grow">
+                    <input
+                        type="text"
+                        placeholder="Rechercher un module..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onFocus={() => setIsSearchingModule(true)}
+                        className="form-input text-sm w-full"
+                    />
+                    {isSearchingModule && searchTerm && (
+                        <div className="absolute z-10 mt-1 w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                            {allModules
+                                .filter(m => m.designation.toLowerCase().includes(searchTerm.toLowerCase()))
+                                .map(module => (
+                                    <div key={module.id} onClick={() => handleSelectModule(module)} className="p-2 text-sm hover:bg-blue-100 dark:hover:bg-blue-800 cursor-pointer">
+                                        {module.designation}
+                                    </div>
+                                ))
+                            }
+                            {allModules.filter(m => m.designation.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 &&
+                                <p className="text-center text-xs text-slate-500 py-2">Aucun module trouvé.</p>
+                            }
+                        </div>
+                    )}
+                </div>
+                {!ticket.idModule && ( // Bouton annuler la recherche si aucun module assigné
+                     <button onClick={() => { setSearchTerm(''); setIsSearchingModule(false); }} className="p-1 text-slate-400 hover:text-red-500" title="Annuler la recherche">
+                        <X size={14}/>
+                    </button>
+                )}
+            </div>
+        );
+    }
+
+    // Affichage normal si un module est assigné et pas en mode recherche
+    return (
+        <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">{ticket.idModule.designation}</span>
+            <button onClick={() => setIsEditing(true)} className="p-1 text-slate-500 hover:text-blue-600 rounded-full hover:bg-blue-100 dark:hover:bg-slate-700" title="Modifier le module">
+                <Edit size={14} />
+            </button>
+            <button onClick={onRemove} className="p-1 text-slate-500 hover:text-red-600 rounded-full hover:bg-red-100 dark:hover:bg-slate-700" title="Supprimer le module">
+                <Trash2 size={14} />
+            </button>
+        </div>
+    );
+};
+
+const PriorityEditor = ({ ticket, onUpdate }) => {
+    const priorities = ["Basse", "Moyenne", "Haute"]; 
+    return (
+        <select value={ticket.priorite} onChange={(e) => onUpdate('priorite', e.target.value)} className="form-select text-sm font-medium bg-transparent border-0 focus:ring-0 p-0">
+            {priorities.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
+    );
+};
 
 // Composant pour la gestion des commentaires dans les sous-tickets
-const SubTicketCommentRow = ({ subTicket, onCommentChange, showTemporaryMessage }) => {
+const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast }) => { // showTemporaryMessage remplacé par setToast
     const [comments, setComments] = useState(subTicket.commentaireList || []);
     const [newCommentText, setNewCommentText] = useState('');
     const [isAdding, setIsAdding] = useState(false);
@@ -112,19 +305,19 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, showTemporaryMessage 
 
     const handleAddComment = async () => {
         if (newCommentText.trim() === '') {
-            if (showTemporaryMessage) showTemporaryMessage('warning', 'Le commentaire ne peut pas être vide.');
+            setToast({ type: 'warning', message: 'Le commentaire ne peut pas être vide.' });
             return;
         }
         setIsAdding(true);
         try {
             await commentService.addComment({ commentaire: newCommentText, idTicket: subTicket.id });
-            if (showTemporaryMessage) showTemporaryMessage('success', 'Commentaire ajouté avec succès.');
+            setToast({ type: 'success', message: 'Commentaire ajouté avec succès.' });
             setNewCommentText('');
-            onCommentChange(subTicket.id);
+            onCommentChange(subTicket.id); // Rafraîchit les données du sous-ticket via le parent
         } catch (error) {
             console.error("Erreur lors de l'ajout du commentaire:", error);
             const errorMessage = error.response?.data?.message || "Erreur lors de l'ajout du commentaire.";
-            if (showTemporaryMessage) showTemporaryMessage('error', errorMessage);
+            setToast({ type: 'error', message: errorMessage });
         } finally {
             setIsAdding(false);
         }
@@ -137,19 +330,19 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, showTemporaryMessage 
 
     const handleSaveEdit = async (commentId) => {
         if (editingCommentText.trim() === '') {
-            if (showTemporaryMessage) showTemporaryMessage('warning', 'Le commentaire modifié ne peut pas être vide.');
+            setToast({ type: 'warning', message: 'Le commentaire modifié ne peut pas être vide.' });
             return;
         }
         try {
             await commentService.updateComment(commentId, { commentaire: editingCommentText, idTicket: subTicket.id });
-            if (showTemporaryMessage) showTemporaryMessage('success', 'Commentaire modifié avec succès.');
+            setToast({ type: 'success', message: 'Commentaire modifié avec succès.' });
             setEditingCommentId(null);
             setEditingCommentText('');
             onCommentChange(subTicket.id);
         } catch (error) {
             console.error("Erreur lors de la modification du commentaire:", error);
             const errorMessage = error.response?.data?.message || "Erreur lors de la modification du commentaire.";
-            if (showTemporaryMessage) showTemporaryMessage('error', errorMessage);
+            setToast({ type: 'error', message: errorMessage });
         }
     };
 
@@ -162,12 +355,12 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, showTemporaryMessage 
         if (window.confirm("Êtes-vous sûr de vouloir supprimer ce commentaire ?")) {
             try {
                 await commentService.deleteComment(commentId);
-                if (showTemporaryMessage) showTemporaryMessage('success', 'Commentaire supprimé avec succès.');
+                setToast({ type: 'success', message: 'Commentaire supprimé avec succès.' });
                 onCommentChange(subTicket.id);
             } catch (error) {
                 console.error("Erreur lors de la suppression du commentaire:", error);
                 const errorMessage = error.response?.data?.message || "Erreur lors de la suppression du commentaire.";
-                if (showTemporaryMessage) showTemporaryMessage('error', errorMessage);
+                setToast({ type: 'error', message: errorMessage });
             }
         }
     };
@@ -195,7 +388,7 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, showTemporaryMessage 
                         <div className="flex justify-end mt-2">
                             <button
                                 onClick={handleAddComment}
-                                className="btn btn-primary-xs"
+                                className="btn btn-primary-sm" // Styles standardisés
                                 disabled={isAdding}
                             >
                                 {isAdding ? <Spinner /> : <PlusCircle size={14} className="mr-1" />}
@@ -243,12 +436,12 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, showTemporaryMessage 
                                                         <>
                                                             <button
                                                                 onClick={() => handleSaveEdit(comment.id)}
-                                                                className="p-1 text-green-500 hover:text-green-700"
+                                                                className="p-1 text-green-500 hover:text-green-700 rounded-full hover:bg-green-50 dark:hover:bg-green-900/30" // Styles standardisés
                                                                 title="Enregistrer"
                                                             ><Check size={14}/></button>
                                                             <button
                                                                 onClick={handleCancelEdit}
-                                                                className="p-1 text-slate-500 hover:text-slate-700"
+                                                                className="p-1 text-slate-500 hover:text-slate-700 rounded-full hover:bg-slate-50 dark:hover:bg-slate-900/30" // Styles standardisés
                                                                 title="Annuler"
                                                             ><X size={14}/></button>
                                                         </>
@@ -256,12 +449,12 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, showTemporaryMessage 
                                                         <>
                                                             <button
                                                                 onClick={() => handleEditClick(comment)}
-                                                                className="p-1 text-slate-500 hover:text-blue-500"
+                                                                className="p-1 text-slate-500 hover:text-blue-500 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30" // Styles standardisés
                                                                 title="Modifier"
                                                             ><Edit size={14}/></button>
                                                             <button
                                                                 onClick={() => handleDeleteComment(comment.id)}
-                                                                className="p-1 text-slate-500 hover:text-red-500"
+                                                                className="p-1 text-slate-500 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30" // Styles standardisés
                                                                 title="Supprimer"
                                                             ><Trash2 size={14}/></button>
                                                         </>
@@ -284,18 +477,28 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, showTemporaryMessage 
 
 
 // --- TABLEAU & LIGNES DE SOUS-TICKETS (MODIFIÉ) ---
-const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModule, onToggleComments, isCommentsExpanded }) => {
+const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModule, onToggleComments, isCommentsExpanded, setToast }) => { // setToast ajouté
     const [editableData, setEditableData] = useState({ ...sub });
     const [isSaving, setIsSaving] = useState(false);
     const textAreaRef = useRef(null);
     useAutosizeTextArea(textAreaRef, editableData.description);
     const [moduleSearchTerm, setSearchTerm] = useState('');
-    const [isSearchingModule, setIsSearchingModule] = useState(!sub.idModule);
+    const [isSearchingModule, setIsSearchingModule] = useState(false); // Changed initial state to false
+
+    // Effect to set initial isSearchingModule state based on whether a module is assigned
+    useEffect(() => {
+        if (!sub.idModule) {
+            setIsSearchingModule(true); // If no module, start in search mode
+        } else {
+            setIsSearchingModule(false);
+        }
+    }, [sub.idModule]);
 
     const handleChange = (field, value) => setEditableData(prev => ({ ...prev, [field]: value }));
     const handleModuleChange = (module) => {
         setEditableData(prev => ({ ...prev, idModule: module }));
         setIsSearchingModule(false);
+        setSearchTerm(''); // Clear search term after selection
     };
     const handleSaveClick = async () => { setIsSaving(true); await onSave(sub, editableData); setIsSaving(false); };
 
@@ -304,10 +507,12 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModul
     }, [sub]);
 
     const renderModuleCell = () => {
-        if (editableData.idModule && editableData.idUtilisateur) {
-            return <span className="text-sm text-slate-500 italic">{editableData.idModule.designation} (verrouillé)</span>;
+        // If assigned to a user, module is locked (not editable directly here)
+        if (editableData.idUtilisateur && editableData.idModule) {
+            return <span className="text-sm text-slate-500 dark:text-slate-400 italic">{editableData.idModule.designation} (verrouillé)</span>;
         }
 
+        // If currently in search mode or no module is assigned, show search input
         if (isSearchingModule || !editableData.idModule) {
             return (
                 <div className="relative">
@@ -317,17 +522,21 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModul
                         value={moduleSearchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Rechercher un module..."
-                        autoFocus
+                        onFocus={() => setIsSearchingModule(true)}
+                        autoFocus={true} // Auto-focus when in search mode
                     />
-                    {moduleSearchTerm && (
+                    {isSearchingModule && ( // Show dropdown only if actively searching
                         <div className="absolute z-10 mt-1 w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md shadow-lg max-h-48 overflow-y-auto">
                             {allModules
                                 .filter(m => m.designation.toLowerCase().includes(moduleSearchTerm.toLowerCase()))
                                 .map(module => (
-                                    <div key={module.id} onClick={() => handleModuleChange(module)} className="p-2 text-sm hover:bg-sky-100 dark:hover:bg-sky-800 cursor-pointer">
+                                    <div key={module.id} onClick={() => handleModuleChange(module)} className="p-2 text-sm hover:bg-blue-100 dark:hover:bg-blue-800 cursor-pointer">
                                         {module.designation}
                                     </div>
                                 ))
+                            }
+                            {allModules.filter(m => m.designation.toLowerCase().includes(moduleSearchTerm.toLowerCase())).length === 0 &&
+                                <p className="text-center text-xs text-slate-500 py-2">Aucun module trouvé.</p>
                             }
                         </div>
                     )}
@@ -335,15 +544,16 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModul
             );
         }
 
+        // If a module is assigned and not in search mode, show module name with edit/remove buttons
         if (editableData.idModule) {
             return (
                 <div className="flex items-center justify-between">
-                    <span className="text-sm">{editableData.idModule.designation}</span>
-                    <div className="flex items-center">
-                        <button onClick={() => setIsSearchingModule(true)} className="p-1 text-slate-400 hover:text-sky-500" title="Modifier le module">
+                    <span className="text-sm text-slate-700 dark:text-slate-200">{editableData.idModule.designation}</span>
+                    <div className="flex items-center space-x-1">
+                        <button onClick={() => setIsEditing(true)} className="p-1 text-slate-500 hover:text-blue-600 rounded-full hover:bg-blue-100 dark:hover:bg-slate-700" title="Modifier le module">
                             <Edit size={14}/>
                         </button>
-                        <button onClick={() => onRemoveModule(sub.id)} className="p-1 text-slate-400 hover:text-red-500" title="Supprimer le module">
+                        <button onClick={() => onRemoveModule(sub.id)} className="p-1 text-slate-500 hover:text-red-600 rounded-full hover:bg-red-100 dark:hover:bg-slate-700" title="Supprimer le module">
                             <Trash2 size={14}/>
                         </button>
                     </div>
@@ -353,28 +563,41 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModul
     };
 
     return (
-        <tr className="bg-sky-50 dark:bg-sky-900/50 align-top">
-            <td className="px-2 py-2">{editableData.titre}</td>
+        <tr className="bg-blue-50 dark:bg-blue-900/50 align-top border-b border-blue-200 dark:border-blue-700"> {/* Couleur pour les lignes éditables */}
+            <td className="px-2 py-2">
+                <input type="text" value={editableData.titre} onChange={(e) => handleChange('titre', e.target.value)} className="form-input text-sm w-full" />
+            </td>
             <td className="px-2 py-2">
                 <textarea ref={textAreaRef} value={editableData.description || ''} onChange={(e) => handleChange('description', e.target.value)} className="form-textarea text-sm w-full overflow-hidden resize-none" rows={1} placeholder="Ajouter une description..."></textarea>
             </td>
             <td className="px-2 py-2">
                 {renderModuleCell()}
             </td>
-            <td className="px-2 py-2 text-xs">{editableData.idUtilisateur ? `${editableData.idUtilisateur.prenom} ${editableData.idUtilisateur.nom}` : 'N/A'}</td>
-            <td className="px-2 py-2 text-xs">{formatDate(editableData.date_echeance)}</td>
+            <td className="px-2 py-2 text-xs text-slate-600 dark:text-slate-300">
+                {editableData.idUtilisateur ? `${editableData.idUtilisateur.prenom} ${editableData.idUtilisateur.nom}` : 'N/A'}
+            </td>
             <td className="px-2 py-2">
-                <select value={editableData.priorite} onChange={(e) => handleChange('priorite', e.target.value)} className="form-select text-sm">
+                <input type="date" value={editableData.date_echeance ? new Date(editableData.date_echeance[0], editableData.date_echeance[1]-1, editableData.date_echeance[2]).toISOString().slice(0, 10) : ''} onChange={(e) => {
+                    const date = e.target.value ? new Date(e.target.value) : null;
+                    handleChange('date_echeance', date ? [date.getFullYear(), date.getMonth() + 1, date.getDate()] : null);
+                }} className="form-input text-sm w-full" />
+            </td>
+            <td className="px-2 py-2">
+                <select value={editableData.priorite} onChange={(e) => handleChange('priorite', e.target.value)} className="form-select text-sm w-full">
                     {["Basse", "Moyenne", "Haute"].map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
             </td>
-            <td className="px-2 py-2 text-sm">{editableData.statue}</td>
-            <td className="px-2 py-2 text-xs">{formatDate(editableData.dateCreation)}</td>
+            <td className="px-2 py-2 text-sm text-slate-600 dark:text-slate-300">
+                {editableData.statue}
+            </td>
+            <td className="px-2 py-2 text-xs text-slate-600 dark:text-slate-300">
+                {formatDate(editableData.dateCreation)}
+            </td>
             <td className="px-2 py-2">
                 <div className="flex items-center justify-center space-x-1">
-                    <button onClick={handleSaveClick} className="p-1.5 text-green-500 hover:text-green-700" title="Enregistrer" disabled={isSaving}>{isSaving ? <Spinner/> : <Check size={16}/>}</button>
-                    <button onClick={onCancel} className="p-1.5 text-slate-500 hover:text-slate-700" title="Annuler" disabled={isSaving}><X size={16}/></button>
-                    <button onClick={() => onToggleComments(sub.id)} className="p-1.5 text-slate-500 hover:text-indigo-500" title={isCommentsExpanded ? "Masquer les commentaires" : "Afficher les commentaires"}>
+                    <button onClick={handleSaveClick} className="p-1.5 text-green-600 hover:bg-green-100 rounded-full" title="Enregistrer" disabled={isSaving}>{isSaving ? <Spinner/> : <Check size={16}/>}</button>
+                    <button onClick={onCancel} className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full" title="Annuler" disabled={isSaving}><X size={16}/></button>
+                    <button onClick={() => onToggleComments(sub.id)} className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-100 rounded-full" title={isCommentsExpanded ? "Masquer les commentaires" : "Afficher les commentaires"}>
                         <MessageSquare size={16}/>
                     </button>
                 </div>
@@ -394,31 +617,31 @@ const DisplaySubTicketRow = ({ sub, onEdit, onDelete, allModules, isDescriptionE
     const descriptionIsLong = sub.description && sub.description.length > 50;
 
     return (
-        <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50 align-top">
-            <td className="px-3 py-2">{sub.titre}</td>
+        <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50 align-top border-b border-slate-200 dark:border-slate-700"> {/* Ajout de bordure */}
+            <td className="px-3 py-2 font-medium text-slate-800 dark:text-slate-100">{sub.titre}</td>
             <td className="px-3 py-2 max-w-xs">
                 <div className="flex items-start justify-between gap-2">
                     <p className={`text-sm text-slate-600 dark:text-slate-300 ${isDescriptionExpanded ? 'whitespace-pre-wrap break-words' : 'truncate'}`} title={!isDescriptionExpanded ? sub.description : ''}>
-                        {sub.description || <span className="italic">Pas de desciption</span>}
+                        {sub.description || <span className="italic">Pas de description</span>}
                     </p>
                     {descriptionIsLong && (
-                        <button onClick={() => onToggleDescription(sub.id)} className="p-1 text-slate-400 hover:text-sky-500 flex-shrink-0" title={isDescriptionExpanded ? 'Réduire' : 'Afficher plus'}>
+                        <button onClick={() => onToggleDescription(sub.id)} className="p-1 text-slate-500 hover:text-blue-600 flex-shrink-0 rounded-full hover:bg-blue-100 dark:hover:bg-slate-700" title={isDescriptionExpanded ? 'Réduire' : 'Afficher plus'}>
                             {isDescriptionExpanded ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                     )}
                 </div>
             </td>
-            <td className="px-3 py-2">{getModuleName(sub.idModule )}</td>
-            <td className="px-3 py-2">{sub.idUtilisateur ? `${sub.idUtilisateur.prenom} ${sub.idUtilisateur.nom}` : 'Aucun employé affecté'}</td>
-            <td className="px-3 py-2">{formatDate(sub.date_echeance) }</td>
-            <td className="px-3 py-2">{sub.priorite}</td>
-            <td className="px-3 py-2">{sub.statue}</td>
-            <td className="px-3 py-2">{formatDate(sub.dateCreation)}</td>
+            <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{getModuleName(sub.idModule )}</td>
+            <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{sub.idUtilisateur ? `${sub.idUtilisateur.prenom} ${sub.idUtilisateur.nom}` : 'Aucun employé affecté'}</td>
+            <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{formatDate(sub.date_echeance) }</td>
+            <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{sub.priorite}</td>
+            <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{sub.statue}</td>
+            <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{formatDate(sub.dateCreation)}</td>
             <td className="px-3 py-2">
                 <div className="flex items-center justify-center space-x-2">
-                    <button onClick={() => onEdit(sub.id)} className="p-1.5 text-slate-500 hover:text-blue-500" title="Modifier"><Edit size={16}/></button>
-                    <button onClick={() => onDelete(sub.id)} className="p-1.5 text-slate-500 hover:text-red-500" title="Supprimer" disabled={isAssigned}><Trash2 size={16}/></button>
-                    <button onClick={() => onToggleComments(sub.id)} className="p-1.5 text-slate-500 hover:text-indigo-500" title={isCommentsExpanded ? "Masquer les commentaires" : "Afficher les commentaires"}>
+                    <button onClick={() => onEdit(sub.id)} className="p-1.5 text-slate-500 hover:text-blue-600 rounded-full hover:bg-blue-100 dark:hover:bg-slate-700" title="Modifier"><Edit size={16}/></button>
+                    <button onClick={() => onDelete(sub.id)} className={`p-1.5 rounded-full ${isAssigned ? 'text-slate-400 cursor-not-allowed' : 'text-slate-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-slate-700'}`} title={isAssigned ? 'Ne peut pas supprimer un sous-ticket assigné' : 'Supprimer'} disabled={isAssigned}><Trash2 size={16}/></button>
+                    <button onClick={() => onToggleComments(sub.id)} className="p-1.5 text-slate-500 hover:text-indigo-600 rounded-full hover:bg-indigo-100 dark:hover:bg-slate-700" title={isCommentsExpanded ? "Masquer les commentaires" : "Afficher les commentaires"}>
                         <MessageSquare size={16}/>
                     </button>
                 </div>
@@ -427,7 +650,7 @@ const DisplaySubTicketRow = ({ sub, onEdit, onDelete, allModules, isDescriptionE
     );
 };
 
-const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModules, onRemoveModule, onRefreshTicketData, showTemporaryMessage }) => {
+const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModules, onRemoveModule, onRefreshTicketData, setToast }) => { // setToast ajouté
     const [editingTicketId, setEditingTicketId] = useState(null);
     const [expandedDescriptions, setExpandedDescriptions] = useState(new Set());
     const [expandedComments, setExpandedComments] = useState(new Set());
@@ -455,11 +678,28 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
 
     return (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg">
-            <div className="flex justify-between items-center mb-4"><h2 className="text-xl font-semibold">Sous-tickets</h2><button onClick={onAdd} className="btn btn-primary-icon" title="Ajouter un sous-ticket"><PlusCircle size={20} /></button></div>
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-200">Sous-tickets</h2>
+                <button onClick={onAdd} className="btn btn-primary-icon" title="Ajouter un sous-ticket"> {/* btn-primary-icon */}
+                    <PlusCircle size={20} className="mr-2"/> Ajouter
+                </button>
+            </div>
             <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
-                    <thead className="bg-slate-100 dark:bg-slate-700"><tr><th className="px-3 py-2 text-left font-medium">Titre</th><th className="px-3 py-2 text-left font-medium">Description</th><th className="px-3 py-2 text-left font-medium">Module</th><th className="px-3 py-2 text-left font-medium">Affecté à</th><th className="px-3 py-2 text-left font-medium">Échéance</th><th className="px-3 py-2 text-left font-medium">Priorité</th><th className="px-3 py-2 text-left font-medium">Statut</th><th className="px-3 py-2 text-left font-medium">Créé le</th><th className="px-3 py-2 text-center font-medium">Actions</th></tr></thead>
-                    <tbody className="divide-y dark:divide-slate-700">
+                    <thead className="bg-slate-100 dark:bg-slate-700">
+                        <tr>
+                            <th className="px-3 py-2 text-left font-medium">Titre</th>
+                            <th className="px-3 py-2 text-left font-medium">Description</th>
+                            <th className="px-3 py-2 text-left font-medium">Module</th>
+                            <th className="px-3 py-2 text-left font-medium">Affecté à</th>
+                            <th className="px-3 py-2 text-left font-medium">Échéance</th>
+                            <th className="px-3 py-2 text-left font-medium">Priorité</th>
+                            <th className="px-3 py-2 text-left font-medium">Statut</th>
+                            <th className="px-3 py-2 text-left font-medium">Créé le</th>
+                            <th className="px-3 py-2 text-center font-medium">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                         {subTickets.map(sub => (
                             <React.Fragment key={sub.id}>
                                 {editingTicketId === sub.id
@@ -471,6 +711,7 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
                                         onRemoveModule={onRemoveModule}
                                         onToggleComments={toggleCommentExpansion}
                                         isCommentsExpanded={expandedComments.has(sub.id)}
+                                        setToast={setToast} // Passe setToast
                                     />
                                     : <DisplaySubTicketRow
                                         sub={sub}
@@ -488,7 +729,7 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
                                     <SubTicketCommentRow
                                         subTicket={sub}
                                         onCommentChange={onRefreshTicketData}
-                                        showTemporaryMessage={showTemporaryMessage}
+                                        setToast={setToast} // Passe setToast
                                     />
                                 )}
                             </React.Fragment>
@@ -505,7 +746,7 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
 import DocumentManager from './DocumentManager';
 import CommentManager from './CommentManager';
 
-const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
+const TicketUpdateView = ({ ticketId, onBack, setToast }) => { // setToast ajouté
     const [ticket, setTicket] = useState(null);
     const [allModules, setAllModules] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -518,15 +759,14 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
             const [ticketData, modulesData] = await Promise.all([ticketService.getTicketById(ticketId), moduleService.getAllModules()]);
             setTicket(ticketData);
             setAllModules(modulesData.data || []);
-        } catch (err) { setError("Impossible de charger les données."); console.error(err); } finally { setIsLoading(false); }
-    }, [ticketId]);
+        } catch (err) { setError("Impossible de charger les données."); console.error(err); setToast({type: 'error', message: "Impossible de charger les détails du ticket."}); } finally { setIsLoading(false); }
+    }, [ticketId, setToast]);
 
     useEffect(() => { setIsLoading(true); fetchInitialData(); }, [fetchInitialData]);
 
     // Fonction d'aide pour nettoyer le payload avant d'envoyer au backend
     const cleanTicketPayload = (ticketObject) => {
         const cleanedPayload = { ...ticketObject };
-        // Supprimer les objets complexes ou listes qui ne sont pas attendus dans un DTO de requête direct
         if (cleanedPayload.idClient) cleanedPayload.idClient = cleanedPayload.idClient.id;
         if (cleanedPayload.idModule) cleanedPayload.idModule = cleanedPayload.idModule.id;
         if (cleanedPayload.idUtilisateur) cleanedPayload.idUtilisateur = cleanedPayload.idUtilisateur.id;
@@ -557,9 +797,9 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
         if (!ticket) return;
         try {
             await _updateField(ticketId, ticket, fieldName, value);
-            if (showTemporaryMessage) showTemporaryMessage('success', 'Mise à jour réussie.');
+            setToast({ type: 'success', message: 'Mise à jour réussie.' });
             await fetchInitialData();
-        } catch (err) { if (showTemporaryMessage) showTemporaryMessage('error', 'La mise à jour a échoué.'); console.error(err); }
+        } catch (err) { setToast({ type: 'error', message: 'La mise à jour a échoué.' }); console.error(err); }
     };
 
     const handleUpdateLocalSubTicketState = (updatedSubTicket) => {
@@ -579,12 +819,12 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
         
         try {
             await ticketService.updateTicket(originalSubTicket.id, payload);
-            if (showTemporaryMessage) showTemporaryMessage('success', 'Sous-ticket mis à jour.');
+            setToast({ type: 'success', message: 'Sous-ticket mis à jour.' });
             await fetchInitialData();
         } catch(err) {
             console.error(err);
-            if (showTemporaryMessage) showTemporaryMessage('error', 'Une erreur est survenue lors de la mise à jour du sous-ticket.');
-            throw err;
+            setToast({ type: 'error', message: 'Une erreur est survenue lors de la mise à jour du sous-ticket.' });
+            throw err; // Re-jeter l'erreur pour que la modal editableField puisse la capturer
         }
     };
 
@@ -594,16 +834,16 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
         setIsActionLoading(false);
     };
 
-    const handleDiffractionSuccess = () => { setIsDiffractionModalOpen(false); fetchInitialData(); if (showTemporaryMessage) showTemporaryMessage('success', 'Sous-tickets créés.'); };
+    const handleDiffractionSuccess = () => { setIsDiffractionModalOpen(false); fetchInitialData(); setToast({ type: 'success', message: 'Sous-tickets créés.' }); };
 
     const handleDeleteSubTicket = async (subTicketId) => {
         if (window.confirm("Êtes-vous sûr de vouloir supprimer ce sous-ticket ?")) {
             try {
                 await ticketService.deleteTicket(subTicketId);
-                if (showTemporaryMessage) showTemporaryMessage('success', 'Sous-ticket supprimé.');
+                setToast({ type: 'success', message: 'Sous-ticket supprimé.' });
                 await fetchInitialData();
             } catch (error) {
-                if (showTemporaryMessage) showTemporaryMessage('error', 'La suppression a échoué.');
+                setToast({ type: 'error', message: 'La suppression a échoué.' });
                 console.error("Erreur lors de la suppression du sous-ticket:", error);
             }
         }
@@ -622,10 +862,10 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
                 });
                 
                 await ticketService.updateTicket(subTicketToUpdate.id, payload);
-                if (showTemporaryMessage) showTemporaryMessage('success', 'Module du sous-ticket supprimé.');
+                setToast({ type: 'success', message: 'Module du sous-ticket supprimé.' });
                 await fetchInitialData();
             } catch (err) {
-                if (showTemporaryMessage) showTemporaryMessage('error', 'La suppression du module a échoué.');
+                setToast({ type: 'error', message: 'La suppression du module a échoué.' });
                 console.error("Erreur lors de la suppression du module du sous-ticket:", err);
             }
         }
@@ -634,22 +874,22 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
     const renderActions = () => {
         if (!ticket) return null;
         switch (ticket.statue) {
-            case 'En_attente': // Utilisez la casse exacte de votre enum Java
+            case 'EN_ATTENTE':
                 return (
                     <div className="flex items-center space-x-3">
-                        <button onClick={() => handleDirectStatusUpdate('Refuse')} className="btn btn-danger">
-                            <X size={18} className="mr-2"/> Refuser
+                        <button onClick={() => handleDirectStatusUpdate('REFUSE')} className="btn btn-danger" disabled={isActionLoading}>
+                            {isActionLoading ? <Spinner /> : <X size={18} className="mr-2"/>} Refuser
                         </button>
-                        <button onClick={() => handleDirectStatusUpdate('Accepte')} className="btn btn-success">
-                            <Check size={18} className="mr-2"/> Accepter
+                        <button onClick={() => handleDirectStatusUpdate('ACCEPTE')} className="btn btn-success" disabled={isActionLoading}>
+                            {isActionLoading ? <Spinner /> : <Check size={18} className="mr-2"/>} Accepter
                         </button>
                     </div>
                 );
-            case 'Accepte': // Utilisez la casse exacte de votre enum Java
+            case 'ACCEPTE':
                 if (!ticket.childTickets || ticket.childTickets.length === 0) {
                     return (
-                        <button onClick={() => setIsDiffractionModalOpen(true)} className="btn btn-primary">
-                            <GitFork size={18} className="mr-2"/> Diffracter
+                        <button onClick={() => setIsDiffractionModalOpen(true)} className="btn btn-primary" disabled={isActionLoading}>
+                            {isActionLoading ? <Spinner /> : <GitFork size={18} className="mr-2"/>} Diffracter
                         </button>
                     );
                 }
@@ -664,7 +904,6 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
     if (!ticket) return null;
     const hasSubTickets = ticket.childTickets && ticket.childTickets.length > 0;
 
-    // Nouvelle condition pour afficher le bloc de commentaires du ticket parent : toujours visible si pas de sous-tickets
     const showParentComments = !hasSubTickets;
 
     let affectedToValue;
@@ -685,13 +924,16 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
 
     return (
         <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
-            <div className="flex justify-between items-center mb-6"><button onClick={onBack} className="btn btn-secondary"><ArrowLeft size={18} className="mr-2"/> Retour</button><div>{isActionLoading ? <Spinner /> : renderActions()}</div></div>
+            <div className="flex justify-between items-center mb-6">
+                <button onClick={onBack} className="btn btn-secondary"><ArrowLeft size={18} className="mr-2"/> Retour</button>
+                <div>{renderActions()}</div>
+            </div>
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg mb-6">
                  <div className="flex flex-col md:flex-row gap-8">
                      <div className="flex-grow md:w-2/3 space-y-6">
                          <EditableField initialValue={ticket.titre} onSave={handleUpdateParentField} fieldName="titre" />
                          <div><h3 className="text-sm font-semibold uppercase text-slate-400 mb-2">Description</h3><EditableField initialValue={ticket.description} onSave={handleUpdateParentField} fieldName="description" isTextarea={true} /></div>
-                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 border-t dark:border-slate-700">
+                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 border-t border-slate-200 dark:border-slate-700">
                               <DetailItem icon={<ModuleIcon size={14} className="mr-2"/>} label="Module"><ModuleEditor ticket={ticket} onUpdate={handleUpdateParentField} onRemove={() => handleUpdateParentField('idModule', null)} allModules={allModules} /></DetailItem>
                               <DetailItem icon={<UserCheck size={14} className="mr-2"/>} label="Affecté à">{affectedToValue}</DetailItem>
                               <DetailItem icon={<Calendar size={14} className="mr-2"/>} label="Échéance">{dueDateValue}</DetailItem>
@@ -700,13 +942,11 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
                      <div className="flex-shrink-0 md:w-1/3 space-y-4">
                          <div className="grid grid-cols-2 gap-x-4 gap-y-4 bg-slate-100 dark:bg-slate-900/50 p-4 rounded-lg">
                               <DetailItem icon={<Tag size={14} className="mr-2"/>} label="Priorité">
-                                   <select value={ticket.priorite} onChange={(e) => handleUpdateParentField('priorite', e.target.value)} className="form-select text-sm font-medium bg-transparent border-0 focus:ring-0 p-0">
-                                        {["Basse", "Moyenne", "Haute"].map(p => <option key={p} value={p}>{p}</option>)}
-                                   </select>
+                                   <PriorityEditor ticket={ticket} onUpdate={handleUpdateParentField} />
                               </DetailItem>
                               <DetailItem icon={<Info size={14} className="mr-2"/>} label="Statut" value={ticket.statue} />
                          </div>
-                         <div className="pt-4 space-y-4 border-t dark:border-slate-700">
+                         <div className="pt-4 space-y-4 border-t border-slate-200 dark:border-slate-700">
                               <div className="grid grid-cols-2 gap-x-4 gap-y-4"><DetailItem icon={<User size={14} className="mr-2"/>} label="Client" value={ticket.idClient?.nomComplet} /><DetailItem icon={<User size={14} className="mr-2"/>} label="Créé par" value={ticket.userCreation} /></div>
                               <div className="grid grid-cols-2 gap-x-4 gap-y-4"><DetailItem icon={<Calendar size={14} className="mr-2"/>} label="Créé le" value={formatDate(ticket.dateCreation)} /><DetailItem icon={<Shield size={14} className="mr-2"/>} label="Actif"><select value={ticket.actif.toString()} onChange={(e) => handleUpdateParentField('actif', e.target.value === 'true')} className="form-select text-sm font-medium bg-transparent border-0 focus:ring-0 p-0"><option value="true">Oui</option><option value="false">Non</option></select></DetailItem></div>
                          </div>
@@ -719,7 +959,7 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
                 ticketId={ticket.id}
                 documents={ticket.documentJointesList}
                 onDocumentChange={fetchInitialData}
-                showTemporaryMessage={showTemporaryMessage}
+                setToast={setToast} // Passer setToast
             />
 
             {/* Zone des commentaires du ticket parent (conditionnelle: seulement si pas de sous-tickets) */}
@@ -728,7 +968,7 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
                     ticketId={ticket.id}
                     comments={ticket.commentaireList}
                     onCommentChange={fetchInitialData}
-                    showTemporaryMessage={showTemporaryMessage}
+                    setToast={setToast} // Passer setToast
                 />
             )}
 
@@ -743,7 +983,7 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
                         allModules={allModules}
                         onRemoveModule={handleRemoveSubTicketModule}
                         onRefreshTicketData={fetchInitialData}
-                        showTemporaryMessage={showTemporaryMessage}
+                        setToast={setToast} // Passer setToast
                     />
                 </div>
             )}
@@ -753,7 +993,7 @@ const TicketUpdateView = ({ ticketId, onBack, showTemporaryMessage }) => {
                     parentTicket={ticket}
                     onClose={() => setIsDiffractionModalOpen(false)}
                     onSuccess={handleDiffractionSuccess}
-                    showTemporaryMessage={showTemporaryMessage}
+                    setToast={setToast} // Passer setToast
                 />
             )}
         </div>

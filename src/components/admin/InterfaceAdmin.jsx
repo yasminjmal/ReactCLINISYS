@@ -100,6 +100,9 @@ const AdminInterface = () => {
       else if (results?.entityType && Array.isArray(results.data)) {
         setSearchResults(results.data);
         setSearchEntityType(results.entityType);
+        if (results.entityType ==="disconnect") {
+           setDisconnect(true);
+        }
         if (results.entityType==="disconnect") {
           return <GoodbyePage/>
         }
@@ -143,7 +146,8 @@ const AdminInterface = () => {
   const handleNavigateToHome = useCallback(() => setActivePage('home'), []);
   const handleUpdateUserProfile = useCallback((updatedUserData) => { setUsersData(prev => prev.map(u => u.id === updatedUserData.id ? updatedUserData : u)); showNotification('success', 'Profil modifié avec succès.'); setActivePage('consulter_profil_admin'); }, [showNotification]);
 
-
+  if (disconnect) {
+    return <GoodbyePage />;}
   return (
     <div className={`flex h-screen bg-slate-50 dark:bg-slate-950 ${isDarkMode ? 'dark' : ''}`}>
       {/* Sidebar: z-40 pour être au-dessus de la navbar */}
