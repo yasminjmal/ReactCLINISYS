@@ -16,7 +16,7 @@ import { exportToPdf } from '../../../utils/exportPdf';
 import { exportTableToExcel } from '../../../utils/exportExcel';
 import { printHtmlContent } from '../../../utils/printContent';
 import { useExport } from '../../../context/ExportContext';
-import { formatDateFromArray } from '../../../utils/dateFormatterTicket';
+import { formatDateFromArray } from '../../../utils/dateFormatter';
 
 // --- Sous-composants ---
 import TicketTableRow from './TicketTableRow';
@@ -90,21 +90,19 @@ const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => {
          <thead className="text-sm text-black bg-sky-100 dark:bg-blue-200"> {/* */}
             <tr>
                 {/* Colonne ST - toujours visible */}
-                <th scope="col" className="px-1 py-3 font-sans text-center separateur-colonne-leger">ST</th>
+                <th scope="col" className="px-1 py-3 font-sans text-center separateur-colonne-leger" style={{ width: '40px' }}>ST</th>
                 {visibleColumns.client && (
-                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger">
-                        {/* Supprimer le tri pour la colonne Client */}
+                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '12%' }}>
                         <span>Client</span>
                     </th>
                 )}
                 {visibleColumns.demandeur && (
-                    <th scope="col" className="px-3 py-3 font-sans text-left separateur-colonne-leger">
-                        {/* Supprimer le tri pour la colonne Demandeur */}
+                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '12%' }}>
                         <span>Demandeur</span>
                     </th>
                 )}
                 {visibleColumns.titre && (
-                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger">
+                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '20%' }}>
                         <button onClick={() => handleSort('titre')} className="flex items-center justify-between w-full hover:text-blue-200">
                             <span>Titre</span>
                             <ArrowUpDown size={16} className="opacity-70" />
@@ -112,19 +110,20 @@ const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => {
                     </th>
                 )}
                 {visibleColumns.module && (
-                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger">
-                        <span>Module</span>
+                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '8%' }}>
+                            <span>Module</span>
+                
                     </th>
                 )}
                 {visibleColumns.affecteA && (
-                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger">
+                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '10%' }}>
                         
                             <span>Affecté à</span>
                           
                     </th>
                 )}
                 {visibleColumns.dateEcheance && (
-                    <th scope="col" className="px-2 py-3 font-sans text-left separateur-colonne-leger">
+                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '10%' }}>
                         <button onClick={() => handleSort('date_echeance')} className="flex items-center justify-between w-full hover:text-blue-200">
                             <span>Date Échéance</span>
                             <ArrowUpDown size={16} className="opacity-70" />
@@ -132,7 +131,7 @@ const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => {
                     </th>
                 )}
                 {visibleColumns.dateCreation && (
-                    <th scope="col" className="px-2 py-3 font-sans text-left separateur-colonne-leger">
+                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '10%' }}>
                         <button onClick={() => handleSort('dateCreation')} className="flex items-center justify-between w-full hover:text-blue-200">
                             <span>Date de Création</span>
                             <ArrowUpDown size={16} className="opacity-70" />
@@ -140,24 +139,24 @@ const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => {
                     </th>
                 )}
                 {visibleColumns.priorite && (
-                    <th scope="col" className="px-2 py-3 font-sans text-left separateur-colonne-leger">
+                    <th scope="col" className="px-2 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '8%' }}>
                             <span>Priorité</span>
                             
                     </th>
                 )}
                 {visibleColumns.statut && (
-                    <th scope="col" className="px-2 py-3 font-sans text-left separateur-colonne-leger">
+                    <th scope="col" className="px-2 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '8%' }}>
                             <span>Statut</span>
                             
                     </th>
                 )}
                 {visibleColumns.actif && (
-                    <th scope="col" className="px-2 py-3 font-sans text-left separateur-colonne-leger">
+                    <th scope="col" className="px-2 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '6%' }}>
                             <span>Actif</span>
                             
                     </th>
                 )}
-                <th scope="col" className="px-4 py-3 font-sans text-center">Actions</th>
+                <th scope="col" className="px-4 py-3 font-sans text-center" style={{ width: '100px' }}>Actions</th> {/* Une largeur fixe est souvent bonne pour les actions */}
             </tr>
         </thead>
     );
@@ -211,22 +210,21 @@ const TicketsManagementPage = () => {
         setExpandedRows(prev => ({ ...prev, [ticketId]: !prev[ticketId] }));
     };
 
-    const [filters, setFilters] = useState({ priorite: 'tous', statue: 'tous', client: 'tous', affecteA: 'tous', module: 'tous' });
+    const [filters, setFilters] = useState({ priorite: 'tous', statue: 'tous', actif: 'tous', client: 'tous', affecteA: 'tous', module: 'tous' }); // Mise à jour pour inclure 'actif' dans les filtres
     const [sortConfig, setSortConfig] = useState({ key: 'dateCreation', direction: 'desc' });
     const [currentPage, setCurrentPage] = useState(1);
     const [entriesPerPage, setEntriesPerPage] = useState(10);
-    // Mise à jour des colonnes visibles pour correspondre au nouvel ordre et ajout/séparation
-    const [visibleColumns, setVisibleColumns] = useState({ 
-        client: true, 
-        demandeur: true, 
-        titre: true, 
-        module: true, 
-        affecteA: true, 
-        dateEcheance: true, 
-        dateCreation: true, 
+    const [visibleColumns, setVisibleColumns] = useState({
+        client: true,
+        demandeur: true,
+        titre: true,
+        module: true,
+        affecteA: true,
+        dateEcheance: true,
+        dateCreation: true,
         priorite: true,
-        statut: true, 
-        actif: true 
+        statut: true,
+        actif: true
     });
     const [openDropdown, setOpenDropdown] = useState(null);
     const dropdownsRef = useRef(null);
@@ -252,7 +250,7 @@ const TicketsManagementPage = () => {
             setAllModules(modulesRes.data || []);
         } catch (error) {
             console.error("Erreur chargement données:", error);
-            setToast({ message: 'Erreur de chargement des données.', type: 'error' });
+            setToast({ message: error.response?.data?.message || error.message || "Erreur de chargement des données.", type: 'error' }); // Affiche plus de détails
         } finally {
             setIsLoading(false);
         }
@@ -311,6 +309,11 @@ const TicketsManagementPage = () => {
         if (filters.statue !== 'tous') {
             filtered = filtered.filter(t => t.statue?.toLowerCase() === filters.statue.toLowerCase());
         }
+        // NOUVEAU: Filtrage par statut "Actif"
+        if (filters.actif !== 'tous') {
+            const isActiveFilter = filters.actif === 'actif';
+            filtered = filtered.filter(t => t.actif === isActiveFilter);
+        }
         if (filters.client !== 'tous') {
             filtered = filtered.filter(t => t.idClient?.id?.toString() === filters.client);
         }
@@ -353,20 +356,15 @@ const TicketsManagementPage = () => {
                         valA = a[sortConfig.key];
                         valB = b[sortConfig.key];
                         break;
-                    // Nouveaux cas pour les colonnes Client et Demandeur
                     case 'client':
-                        valA = (a.idClient?.nomComplet || '').toLowerCase();
-                        valB = (b.idClient?.nomComplet || '').toLowerCase();
-                        break;
+                        return 0;
                     case 'demandeur':
-                        valA = (a.userCreation || (a.demandeur ? `${a.demandeur.prenom} ${a.demandeur.nom}` : '')).toLowerCase();
-                        valB = (b.userCreation || (b.demandeur ? `${b.demandeur.prenom} ${b.demandeur.nom}` : '')).toLowerCase();
-                        break;
+                        return 0;
                     default:
                         valA = (a[sortConfig.key] || '').toLowerCase();
                         valB = (b[sortConfig.key] || '').toLowerCase();
                 }
-                
+
                 if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
                 if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
                 return 0;
@@ -436,6 +434,10 @@ const TicketsManagementPage = () => {
     };
 
     const handleSort = useCallback((key) => {
+        // Si la clé est 'client' ou 'demandeur', on ne fait rien
+        if (key === 'client' || key === 'demandeur' || key === 'module' || key === 'affecteA' || key === 'priorite' || key === 'statue' || key === 'actif') { // Ajout des colonnes sans tri
+            return;
+        }
         setSortConfig(p => ({ key, direction: p.key === key && p.direction === 'asc' ? 'desc' : 'asc' }));
     }, []);
     const handleToggleColumn = useCallback((key) => setVisibleColumns(p => ({ ...p, [key]: !p[key] })), []);
@@ -445,7 +447,7 @@ const TicketsManagementPage = () => {
 
     // Mise à jour des en-têtes et données pour l'exportation et l'impression
     const pdfHeaders = useMemo(() => [[
-        'ST', 'Client', 'Demandeur', 'Titre', 'Module', 'Affecté à', 
+        'ST', 'Client', 'Demandeur', 'Titre', 'Module', 'Affecté à',
         'Date Échéance', 'Date de Création', 'Priorité', 'Statut', 'Actif', 'Actions'
     ]], []);
 
@@ -540,9 +542,9 @@ const TicketsManagementPage = () => {
 
 
     if (currentView.view === 'update') {
-        return <TicketUpdateView 
-                 ticketId={currentView.ticketId} 
-                 onBack={handleBackToList} 
+        return <TicketUpdateView
+                 ticketId={currentView.ticketId}
+                 onBack={handleBackToList}
                  setToast={setToast}
                />;
     }
@@ -601,23 +603,68 @@ const TicketsManagementPage = () => {
                             <button onClick={() => setActiveModal('add')} className="btn btn-primary h-full px-3"><PlusCircle size={20} /></button>
                             <button onClick={fetchAllNecessaryData} className="btn btn-secondary h-full px-3" title="Rafraîchir"><RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} /></button>
                         </div>
-                        
-                        {/* Groupe 2: Bouton de filtre principal (regroupant tous les filtres) */}
+
+                        {/* NOUVEAU: Trois boutons de filtre distincts */}
                         <div className="relative shrink-0">
+                            <button onClick={() => toggleDropdownGlobal('prioriteFilter')} className="btn btn-secondary">
+                                <Filter size={16} className="mr-2" />
+                                Priorité
+                            </button>
+                            {openDropdown === 'prioriteFilter' &&
+                                <DropdownMenu>
+                                    <DropdownMenuItem isSelected={filters.priorite === 'tous'} onClick={() => { setFilters(f => ({...f, priorite: 'tous'})); toggleDropdownGlobal('prioriteFilter'); }}>Toutes</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.priorite === 'Haute'} onClick={() => { setFilters(f => ({...f, priorite: 'Haute'})); toggleDropdownGlobal('prioriteFilter'); }}>Haute</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.priorite === 'Moyenne'} onClick={() => { setFilters(f => ({...f, priorite: 'Moyenne'})); toggleDropdownGlobal('prioriteFilter'); }}>Moyenne</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.priorite === 'Basse'} onClick={() => { setFilters(f => ({...f, priorite: 'Basse'})); toggleDropdownGlobal('prioriteFilter'); }}>Basse</DropdownMenuItem>
+                                </DropdownMenu>
+                            }
+                        </div>
+
+                        <div className="relative shrink-0">
+                            <button onClick={() => toggleDropdownGlobal('statutFilter')} className="btn btn-secondary">
+                                <Filter size={16} className="mr-2" />
+                                Statut
+                            </button>
+                            {openDropdown === 'statutFilter' &&
+                                <DropdownMenu>
+                                    <DropdownMenuItem isSelected={filters.statue === 'tous'} onClick={() => { setFilters(f => ({...f, statue: 'tous'})); toggleDropdownGlobal('statutFilter'); }}>Tous</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.statue === 'En_attente'} onClick={() => { setFilters(f => ({...f, statue: 'En_attente'})); toggleDropdownGlobal('statutFilter'); }}>En attente</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.statue === 'Accepte'} onClick={() => { setFilters(f => ({...f, statue: 'Accepte'})); toggleDropdownGlobal('statutFilter'); }}>Accepté</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.statue === 'En_cours'} onClick={() => { setFilters(f => ({...f, statue: 'En_cours'})); toggleDropdownGlobal('statutFilter'); }}>En cours</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.statue === 'Termine'} onClick={() => { setFilters(f => ({...f, statue: 'Termine'})); toggleDropdownGlobal('statutFilter'); }}>Terminé</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.statue === 'REFUSE'} onClick={() => { setFilters(f => ({...f, statue: 'REFUSE'})); toggleDropdownGlobal('statutFilter'); }}>Refusé</DropdownMenuItem>
+                                </DropdownMenu>
+                            }
+                        </div>
+
+                        <div className="relative shrink-0">
+                            <button onClick={() => toggleDropdownGlobal('actifFilter')} className="btn btn-secondary">
+                                <Filter size={16} className="mr-2" />
+                                Actif
+                            </button>
+                            {openDropdown === 'actifFilter' &&
+                                <DropdownMenu>
+                                    <DropdownMenuItem isSelected={filters.actif === 'tous'} onClick={() => { setFilters(f => ({...f, actif: 'tous'})); toggleDropdownGlobal('actifFilter'); }}>Tous</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.actif === 'actif'} onClick={() => { setFilters(f => ({...f, actif: 'actif'})); toggleDropdownGlobal('actifFilter'); }}>Actif</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.actif === 'non actif'} onClick={() => { setFilters(f => ({...f, actif: 'non actif'})); toggleDropdownGlobal('actifFilter'); }}>Non actif</DropdownMenuItem>
+                                </DropdownMenu>
+                            }
+                        </div>
+
+                        {/* ANCIEN BOUTON DE FILTRE GENERALISTE - SUPPRIMÉ */}
+                        {/* <div className="relative shrink-0">
                             <button onClick={() => toggleDropdownGlobal('mainFilter')} className="btn btn-secondary">
                                 <Filter size={16} className="mr-2" />
                                 {Object.values(filters).some(f => f !== 'tous') ? 'Filtre appliqué' : 'Filtrer'}
                             </button>
                             {openDropdown === 'mainFilter' &&
                                 <DropdownMenu>
-                                    {/* Section Priorité */}
                                     <DropdownSectionTitle>Priorité</DropdownSectionTitle>
                                     <DropdownMenuItem isSelected={filters.priorite === 'tous'} onClick={() => { setFilters(f => ({...f, priorite: 'tous'})); toggleDropdownGlobal('mainFilter'); }}>Toutes</DropdownMenuItem>
                                     <DropdownMenuItem isSelected={filters.priorite === 'Haute'} onClick={() => { setFilters(f => ({...f, priorite: 'Haute'})); toggleDropdownGlobal('mainFilter'); }}>Haute</DropdownMenuItem>
                                     <DropdownMenuItem isSelected={filters.priorite === 'Moyenne'} onClick={() => { setFilters(f => ({...f, priorite: 'Moyenne'})); toggleDropdownGlobal('mainFilter'); }}>Moyenne</DropdownMenuItem>
                                     <DropdownMenuItem isSelected={filters.priorite === 'Basse'} onClick={() => { setFilters(f => ({...f, priorite: 'Basse'})); toggleDropdownGlobal('mainFilter'); }}>Basse</DropdownMenuItem>
                                     
-                                    {/* Section Statut */}
                                     <DropdownSectionTitle>Statut</DropdownSectionTitle>
                                     <DropdownMenuItem isSelected={filters.statue === 'tous'} onClick={() => { setFilters(f => ({...f, statue: 'tous'})); toggleDropdownGlobal('mainFilter'); }}>Tous</DropdownMenuItem>
                                     <DropdownMenuItem isSelected={filters.statue === 'En_attente'} onClick={() => { setFilters(f => ({...f, statue: 'En_attente'})); toggleDropdownGlobal('mainFilter'); }}>En attente</DropdownMenuItem>
@@ -626,21 +673,18 @@ const TicketsManagementPage = () => {
                                     <DropdownMenuItem isSelected={filters.statue === 'Termine'} onClick={() => { setFilters(f => ({...f, statue: 'Termine'})); toggleDropdownGlobal('mainFilter'); }}>Terminé</DropdownMenuItem>
                                     <DropdownMenuItem isSelected={filters.statue === 'REFUSE'} onClick={() => { setFilters(f => ({...f, statue: 'REFUSE'})); toggleDropdownGlobal('mainFilter'); }}>Refusé</DropdownMenuItem>
 
-                                    {/* Section Client */}
                                     <DropdownSectionTitle>Client</DropdownSectionTitle>
                                     <DropdownMenuItem isSelected={filters.client === 'tous'} onClick={() => { setFilters(f => ({...f, client: 'tous'})); toggleDropdownGlobal('mainFilter'); }}>Tous</DropdownMenuItem>
                                     {allClients.map(client => (
                                         <DropdownMenuItem key={client.id} isSelected={filters.client === client.id?.toString()} onClick={() => { setFilters(f => ({...f, client: client.id?.toString()})); toggleDropdownGlobal('mainFilter'); }}>{client.nomComplet}</DropdownMenuItem>
                                     ))}
 
-                                    {/* Section Employé */}
                                     <DropdownSectionTitle>Employé</DropdownSectionTitle>
                                     <DropdownMenuItem isSelected={filters.affecteA === 'tous'} onClick={() => { setFilters(f => ({...f, affecteA: 'tous'})); toggleDropdownGlobal('mainFilter'); }}>Tous</DropdownMenuItem>
                                     {allUsers.map(user => (
                                         <DropdownMenuItem key={user.id} isSelected={filters.affecteA === user.id?.toString()} onClick={() => { setFilters(f => ({...f, affecteA: user.id?.toString()})); toggleDropdownGlobal('mainFilter'); }}>{user.prenom} {user.nom}</DropdownMenuItem>
                                     ))}
 
-                                    {/* Section Module */}
                                     <DropdownSectionTitle>Module</DropdownSectionTitle>
                                     <DropdownMenuItem isSelected={filters.module === 'tous'} onClick={() => { setFilters(f => ({...f, module: 'tous'})); toggleDropdownGlobal('mainFilter'); }}>Tous</DropdownMenuItem>
                                     {allModules.map(module => (
@@ -648,12 +692,13 @@ const TicketsManagementPage = () => {
                                     ))}
                                 </DropdownMenu>
                             }
-                        </div>
-                        
+                        </div> */}
+                        {/* FIN ANCIEN BOUTON DE FILTRE GENERALISTE */}
+
                         {/* Groupe 3: Colonnes, Lignes par page */}
                         <div className="flex items-center gap-2 shrink-0">
                             <div className="relative"><button onClick={() => toggleDropdownGlobal('columns')} className="btn btn-secondary"><Eye size={16} className="mr-2" />Colonnes</button>
-                                {openDropdown === 'columns' && 
+                                {openDropdown === 'columns' &&
                                     <DropdownMenu>
                                         {/* Nouvelle colonne ST - non désactivable */}
                                         <DropdownMenuItem disabled={true}>
@@ -669,9 +714,9 @@ const TicketsManagementPage = () => {
                                     </DropdownMenu>
                                 }
                             </div>
-                            {/* <div className="relative"><button onClick={() => toggleDropdownGlobal('entries')} className="btn btn-secondary">{entriesPerPage} / page</button>
+                            <div className="relative"><button onClick={() => toggleDropdownGlobal('entries')} className="btn btn-secondary">{entriesPerPage} / page</button>
                                 {openDropdown === 'entries' && <DropdownMenu>{[10, 25, 50].map(num => (<DropdownMenuItem isSelected={entriesPerPage === num} key={num} onClick={() => { setEntriesPerPage(num); toggleDropdownGlobal('entries'); }}>{num} lignes</DropdownMenuItem>))}</DropdownMenu>}
-                            </div> */}
+                            </div>
                         </div>
 
                         {/* Groupe 4: Impression et Export */}
@@ -721,9 +766,9 @@ const TicketsManagementPage = () => {
                         />
                         <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                             {paginatedTickets.map(ticket => (
-                                <TicketTableRow 
-                                    key={ticket.id} 
-                                    ticket={ticket} 
+                                <TicketTableRow
+                                    key={ticket.id}
+                                    ticket={ticket}
                                     onNavigateToDetails={handleShowDetails}
                                     onNavigateToUpdate={handleNavigateToUpdate}
                                     isExpanded={!!expandedRows[ticket.id]}
