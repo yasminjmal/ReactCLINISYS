@@ -97,7 +97,16 @@ const dashboardService = {
             console.error("Erreur lors de la récupération des statistiques clients par région:", error);
             throw error;
         }
+    },
+    getClientLocations: async () => {
+    try {
+        const response = await api.get('clients/locations'); // Adaptez cet endpoint à votre backend
+        return response.data; // Attendu: [{id: 1, lat: ..., lng: ..., status: 'active'}, ...]
+    } catch (error) {
+        console.error("Erreur lors de la récupération des emplacements clients:", error);
+        throw error;
     }
+},
 
     
     

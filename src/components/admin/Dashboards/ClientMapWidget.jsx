@@ -4,16 +4,15 @@ import {
   Geographies,
   Geography,
   ZoomableGroup,
+  Marker // Importez Marker si vous voulez des points précis
 } from "react-simple-maps";
 import { scaleQuantile } from "d3-scale";
-import { interpolateGreens, interpolateBlues, interpolateReds } from "d3-scale-chromatic";
+import { interpolateGreens, interpolateReds } from "d3-scale-chromatic"; // Importez Greens et Reds
 import dashboardService from '../../../services/dashboardService';
 
 // URLs des fichiers GeoJSON
 const WORLD_GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
-// Pour la Tunisie, cette URL GitHub peut être instable ou bloquée par CORS.
-// Idéalement, servez ce fichier depuis votre propre backend ou un CDN fiable.
-const TUNISIA_GOVERNORATES_GEO_URL = "https://raw.githubusercontent.com/datasets/geo-countries-regions-tunisia/main/data/tunisia.geojson";
+const TUNISIA_GOVERNORATES_GEO_URL = "/data/tunisia.geojson"; // Chemin relatif vers votre dossier public/data
 
 // Helper pour convertir le code ISO A2 en nom de pays (si nécessaire)
 const countryCodeToNameMapping = {
@@ -27,24 +26,75 @@ const countryCodeToNameMapping = {
     // Ajoutez d'autres pays si nécessaire
 };
 
+// --- Composant d'animation de cercle (Exemple - nécessite des données lat/lng du backend) ---
+// Ceci est un exemple et nécessitera des données de clients avec leurs coordonnées exactes
+const AnimatedClientMarker = ({ coordinates, status }) => {
+  const color = status === 'active' ? '#4CAF50' : '#F44336'; // Vert pour actif, Rouge pour inactif
+  const animationClass = status === 'active' ? 'animate-ping-green' : 'animate-ping-red';
+
+  return (
+    <Marker coordinates={coordinates}>
+      <circle r={8} fill={color} stroke="#fff" strokeWidth={1} />
+      <circle r={8} fill={color} className={animationClass} />
+    </Marker>
+  );
+};
+// N'oubliez pas d'ajouter les keyframes CSS pour 'animate-ping-green' et 'animate-ping-red' dans votre fichier CSS global (ex: index.css ou tailwind.css)
+/*
+@keyframes ping-green {
+  0% {
+    transform: scale(0.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+.animate-ping-green {
+  animation: ping-green 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes ping-red {
+  0% {
+    transform: scale(0.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+.animate-ping-red {
+  animation: ping-red 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+*/
+
+
 const ClientMapWidget = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [mapType, setMapType] = useState('world'); // 'world' ou 'tunisia'
-  const [clientStats, setClientStats] = useState([]);
+  const [clientStats, setClientStats] = useState([]); // Stats agrégées par région/pays
+  // [NEW] Pourrait contenir une liste de clients individuels avec lat/lng si le backend les fournit
+  const [individualClients, setIndividualClients] = useState([]); 
   const [geoUrl, setGeoUrl] = useState(WORLD_GEO_URL); // URL GeoJSON active
-  const [mapData, setMapData] = useState(null); // Données GeoJSON brutes (non utilisées directement par Geographies pour l'instant)
 
   const [tooltipContent, setTooltipContent] = useState("");
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
-  // Charger les statistiques clients
+  // Charger les statistiques clients (agrégées par région/pays)
   useEffect(() => {
     const fetchClientStats = async () => {
       setLoading(true);
       try {
+        // Le backend doit renvoyer les stats pour le type de carte demandé
+        // Ex: [{ id: "TN", value: 10, active: 8, inactive: 2 }]
+        // Ou pour clients individuels: [{ lat: ..., lng: ..., status: "active" }]
         const stats = await dashboardService.getClientStatsByRegion(mapType);
         setClientStats(stats);
+        // Si le backend renvoyait des clients individuels, vous les stockeriez ici:
+        // setIndividualClients(stats.individualClients || []);
       } catch (err) {
         console.error("Erreur lors du chargement des stats clients:", err);
         setError("Erreur lors du chargement des statistiques.");
@@ -54,6 +104,21 @@ const ClientMapWidget = () => {
     };
     fetchClientStats();
   }, [mapType]); // Re-fetch quand le type de carte change
+  
+
+  useEffect(() => {
+  const fetchClientLocations = async () => {
+    try {
+      setLoading(true);
+      const data = await dashboardService.getClientLocations(); // Ou clientService.getClientLocations()
+      setIndividualClients(data);
+    } catch (err) {
+      setError("Erreur lors du chargement des emplacements clients.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };}, []);
 
   // Charger le fichier GeoJSON spécifique à la carte
   useEffect(() => {
@@ -61,56 +126,37 @@ const ClientMapWidget = () => {
     setError(null);
     const currentGeoUrl = mapType === 'tunisia' ? TUNISIA_GOVERNORATES_GEO_URL : WORLD_GEO_URL;
     setGeoUrl(currentGeoUrl);
-
-    // Une solution alternative si la Tunisie ne s'affiche pas à cause de CORS/URL invalide
-    // (Non active par défaut, car Geographies peut charger l'URL directement)
-    /*
-    fetch(currentGeoUrl)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(data => {
-        setMapData(data); // Stocke les données GeoJSON
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Erreur lors du chargement du fichier GeoJSON:", err);
-        setError(`Impossible de charger la carte: ${err.message}. Vérifiez l'URL du fichier GeoJSON.`);
-        setLoading(false);
-      });
-    */
-    setLoading(false); // Réinitialiser le loading ici si on se repose sur Geographies
+    setLoading(false); 
   }, [mapType]);
 
-
   // Générateur de couleurs basé sur les statistiques
+  // Utilisation de interpolateGreens pour une palette plus douce
   const colorScale = scaleQuantile()
-    .domain(clientStats.map(d => d.value))
-    .range(Array.from({ length: 9 }, (_, i) => interpolateBlues(i / 8))); // Génère 9 couleurs du plus clair au plus foncé
+    .domain(clientStats.map(d => d.value)) // `value` est le nombre total de clients
+    .range(Array.from({ length: 9 }, (_, i) => interpolateGreens(i / 8))); 
 
   const handleMouseEnter = (geo) => {
-    // Déterminer l'ID de la région/pays en fonction du type de carte
-    // Pour le monde, on utilise ISO_A2 (code pays alpha-2)
-    // Pour la Tunisie, on utilise iso_3166_2 (code de subdivision, ex: TN-11)
     const geoId = mapType === 'tunisia' ? geo.properties.iso_3166_2 : geo.properties.ISO_A2;
     const stat = clientStats.find(s => s.id === geoId);
     
     let name = geo.properties.name;
-    let count = stat ? stat.value : 0;
-    
-    // Pour la carte du monde, le nom est ISO_A2, on le convertit si possible
+    let totalCount = stat ? stat.value : 0;
+    let activeCount = stat && stat.active !== undefined ? stat.active : 'N/A'; // Supposons que le backend renvoie 'active' et 'inactive'
+    let inactiveCount = stat && stat.inactive !== undefined ? stat.inactive : 'N/A';
+
     if (mapType === 'world' && geo.properties.ISO_A2) {
         name = countryCodeToNameMapping[geo.properties.ISO_A2] || geo.properties.name;
     }
-    // Pour la Tunisie, les noms sont dans geo.properties.name (selon le GeoJSON)
     if (mapType === 'tunisia' && geo.properties.name) {
         name = geo.properties.name;
     }
 
-    setTooltipContent(`<strong>${name}</strong><br/>Clients: ${count}`);
+    setTooltipContent(
+      `<strong>${name}</strong><br/>
+      Clients Totaux: ${totalCount}<br/>
+      Actifs: <span style="color:${interpolateGreens(0.8)};">${activeCount}</span><br/>
+      Non Actifs: <span style="color:${interpolateReds(0.8)};">${inactiveCount}</span>`
+    );
   };
 
   const handleMouseLeave = () => {
@@ -162,17 +208,15 @@ const ClientMapWidget = () => {
         <div className="w-full h-full">
             <ComposableMap
               projection="geoMercator"
-              // Ajuster le scale et le centre pour la Tunisie
               projectionConfig={{ 
-                scale: mapType === 'world' ? 140 : 2500, // Ajuster le scale pour la Tunisie (peut nécessiter d'autres essais)
+                scale: mapType === 'world' ? 140 : 2500, 
               }} 
               style={{ width: "100%", height: "100%" }}
             >
-              <ZoomableGroup center={mapType === 'tunisia' ? [9.5, 34] : [0, 0]}> {/* Centrer sur la Tunisie si mapType est 'tunisia' */}
+              <ZoomableGroup center={mapType === 'tunisia' ? [9.5, 34] : [0, 0]}> 
                 <Geographies geography={geoUrl}>
                   {({ geographies }) =>
                     geographies.map((geo) => {
-                      // Déterminer l'ID de la région/pays en fonction du type de carte
                       const geoId = mapType === 'tunisia' ? geo.properties.iso_3166_2 : geo.properties.ISO_A2;
                       const d = clientStats.find(s => s.id === geoId);
                       
@@ -190,7 +234,7 @@ const ClientMapWidget = () => {
                                 outline: "none"
                             },
                             hover: {
-                                fill: d ? colorScale(d.value) : "#D6D6DA", // Couleur au survol
+                                fill: d ? interpolateGreens(d.value * 0.5) : "#D6D6DA", // Couleur au survol, légèrement différente
                                 stroke: "#FFFFFF",
                                 strokeWidth: 0.75,
                                 outline: "none"
@@ -207,6 +251,16 @@ const ClientMapWidget = () => {
                     })
                   }
                 </Geographies>
+                
+                {individualClients.map((client, index) => (
+                    <AnimatedClientMarker 
+                        key={index} 
+                        coordinates={[client.lng, client.lat]} // Assurez-vous d'avoir lat/lng
+                        status={client.status} // 'active' ou 'inactive'
+                    />
+                ))}
+
+
               </ZoomableGroup>
             </ComposableMap>
         </div>
@@ -223,7 +277,7 @@ const ClientMapWidget = () => {
               zIndex: 1000,
               top: `${tooltipPosition.y + 15}px`,
               left: `${tooltipPosition.x + 15}px`,
-              transform: "translate(-50%, -100%)", // Centrer au-dessus du curseur
+              transform: "translateY(-100%)", // Rendu au-dessus du curseur, ajustement en Y
               whiteSpace: 'nowrap',
             }}
             dangerouslySetInnerHTML={{ __html: tooltipContent }}
@@ -233,20 +287,31 @@ const ClientMapWidget = () => {
 
        {/* Légende */}
        <div className="mt-4 text-sm text-slate-600 dark:text-slate-300">
-         <p>La couleur indique la concentration de clients (plus le bleu est foncé, plus il y a de clients).</p>
-         <div className="flex mt-2">
+         <p>La couleur indique la concentration de clients (plus le vert est foncé, plus il y a de clients).</p>
+         <div className="flex mt-2 items-center">
             {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => (
                 <div 
                     key={i} 
                     style={{ 
                         width: '20px', 
                         height: '10px', 
-                        // *** CORRECTION DE LA LIGNE ICI POUR LA LÉGENDE ***
-                        backgroundColor: interpolateBlues(i / 8) // Génère les mêmes nuances que la carte
+                        backgroundColor: interpolateGreens(i / 8) // Génère les mêmes nuances que la carte
                     }}
                     className="border border-slate-300 dark:border-slate-600"
                 ></div>
             ))}
+            <span className="ml-3">Nombre de clients</span>
+         </div>
+         {/* Légende pour les statuts Actif/Non actif si les données sont disponibles */}
+         <div className="flex mt-2 items-center gap-4">
+             <div className="flex items-center">
+                 <div style={{ width: '15px', height: '15px', borderRadius: '50%', backgroundColor: '#4CAF50' }} className="mr-2 border border-slate-300"></div>
+                 <span>Actif (survol pour les chiffres par région)</span>
+             </div>
+             <div className="flex items-center">
+                 <div style={{ width: '15px', height: '15px', borderRadius: '50%', backgroundColor: '#F44336' }} className="mr-2 border border-slate-300"></div>
+                 <span>Non Actif (survol pour les chiffres par région)</span>
+             </div>
          </div>
        </div>
     </div>

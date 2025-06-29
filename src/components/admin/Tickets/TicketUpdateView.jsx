@@ -3,7 +3,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ticketService from '../../../services/ticketService';
 import moduleService from '../../../services/moduleService';
 import commentService from '../../../services/commentService';
-import documentService from '../../../services/documentService'; // <-- Assure-toi que cette ligne est bien présente
+import documentService from '../../../services/documentService';
+import userService from '../../../services/userService'; // <-- Assure-toi que cet import est bien là
 
 // Utilisation de la fonction de formatage de date universelle
 const formatDate = (dateInput) => {
@@ -36,7 +37,7 @@ import {
 } from 'lucide-react';
 
 // --- COMPOSANTS UTILITAIRES ---
-const Spinner = () => <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>; // Couleur ajustée
+const Spinner = () => <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>;
 
 // Composant de message de notification (Toast) - Réutilisé
 const ToastMessage = ({ message, type, onClose }) => {
@@ -244,7 +245,7 @@ const PriorityEditor = ({ ticket, onUpdate }) => {
 };
 
 // Composant pour la gestion des commentaires dans les sous-tickets
-const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast }) => {
+const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast, currentUserId }) => {
     const [comments, setComments] = useState(subTicket.commentaireList || []);
     const [newCommentText, setNewCommentText] = useState('');
     const [isAdding, setIsAdding] = useState(false);
@@ -264,8 +265,10 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast }) => {
             return;
         }
         setIsAdding(true);
+        // Log pour débogage
+        console.log("SubTicketCommentRow: Tentative d'ajout de commentaire. Payload:", { commentaire: newCommentText, idTicket: subTicket.id, idUtilisateur: currentUserId });
         try {
-            await commentService.addComment({ commentaire: newCommentText, idTicket: subTicket.id });
+            await commentService.addComment({ commentaire: newCommentText, idTicket: subTicket.id ,idUtilisateur: currentUserId});
             setToast({ type: 'success', message: 'Commentaire ajouté avec succès.' });
             setNewCommentText('');
             onCommentChange(subTicket.id);
@@ -288,8 +291,10 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast }) => {
             setToast({ type: 'warning', message: 'Le commentaire modifié ne peut pas être vide.' });
             return;
         }
+        // Log pour débogage
+        console.log("SubTicketCommentRow: Tentative de modification de commentaire. Payload:", { commentaire: editingCommentText, idTicket: subTicket.id, idUtilisateur: currentUserId });
         try {
-            await commentService.updateComment(commentId, { commentaire: editingCommentText, idTicket: subTicket.id });
+            await commentService.updateComment(commentId, { commentaire: editingCommentText, idTicket: subTicket.id ,idUtilisateur: currentUserId});
             setToast({ type: 'success', message: 'Commentaire modifié avec succès.' });
             setEditingCommentId(null);
             setEditingCommentText('');
@@ -361,7 +366,7 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast }) => {
                                         <th className="px-2 py-1 text-left font-medium">Commentaire</th>
                                         <th className="px-2 py-1 text-left font-medium">Créé par</th>
                                         <th className="px-2 py-1 text-left font-medium w-32">Date</th>
-                                        <th className="px-2 py-1 text-center font-medium w-24">Actions</th>
+                                                                                <th className="px-2 py-1 text-center font-medium w-24">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -391,12 +396,12 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast }) => {
                                                         <>
                                                             <button
                                                                 onClick={() => handleSaveEdit(comment.id)}
-                                                                className="p-1 text-green-500 hover:text-green-700 rounded-full hover:bg-green-50 dark:hover:bg-green-900/30"
+                                                                className="p-1.5 text-green-500 hover:text-green-700 rounded-full hover:bg-green-50 dark:hover:bg-green-900/30"
                                                                 title="Enregistrer"
                                                             ><Check size={14}/></button>
                                                             <button
                                                                 onClick={handleCancelEdit}
-                                                                className="p-1 text-slate-500 hover:text-slate-700 rounded-full hover:bg-slate-50 dark:hover:bg-slate-900/30"
+                                                                className="p-1.5 text-slate-500 hover:text-slate-700 rounded-full hover:bg-slate-50 dark:hover:bg-slate-900/30"
                                                                 title="Annuler"
                                                             ><X size={14}/></button>
                                                         </>
@@ -404,12 +409,12 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast }) => {
                                                         <>
                                                             <button
                                                                 onClick={() => handleEditClick(comment)}
-                                                                className="p-1 text-slate-500 hover:text-blue-500 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                                                                className="p-1.5 text-slate-500 hover:text-blue-500 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30"
                                                                 title="Modifier"
                                                             ><Edit size={14}/></button>
                                                             <button
                                                                 onClick={() => handleDeleteComment(comment.id)}
-                                                                className="p-1 text-slate-500 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30"
+                                                                className="p-1.5 text-slate-500 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30"
                                                                 title="Supprimer"
                                                             ><Trash2 size={14}/></button>
                                                         </>
@@ -480,14 +485,14 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModul
                     {isSearchingModule && (
                         <div className="absolute z-10 mt-1 w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md shadow-lg max-h-48 overflow-y-auto">
                             {allModules
-                                .filter(m => m.designation.toLowerCase().includes(searchTerm.toLowerCase()))
+                                .filter(m => m.designation.toLowerCase().includes(moduleSearchTerm.toLowerCase()))
                                 .map(module => (
                                     <div key={module.id} onClick={() => handleModuleChange(module)} className="p-2 text-sm hover:bg-blue-100 dark:hover:bg-blue-800 cursor-pointer">
                                         {module.designation}
                                     </div>
                                 ))
                             }
-                            {allModules.filter(m => m.designation.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 &&
+                             {allModules.filter(m => m.designation.toLowerCase().includes(moduleSearchTerm.toLowerCase())).length === 0 &&
                                 <p className="text-center text-xs text-slate-500 py-2">Aucun module trouvé.</p>
                             }
                         </div>
@@ -603,7 +608,7 @@ const DisplaySubTicketRow = ({ sub, onEdit, onDelete, allModules, isDescriptionE
     );
 };
 
-const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModules, onRemoveModule, onRefreshTicketData, setToast }) => {
+const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModules, onRemoveModule, onRefreshTicketData, setToast, currentUserId }) => { // <-- currentUserId ajouté ici
     const [editingTicketId, setEditingTicketId] = useState(null);
     const [expandedDescriptions, setExpandedDescriptions] = useState(new Set());
     const [expandedComments, setExpandedComments] = useState(new Set());
@@ -665,6 +670,7 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
                                         onToggleComments={toggleCommentExpansion}
                                         isCommentsExpanded={expandedComments.has(sub.id)}
                                         setToast={setToast}
+                                        currentUserId={currentUserId} // <-- PASSE currentUserId
                                     />
                                     : <DisplaySubTicketRow
                                         sub={sub}
@@ -675,12 +681,15 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
                                         onToggleDescription={toggleDescriptionExpansion}
                                         onToggleComments={toggleCommentExpansion}
                                         isCommentsExpanded={expandedComments.has(sub.id)}
+                                        setToast={setToast}
+                                        currentUserId={currentUserId} // <-- PASSE currentUserId
                                     />
                                 }
                                 {expandedComments.has(sub.id) && (
                                     <SubTicketCommentRow
                                         subTicket={sub}
                                         onCommentChange={onRefreshTicketData}
+                                        currentUserId={currentUserId} // <-- PASSE currentUserId
                                         setToast={setToast}
                                     />
                                 )}
@@ -697,6 +706,7 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
 // --- VUE PRINCIPALE DE MODIFICATION ---
 import DocumentManager from './DocumentManager';
 import CommentManager from './CommentManager';
+// import userService from '../../../services/userService'; // Importé plus haut, assurez-vous qu'il n'y a pas de doublon
 
 const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
     const [ticket, setTicket] = useState(null);
@@ -705,13 +715,34 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
     const [isActionLoading, setIsActionLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isDiffractionModalOpen, setIsDiffractionModalOpen] = useState(false);
+    const [userId, setUserId] = useState(null); // Ajoute cet état
+
+        useEffect(() => {
+            const fetchCurrentUser = async () => {
+                try {
+                    const storedUser = JSON.parse(localStorage.getItem('currentUser'));
+                    const login = storedUser?.login;
+                    if (login) {
+                        const userProfile = await userService.getUserByLogin(login); // Utilise ton userService
+                        setUserId(userProfile.id);
+                        console.log("Utilisateur connecté ID:", userProfile.id); // Log pour vérification
+                    } else {
+                        console.warn("Aucun login trouvé dans le localStorage pour récupérer l'ID utilisateur.");
+                    }
+                } catch (error) {
+                    console.error("Erreur lors de la récupération de l'utilisateur connecté:", error);
+                    setToast({type: 'error', message: "Erreur lors de la récupération de l'utilisateur."});
+                }
+            };
+            fetchCurrentUser();
+        }, []); // S'exécute une seule fois au montage
+
 
     const fetchInitialData = useCallback(async () => {
         try {
             const [ticketData, modulesData] = await Promise.all([ticketService.getTicketById(ticketId), moduleService.getAllModules()]);
             setTicket(ticketData);
             setAllModules(modulesData.data || []);
-            // Ajout de logs pour le débogage. Retirez-les après avoir résolu le problème.
             console.log("TicketData reçu par getTicketById dans TicketUpdateView:", ticketData);
         } catch (err) {
             setError("Impossible de charger les données.");
@@ -731,7 +762,6 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
 
             if (isParentTicketNow && hasNoChildTicketsData) {
                 console.warn("Ticket parent chargé sans childTickets. Tentative de re-fetch via getAllParentTickets...");
-                // Tentative de recharger les tickets parents pour trouver celui avec les enfants
                 const reFetchParents = async () => {
                     try {
                         const allParentsWithChildren = await ticketService.getAllParentTickets();
@@ -739,12 +769,10 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
 
                         if (foundTicketWithChildren && foundTicketWithChildren.childTickets && foundTicketWithChildren.childTickets.length > 0) {
                             console.log("Trouvé le ticket parent avec childTickets via getAllParentTickets:", foundTicketWithChildren);
-                            setTicket(foundTicketWithChildren); // Met à jour l'état du ticket avec les enfants
+                            setTicket(foundTicketWithChildren);
                             setToast({type: 'info', message: 'Détails du ticket mis à jour (sous-tickets chargés).'});
                         } else {
                             console.log("Le ticket parent n'a toujours pas de childTickets, même après getAllParentTickets.");
-                            // Optionnel: Afficher un message à l'utilisateur si les sous-tickets sont attendus mais absents
-                            // setToast({type: 'warning', message: 'Les sous-tickets ne sont pas disponibles pour ce ticket.'});
                         }
                     } catch (err) {
                         console.error("Erreur lors du re-fetch des tickets parents:", err);
@@ -754,30 +782,27 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
                 reFetchParents();
             }
         }
-    }, [ticket, isLoading, ticketId, setToast]); // Déclenché quand le ticket est chargé ou l'état de chargement change
+    }, [ticket, isLoading, ticketId, setToast]);
 
     useEffect(() => { setIsLoading(true); fetchInitialData(); }, [fetchInitialData]);
 
     const cleanTicketPayload = (ticketObject) => {
         const cleanedPayload = { ...ticketObject };
-        // Convertir les objets Client, Module, Utilisateur en leurs IDs si ce sont des objets
         if (cleanedPayload.idClient && typeof cleanedPayload.idClient === 'object') cleanedPayload.idClient = cleanedPayload.idClient.id;
         if (cleanedPayload.idModule && typeof cleanedPayload.idModule === 'object') cleanedPayload.idModule = cleanedPayload.idModule.id;
         if (cleanedPayload.idUtilisateur && typeof cleanedPayload.idUtilisateur === 'object') cleanedPayload.idUtilisateur = cleanedPayload.idUtilisateur.id;
         if (cleanedPayload.parentTicket && typeof cleanedPayload.parentTicket === 'object') cleanedPayload.idParentTicket = cleanedPayload.parentTicket.id;
         
-        // Assurez-vous que date_echeance est bien un tableau de nombres [year, month, day, ...] ou null
         if (typeof cleanedPayload.date_echeance === 'string') {
             const [year, month, day] = cleanedPayload.date_echeance.split('-').map(Number);
-            cleanedPayload.date_echeance = [year, month, day, 0, 0, 0]; // Ajoute heures, minutes, secondes
+            cleanedPayload.date_echeance = [year, month, day, 0, 0, 0];
         } else if (!Array.isArray(cleanedPayload.date_echeance)) {
             cleanedPayload.date_echeance = null;
         }
 
-        // Supprimer les propriétés qui ne sont pas nécessaires ou qui causent des problèmes au backend
         delete cleanedPayload.documentJointesList;
         delete cleanedPayload.commentaireList;
-        delete cleanedPayload.childTickets; // <--- Assurez-vous que cela est supprimé AVANT d'envoyer au backend
+        delete cleanedPayload.childTickets;
         delete cleanedPayload.parentTicket;
         delete cleanedPayload.userCreation;
         delete cleanedPayload.dateCreation;
@@ -809,9 +834,9 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
         const payload = cleanTicketPayload({
             ...originalSubTicket,
             ...editedSubTicket,
-            id: originalSubTicket.id, // S'assurer que l'ID du sous-ticket est inclus
-            idParentTicket: ticket.id, // Assurez-vous que l'idParentTicket est celui du ticket parent actuel
-            idClient: ticket.idClient?.id // Assurez-vous que l'idClient est celui du ticket parent actuel
+            id: originalSubTicket.id,
+            idParentTicket: ticket.id,
+            idClient: ticket.idClient?.id
         });
         
         try {
@@ -874,9 +899,8 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
         }
     };
 
-    // La condition pour savoir si c'est un sous-ticket
     const isSubTicket = ticket && ticket.idParentTicket !== null;
-    const isParentTicket = ticket && ticket.idParentTicket === null; // Conserve cette ligne pour la clarté si besoin ailleurs
+    const isParentTicket = ticket && ticket.idParentTicket === null;
 
     const renderActions = () => {
         if (!ticket || isActionLoading) return <Spinner />;
@@ -914,12 +938,9 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
     if (error) return <div className="text-center text-red-500 p-8">{error}</div>;
     if (!ticket) return null;
 
-    // Mise à jour de la définition de hasSubTickets et showSubTicketsTable
     const hasSubTickets = ticket.childTickets && ticket.childTickets.length > 0;
-    // MODIFICATION CLÉ : showSubTicketsTable dépend maintenant directement de hasSubTickets
     const showSubTicketsTable = hasSubTickets; 
 
-    // Ajoutez des logs de débogage pour voir les valeurs finales
     console.log("--- Débug TicketUpdateView Final ---");
     console.log("Ticket ID:", ticketId);
     console.log("Ticket data (direct from state):", ticket);
@@ -1006,6 +1027,7 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
                         allModules={allModules}
                         onRemoveModule={handleRemoveSubTicketModule}
                         onRefreshTicketData={fetchInitialData}
+                        currentUserId={userId} 
                         setToast={setToast}
                     />
                 </div>
