@@ -178,6 +178,7 @@ const CommentManager = ({ ticketId, comments: initialComments, onCommentChange, 
                 >
                     {isCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
                 </button>
+
             </div>
 
             {!isCollapsed && (

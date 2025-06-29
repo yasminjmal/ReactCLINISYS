@@ -1,4 +1,3 @@
-// src/components/admin/Dashboards/ClientMapWidget.jsx
 import React, { useState, useEffect, memo, useRef } from 'react';
 import {
   ComposableMap,
@@ -8,181 +7,210 @@ import {
 } from "react-simple-maps";
 import { scaleQuantile } from "d3-scale";
 import { interpolateGreens, interpolateBlues, interpolateReds } from "d3-scale-chromatic";
-import { ResponsiveContainer } from 'recharts';
 import dashboardService from '../../../services/dashboardService';
 
+// URLs des fichiers GeoJSON
 const WORLD_GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+// Pour la Tunisie, cette URL GitHub peut être instable ou bloquée par CORS.
+// Idéalement, servez ce fichier depuis votre propre backend ou un CDN fiable.
 const TUNISIA_GOVERNORATES_GEO_URL = "https://raw.githubusercontent.com/datasets/geo-countries-regions-tunisia/main/data/tunisia.geojson";
 
 // Helper pour convertir le code ISO A2 en nom de pays (si nécessaire)
-// Ceci est un exemple, vous pourriez avoir besoin d'une liste plus complète
 const countryCodeToNameMapping = {
     "US": "United States of America",
     "FR": "France",
-    "TN": "Tunisia",
+    "TN": "Tunisie",
+    "LY": "Libye",
+    "EG": "Egypte",
+    "MA": "Maroc",
+    "DZ": "Algérie",
     // Ajoutez d'autres pays si nécessaire
 };
 
 const ClientMapWidget = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [mapType, setMapType] = useState('world');
+  const [mapType, setMapType] = useState('world'); // 'world' ou 'tunisia'
   const [clientStats, setClientStats] = useState([]);
+  const [geoUrl, setGeoUrl] = useState(WORLD_GEO_URL); // URL GeoJSON active
+  const [mapData, setMapData] = useState(null); // Données GeoJSON brutes (non utilisées directement par Geographies pour l'instant)
+
   const [tooltipContent, setTooltipContent] = useState("");
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  const [colorBy, setColorBy] = useState('totalClients');
-  const mapContainerRef = useRef(null);
 
-  // Fonction pour obtenir la couleur de la région
-  const getFillColor = (geo) => {
-    // Pour la carte du monde, le nom est dans `geo.properties.name`
-    // Pour la carte de Tunisie, le nom est dans `geo.properties.name` aussi (ex: "Sfax")
-    const geoRegionName = geo.properties.name;
-    
-    // Le nom de la région depuis notre API est dans `s.regionName`
-    const stat = clientStats.find(s => {
-        if (mapType === 'world') {
-            // On compare le nom du pays du GeoJSON avec la version convertie de notre code pays
-            const countryNameFromCode = countryCodeToNameMapping[s.regionName] || s.regionName;
-            return countryNameFromCode && geoRegionName && countryNameFromCode.toLowerCase() === geoRegionName.toLowerCase();
-        }
-        // Pour la Tunisie, la correspondance devrait être directe
-        return s.regionName && geoRegionName && s.regionName.toLowerCase() === geoRegionName.toLowerCase();
-    });
-
-    if (!stat) return "#E0E0E0"; // Couleur pour les régions sans données
-
-    let value = 0;
-    let colorScale = scaleQuantile();
-
-    if (colorBy === 'totalClients') {
-      value = stat.totalClients || 0;
-      colorScale.domain([0, 1, 10, 50, 100]).range(["#c8e6c9", "#81c784", "#4caf50", "#388e3c", "#1b5e20"]);
-    } else if (colorBy === 'activeClients') {
-      value = stat.activeClients || 0;
-      colorScale.domain([0, 1, 5, 20, 50]).range(["#bbdefb", "#64b5f6", "#2196f3", "#1976d2", "#0d47a1"]);
-    } else if (colorBy === 'ticketsHighPriority') {
-        // NOTE: Cette donnée n'est plus calculée par le backend optimisé.
-        // Il faudrait l'ajouter à la requête JPQL si vous en avez besoin.
-        value = stat.ticketsByStatus?.HAUTE || 0;
-        colorScale.domain([0, 1, 3, 5, 10]).range(["#ffcdd2", "#ef9a9a", "#e57373", "#ef5350", "#d32f2f"]);
-    }
-
-    return colorScale(value);
-  };
-
+  // Charger les statistiques clients
   useEffect(() => {
     const fetchClientStats = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        const data = await dashboardService.getClientStatsByRegion(mapType);
-        setClientStats(data);
+        const stats = await dashboardService.getClientStatsByRegion(mapType);
+        setClientStats(stats);
       } catch (err) {
-        console.error(`Erreur lors de la récupération des stats pour ${mapType}:`, err);
-        setError("Impossible de charger les statistiques.");
+        console.error("Erreur lors du chargement des stats clients:", err);
+        setError("Erreur lors du chargement des statistiques.");
       } finally {
         setLoading(false);
       }
     };
-
     fetchClientStats();
-    // Re-fetch quand le type de carte change
+  }, [mapType]); // Re-fetch quand le type de carte change
+
+  // Charger le fichier GeoJSON spécifique à la carte
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    const currentGeoUrl = mapType === 'tunisia' ? TUNISIA_GOVERNORATES_GEO_URL : WORLD_GEO_URL;
+    setGeoUrl(currentGeoUrl);
+
+    // Une solution alternative si la Tunisie ne s'affiche pas à cause de CORS/URL invalide
+    // (Non active par défaut, car Geographies peut charger l'URL directement)
+    /*
+    fetch(currentGeoUrl)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        setMapData(data); // Stocke les données GeoJSON
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Erreur lors du chargement du fichier GeoJSON:", err);
+        setError(`Impossible de charger la carte: ${err.message}. Vérifiez l'URL du fichier GeoJSON.`);
+        setLoading(false);
+      });
+    */
+    setLoading(false); // Réinitialiser le loading ici si on se repose sur Geographies
   }, [mapType]);
 
-  const handleMouseMove = (event) => {
-      if (mapContainerRef.current) {
-          const rect = mapContainerRef.current.getBoundingClientRect();
-          setTooltipPosition({
-              x: event.clientX - rect.left,
-              y: event.clientY - rect.top
-          });
-      }
-  };
+
+  // Générateur de couleurs basé sur les statistiques
+  const colorScale = scaleQuantile()
+    .domain(clientStats.map(d => d.value))
+    .range(Array.from({ length: 9 }, (_, i) => interpolateBlues(i / 8))); // Génère 9 couleurs du plus clair au plus foncé
 
   const handleMouseEnter = (geo) => {
-    const geoRegionName = geo.properties.name;
-    const stat = clientStats.find(s => {
-        if (mapType === 'world') {
-            const countryNameFromCode = countryCodeToNameMapping[s.regionName] || s.regionName;
-            return countryNameFromCode && geoRegionName && countryNameFromCode.toLowerCase() === geoRegionName.toLowerCase();
-        }
-        return s.regionName && geoRegionName && s.regionName.toLowerCase() === geoRegionName.toLowerCase();
-    });
-
-    let content = `<b>${geoRegionName || "Région inconnue"}</b><br/>`;
-    if (stat) {
-      content += `Clients Totaux: ${stat.totalClients || 0}<br/>`;
-      content += `Clients Actifs: ${stat.activeClients || 0}<br/>`;
-    } else {
-      content += "Aucune donnée client pour cette région.";
+    // Déterminer l'ID de la région/pays en fonction du type de carte
+    // Pour le monde, on utilise ISO_A2 (code pays alpha-2)
+    // Pour la Tunisie, on utilise iso_3166_2 (code de subdivision, ex: TN-11)
+    const geoId = mapType === 'tunisia' ? geo.properties.iso_3166_2 : geo.properties.ISO_A2;
+    const stat = clientStats.find(s => s.id === geoId);
+    
+    let name = geo.properties.name;
+    let count = stat ? stat.value : 0;
+    
+    // Pour la carte du monde, le nom est ISO_A2, on le convertit si possible
+    if (mapType === 'world' && geo.properties.ISO_A2) {
+        name = countryCodeToNameMapping[geo.properties.ISO_A2] || geo.properties.name;
     }
-    setTooltipContent(content);
+    // Pour la Tunisie, les noms sont dans geo.properties.name (selon le GeoJSON)
+    if (mapType === 'tunisia' && geo.properties.name) {
+        name = geo.properties.name;
+    }
+
+    setTooltipContent(`<strong>${name}</strong><br/>Clients: ${count}`);
   };
 
   const handleMouseLeave = () => {
     setTooltipContent("");
   };
 
-  if (error) return <div className="text-center py-4 text-red-500">{error}</div>;
+  const handleMouseMove = (event) => {
+    setTooltipPosition({ x: event.clientX, y: event.clientY });
+  };
+
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-full min-h-[300px] text-slate-500 dark:text-slate-400">
+        Chargement de la carte...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-full min-h-[300px] text-red-500 dark:text-red-400">
+        Erreur: {error}
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md relative">
+    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow min-h-[350px] flex flex-col">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Client Map (Bird's Eye)</h3>
-        <div className="flex items-center space-x-2">
-          <select
-            value={mapType}
-            onChange={(e) => setMapType(e.target.value)}
-            className="form-select text-sm p-2 rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Clients par Région</h2>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setMapType('world')}
+            className={`px-3 py-1 rounded-full text-sm font-medium ${mapType === 'world' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'}`}
           >
-            <option value="world">Monde</option>
-            <option value="tunisia">Tunisie</option>
-          </select>
-          <select
-            value={colorBy}
-            onChange={(e) => setColorBy(e.target.value)}
-            className="form-select text-sm p-2 rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+            Monde
+          </button>
+          <button
+            onClick={() => setMapType('tunisia')}
+            className={`px-3 py-1 rounded-full text-sm font-medium ${mapType === 'tunisia' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'}`}
           >
-            <option value="totalClients">Total Clients</option>
-            <option value="activeClients">Clients Actifs</option>
-            {/* <option value="ticketsHighPriority">Tickets Haute Priorité</option> */}
-          </select>
+            Tunisie
+          </button>
         </div>
       </div>
 
-      <div ref={mapContainerRef} onMouseMove={handleMouseMove} style={{ position: 'relative', width: '100%', height: '450px' }}>
-        {loading ? (
-            <div className="text-center py-4 text-slate-600 dark:text-slate-400">Chargement de la carte...</div>
-        ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposableMap projectionConfig={{ scale: mapType === 'tunisia' ? 4000 : 150 }}>
-                <ZoomableGroup 
-                    center={mapType === 'tunisia' ? [9.5, 34.5] : [0, 20]} 
-                    zoom={mapType === 'tunisia' ? 1.5 : 1}
-                >
-                    <Geographies geography={mapType === 'tunisia' ? TUNISIA_GOVERNORATES_GEO_URL : WORLD_GEO_URL}>
-                      {({ geographies }) =>
-                        geographies.map((geo) => (
-                          <Geography
-                            key={geo.rsmKey}
-                            geography={geo}
-                            fill={getFillColor(geo)}
-                            stroke="#FFF"
-                            onMouseEnter={() => handleMouseEnter(geo)}
-                            onMouseLeave={handleMouseLeave}
-                            style={{
-                              default: { outline: "none" },
-                              hover: { outline: "none", fill: "#FFC107" },
-                              pressed: { outline: "none", fill: "#FFA000" },
-                            }}
-                          />
-                        ))
-                      }
-                    </Geographies>
-                </ZoomableGroup>
-              </ComposableMap>
-            </ResponsiveContainer>
-        )}
+      <div className="flex-grow relative" onMouseMove={handleMouseMove}>
+        <div className="w-full h-full">
+            <ComposableMap
+              projection="geoMercator"
+              // Ajuster le scale et le centre pour la Tunisie
+              projectionConfig={{ 
+                scale: mapType === 'world' ? 140 : 2500, // Ajuster le scale pour la Tunisie (peut nécessiter d'autres essais)
+              }} 
+              style={{ width: "100%", height: "100%" }}
+            >
+              <ZoomableGroup center={mapType === 'tunisia' ? [9.5, 34] : [0, 0]}> {/* Centrer sur la Tunisie si mapType est 'tunisia' */}
+                <Geographies geography={geoUrl}>
+                  {({ geographies }) =>
+                    geographies.map((geo) => {
+                      // Déterminer l'ID de la région/pays en fonction du type de carte
+                      const geoId = mapType === 'tunisia' ? geo.properties.iso_3166_2 : geo.properties.ISO_A2;
+                      const d = clientStats.find(s => s.id === geoId);
+                      
+                      return (
+                        <Geography
+                          key={geo.rsmKey}
+                          geography={geo}
+                          onMouseEnter={() => handleMouseEnter(geo)}
+                          onMouseLeave={handleMouseLeave}
+                          style={{
+                            default: {
+                                fill: d ? colorScale(d.value) : "#ECEFF1", // Couleur basée sur les stats
+                                stroke: "#FFFFFF",
+                                strokeWidth: 0.5,
+                                outline: "none"
+                            },
+                            hover: {
+                                fill: d ? colorScale(d.value) : "#D6D6DA", // Couleur au survol
+                                stroke: "#FFFFFF",
+                                strokeWidth: 0.75,
+                                outline: "none"
+                            },
+                            pressed: {
+                                fill: "#FFC107", // Couleur au clic
+                                stroke: "#FFFFFF",
+                                strokeWidth: 0.75,
+                                outline: "none"
+                            },
+                          }}
+                        />
+                      );
+                    })
+                  }
+                </Geographies>
+              </ZoomableGroup>
+            </ComposableMap>
+        </div>
+
         {tooltipContent && (
           <div
             style={{
@@ -203,9 +231,23 @@ const ClientMapWidget = () => {
         )}
       </div>
 
-       {/* Légende (à adapter) */}
+       {/* Légende */}
        <div className="mt-4 text-sm text-slate-600 dark:text-slate-300">
-         {/* ... votre légende ici ... */}
+         <p>La couleur indique la concentration de clients (plus le bleu est foncé, plus il y a de clients).</p>
+         <div className="flex mt-2">
+            {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                <div 
+                    key={i} 
+                    style={{ 
+                        width: '20px', 
+                        height: '10px', 
+                        // *** CORRECTION DE LA LIGNE ICI POUR LA LÉGENDE ***
+                        backgroundColor: interpolateBlues(i / 8) // Génère les mêmes nuances que la carte
+                    }}
+                    className="border border-slate-300 dark:border-slate-600"
+                ></div>
+            ))}
+         </div>
        </div>
     </div>
   );

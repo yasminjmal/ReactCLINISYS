@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ticketService from '../../../services/ticketService';
 import moduleService from '../../../services/moduleService';
-import documentService from '../../../services/documentService';
 import commentService from '../../../services/commentService';
+import documentService from '../../../services/documentService'; // <-- Assure-toi que cette ligne est bien présente
 
 // Utilisation de la fonction de formatage de date universelle
 const formatDate = (dateInput) => {
@@ -32,7 +32,7 @@ const formatDate = (dateInput) => {
 import {
     ArrowLeft, Check, X, GitFork, Loader, Send, PlusCircle, User, Tag, Info, Calendar,
     Package as ModuleIcon, UserCheck, Shield, Edit, Trash2, Eye, EyeOff, MessageSquare, ChevronDown, ChevronUp,
-    AlertTriangle, CheckCircle // Ajout de CheckCircle ici
+    AlertTriangle, CheckCircle
 } from 'lucide-react';
 
 // --- COMPOSANTS UTILITAIRES ---
@@ -90,8 +90,7 @@ const useAutosizeTextArea = (textAreaRef, value) => {
 };
 
 // --- MODAL DE DIFFRACTION (avec styles unifiés) ---
-// Utilisation du composant DiffractionForm importé directement
-import DiffractionForm from './DiffractionForm'; //
+import DiffractionForm from './DiffractionForm';
 
 // --- COMPOSANTS D'ÉDITION (Standardisés) ---
 const EditableField = ({ initialValue, onSave, fieldName, isTextarea = false }) => {
@@ -481,14 +480,14 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModul
                     {isSearchingModule && (
                         <div className="absolute z-10 mt-1 w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md shadow-lg max-h-48 overflow-y-auto">
                             {allModules
-                                .filter(m => m.designation.toLowerCase().includes(moduleSearchTerm.toLowerCase()))
+                                .filter(m => m.designation.toLowerCase().includes(searchTerm.toLowerCase()))
                                 .map(module => (
                                     <div key={module.id} onClick={() => handleModuleChange(module)} className="p-2 text-sm hover:bg-blue-100 dark:hover:bg-blue-800 cursor-pointer">
                                         {module.designation}
                                     </div>
                                 ))
                             }
-                            {allModules.filter(m => m.designation.toLowerCase().includes(moduleSearchTerm.toLowerCase())).length === 0 &&
+                            {allModules.filter(m => m.designation.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 &&
                                 <p className="text-center text-xs text-slate-500 py-2">Aucun module trouvé.</p>
                             }
                         </div>
@@ -696,8 +695,8 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
 
 
 // --- VUE PRINCIPALE DE MODIFICATION ---
-import DocumentManager from './DocumentManager'; //
-import CommentManager from './CommentManager'; //
+import DocumentManager from './DocumentManager';
+import CommentManager from './CommentManager';
 
 const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
     const [ticket, setTicket] = useState(null);
@@ -706,15 +705,55 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
     const [isActionLoading, setIsActionLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isDiffractionModalOpen, setIsDiffractionModalOpen] = useState(false);
-    // Supprimé: const subTicketStatuses = ["En_attente", "En_cours", "Termine", "Accepte", "Refuse"]; car non utilisé
 
     const fetchInitialData = useCallback(async () => {
         try {
             const [ticketData, modulesData] = await Promise.all([ticketService.getTicketById(ticketId), moduleService.getAllModules()]);
             setTicket(ticketData);
             setAllModules(modulesData.data || []);
-        } catch (err) { setError("Impossible de charger les données."); console.error(err); setToast({type: 'error', message: "Impossible de charger les détails du ticket."}); } finally { setIsLoading(false); }
+            // Ajout de logs pour le débogage. Retirez-les après avoir résolu le problème.
+            console.log("TicketData reçu par getTicketById dans TicketUpdateView:", ticketData);
+        } catch (err) {
+            setError("Impossible de charger les données.");
+            console.error("Erreur lors du chargement des données initiales dans TicketUpdateView:", err);
+            setToast({type: 'error', message: "Impossible de charger les détails du ticket."});
+        } finally {
+            setIsLoading(false);
+        }
     }, [ticketId, setToast]);
+
+    // NOUVEL EFFET POUR VÉRIFIER ET CHARGER LES SOUS-TICKETS SI MANQUANTS
+    useEffect(() => {
+        if (ticket && !isLoading) {
+            const isParentTicketNow = ticket.idParentTicket === null;
+            const hasNoChildTicketsData = !ticket.childTickets || ticket.childTickets.length === 0;
+
+            if (isParentTicketNow && hasNoChildTicketsData) {
+                console.warn("Ticket parent chargé sans childTickets. Tentative de re-fetch via getAllParentTickets...");
+                // Tentative de recharger les tickets parents pour trouver celui avec les enfants
+                const reFetchParents = async () => {
+                    try {
+                        const allParentsWithChildren = await ticketService.getAllParentTickets();
+                        const foundTicketWithChildren = allParentsWithChildren.find(t => t.id === ticket.id);
+
+                        if (foundTicketWithChildren && foundTicketWithChildren.childTickets && foundTicketWithChildren.childTickets.length > 0) {
+                            console.log("Trouvé le ticket parent avec childTickets via getAllParentTickets:", foundTicketWithChildren);
+                            setTicket(foundTicketWithChildren); // Met à jour l'état du ticket avec les enfants
+                            setToast({type: 'info', message: 'Détails du ticket mis à jour (sous-tickets chargés).'});
+                        } else {
+                            console.log("Le ticket parent n'a toujours pas de childTickets, même après getAllParentTickets.");
+                            // Optionnel: Afficher un message à l'utilisateur si les sous-tickets sont attendus mais absents
+                            // setToast({type: 'warning', message: 'Les sous-tickets ne sont pas disponibles pour ce ticket.'});
+                        }
+                    } catch (err) {
+                        console.error("Erreur lors du re-fetch des tickets parents:", err);
+                        setToast({type: 'error', message: 'Erreur lors du chargement des sous-tickets.'});
+                    }
+                };
+                reFetchParents();
+            }
+        }
+    }, [ticket, isLoading, ticketId, setToast]); // Déclenché quand le ticket est chargé ou l'état de chargement change
 
     useEffect(() => { setIsLoading(true); fetchInitialData(); }, [fetchInitialData]);
 
@@ -737,7 +776,7 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
         // Supprimer les propriétés qui ne sont pas nécessaires ou qui causent des problèmes au backend
         delete cleanedPayload.documentJointesList;
         delete cleanedPayload.commentaireList;
-        delete cleanedPayload.childTickets;
+        delete cleanedPayload.childTickets; // <--- Assurez-vous que cela est supprimé AVANT d'envoyer au backend
         delete cleanedPayload.parentTicket;
         delete cleanedPayload.userCreation;
         delete cleanedPayload.dateCreation;
@@ -765,11 +804,7 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
         } catch (err) { setToast({ type: 'error', message: 'La mise à jour a échoué.' }); console.error(err); }
     };
 
-    // handleUpdateLocalSubTicketState n'est plus strictement nécessaire car fetchInitialData() rafraîchit tout
-    // const handleUpdateLocalSubTicketState = (updatedSubTicket) => { ... };
-
     const handleSaveSubTicket = async (originalSubTicket, editedSubTicket) => {
-        // Le payload doit inclure l'id du ticket parent et l'id du client du ticket parent
         const payload = cleanTicketPayload({
             ...originalSubTicket,
             ...editedSubTicket,
@@ -798,7 +833,6 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
     const handleDiffractionSuccess = () => { setIsDiffractionModalOpen(false); fetchInitialData(); setToast({ type: 'success', message: 'Sous-tickets créés.' }); };
 
     const handleDeleteSubTicket = async (subTicketId) => {
-        // Vérifier si le sous-ticket est affecté à un utilisateur avant de permettre la suppression
         const subTicketToDelete = ticket.childTickets.find(sub => sub.id === subTicketId);
         if (subTicketToDelete && subTicketToDelete.idUtilisateur) {
             setToast({ type: 'error', message: "Impossible de supprimer un sous-ticket déjà affecté à un employé." });
@@ -839,12 +873,11 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
         }
     };
 
-    // La condition pour savoir si c'est un sous-ticket doit être basée sur `idParentTicket`
     const isSubTicket = ticket && ticket.idParentTicket !== null;
+    const isParentTicket = ticket && ticket.idParentTicket === null; // Conserve cette ligne
 
     const renderActions = () => {
         if (!ticket || isActionLoading) return <Spinner />;
-        // Les actions (Accepter/Refuser/Diffracter) sont uniquement pour les tickets parents
         if (isSubTicket) {
             return null;
         }
@@ -862,7 +895,6 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
                     </div>
                 );
             case 'Accepte':
-                // La diffraction est possible uniquement si le ticket est accepté et n'a pas de sous-tickets
                 if (!ticket.childTickets || ticket.childTickets.length === 0) {
                     return (
                         <button onClick={() => setIsDiffractionModalOpen(true)} className="btn btn-primary" disabled={isActionLoading}>
@@ -879,7 +911,18 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
     if (isLoading) return <div className="flex justify-center items-center h-screen"><Spinner /></div>;
     if (error) return <div className="text-center text-red-500 p-8">{error}</div>;
     if (!ticket) return null;
+
+    // Ajoutez des logs de débogage pour voir les valeurs
+    console.log("--- Débug TicketUpdateView ---");
+    console.log("Ticket ID:", ticketId);
+    console.log("Ticket data (direct from state):", ticket);
+    console.log("isSubTicket (calculated):", isSubTicket);
+    console.log("isParentTicket (calculated):", isParentTicket);
     const hasSubTickets = ticket.childTickets && ticket.childTickets.length > 0;
+    console.log("hasSubTickets (calculated):", hasSubTickets);
+    const showSubTicketsTable = isParentTicket && hasSubTickets; // La logique est ici
+    console.log("showSubTicketsTable (final decision):", showSubTicketsTable);
+    console.log("------------------------------");
 
     let affectedToValue;
     if (hasSubTickets && !ticket.idUtilisateur) {
@@ -896,8 +939,6 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
     } else {
         dueDateValue = formatDate(ticket.date_echeance);
     }
-    const showSubTicketsTable = !isSubTicket && ticket.childTickets && ticket.childTickets.length > 0;
-
 
     return (
         <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
@@ -949,7 +990,6 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
                     setToast={setToast}
                 />
             </div>
-
             {/* Tableau des sous-tickets - Conditionnel si présence de sous-tickets */}
             {showSubTicketsTable && (
                 <div className="mt-8">

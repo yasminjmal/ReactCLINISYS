@@ -87,76 +87,58 @@ const DropdownMenuItem = ({ children, onClick, isSelected, disabled }) => (
 
 const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => {
     return (
-         <thead className="text-sm text-black bg-sky-100 dark:bg-blue-200"> {/* */}
+        <thead className="text-sm text-black bg-sky-100 dark:bg-blue-200">
             <tr>
-                {/* Colonne ST - toujours visible */}
-                <th scope="col" className="px-1 py-3 font-sans text-center separateur-colonne-leger" style={{ width: '40px' }}>ST</th>
-                {visibleColumns.client && (
+                <th scope="col" className="px-1 py-3 font-sans text-center separateur-colonne-leger" style={{ width: '40px' }}>ST</th>{visibleColumns.client && (
                     <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '12%' }}>
                         <span>Client</span>
                     </th>
-                )}
-                {visibleColumns.demandeur && (
+                )}{visibleColumns.demandeur && (
                     <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '12%' }}>
                         <span>Demandeur</span>
                     </th>
-                )}
-                {visibleColumns.titre && (
+                )}{visibleColumns.titre && (
                     <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '20%' }}>
                         <button onClick={() => handleSort('titre')} className="flex items-center justify-between w-full hover:text-blue-200">
                             <span>Titre</span>
                             <ArrowUpDown size={16} className="opacity-70" />
                         </button>
                     </th>
-                )}
-                {visibleColumns.module && (
+                )}{visibleColumns.module && (
                     <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '8%' }}>
-                            <span>Module</span>
-                
+                        <span>Module</span>
                     </th>
-                )}
-                {visibleColumns.affecteA && (
+                )}{visibleColumns.affecteA && (
                     <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '10%' }}>
-                        
-                            <span>Affecté à</span>
-                          
+                        <span>Affecté à</span>
                     </th>
-                )}
-                {visibleColumns.dateEcheance && (
+                )}{visibleColumns.dateEcheance && (
                     <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '10%' }}>
                         <button onClick={() => handleSort('date_echeance')} className="flex items-center justify-between w-full hover:text-blue-200">
                             <span>Date Échéance</span>
                             <ArrowUpDown size={16} className="opacity-70" />
                         </button>
                     </th>
-                )}
-                {visibleColumns.dateCreation && (
+                )}{visibleColumns.dateCreation && (
                     <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '10%' }}>
                         <button onClick={() => handleSort('dateCreation')} className="flex items-center justify-between w-full hover:text-blue-200">
                             <span>Date de Création</span>
                             <ArrowUpDown size={16} className="opacity-70" />
                         </button>
                     </th>
-                )}
-                {visibleColumns.priorite && (
+                )}{visibleColumns.priorite && (
                     <th scope="col" className="px-2 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '8%' }}>
-                            <span>Priorité</span>
-                            
+                        <span>Priorité</span>
                     </th>
-                )}
-                {visibleColumns.statut && (
+                )}{visibleColumns.statut && (
                     <th scope="col" className="px-2 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '8%' }}>
-                            <span>Statut</span>
-                            
+                        <span>Statut</span>
                     </th>
-                )}
-                {visibleColumns.actif && (
+                )}{visibleColumns.actif && (
                     <th scope="col" className="px-2 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '6%' }}>
-                            <span>Actif</span>
-                            
+                        <span>Actif</span>
                     </th>
-                )}
-                <th scope="col" className="px-4 py-3 font-sans text-center" style={{ width: '100px' }}>Actions</th> {/* Une largeur fixe est souvent bonne pour les actions */}
+                )}<th scope="col" className="px-4 py-3 font-sans text-center" style={{ width: '100px' }}>Actions</th>
             </tr>
         </thead>
     );
@@ -263,7 +245,7 @@ const TicketsManagementPage = () => {
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownsRef.current && !dropdownsRef.current.contains(event.target)) {
-                 const isExportButton = event.target.closest('.btn-export-dropdown');
+                const isExportButton = event.target.closest('.btn-export-dropdown');
                 if (!isExportButton) {
                     setOpenDropdown(null);
                 }
@@ -543,12 +525,12 @@ const TicketsManagementPage = () => {
 
     if (currentView.view === 'update') {
         return <TicketUpdateView
-                 ticketId={currentView.ticketId}
-                 onBack={handleBackToList}
-                 setToast={setToast}
-                onNavigateToParent={(parentId) => setCurrentView({ view: 'update', ticketId: parentId })}
+            ticketId={currentView.ticketId}
+            onBack={handleBackToList}
+            setToast={setToast}
+            onNavigateToParent={(parentId) => setCurrentView({ view: 'update', ticketId: parentId })}
 
-               />;
+        />;
     }
 
     return (
@@ -614,10 +596,10 @@ const TicketsManagementPage = () => {
                             </button>
                             {openDropdown === 'prioriteFilter' &&
                                 <DropdownMenu>
-                                    <DropdownMenuItem isSelected={filters.priorite === 'tous'} onClick={() => { setFilters(f => ({...f, priorite: 'tous'})); toggleDropdownGlobal('prioriteFilter'); }}>Toutes</DropdownMenuItem>
-                                    <DropdownMenuItem isSelected={filters.priorite === 'Haute'} onClick={() => { setFilters(f => ({...f, priorite: 'Haute'})); toggleDropdownGlobal('prioriteFilter'); }}>Haute</DropdownMenuItem>
-                                    <DropdownMenuItem isSelected={filters.priorite === 'Moyenne'} onClick={() => { setFilters(f => ({...f, priorite: 'Moyenne'})); toggleDropdownGlobal('prioriteFilter'); }}>Moyenne</DropdownMenuItem>
-                                    <DropdownMenuItem isSelected={filters.priorite === 'Basse'} onClick={() => { setFilters(f => ({...f, priorite: 'Basse'})); toggleDropdownGlobal('prioriteFilter'); }}>Basse</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.priorite === 'tous'} onClick={() => { setFilters(f => ({ ...f, priorite: 'tous' })); toggleDropdownGlobal('prioriteFilter'); }}>Toutes</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.priorite === 'Haute'} onClick={() => { setFilters(f => ({ ...f, priorite: 'Haute' })); toggleDropdownGlobal('prioriteFilter'); }}>Haute</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.priorite === 'Moyenne'} onClick={() => { setFilters(f => ({ ...f, priorite: 'Moyenne' })); toggleDropdownGlobal('prioriteFilter'); }}>Moyenne</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.priorite === 'Basse'} onClick={() => { setFilters(f => ({ ...f, priorite: 'Basse' })); toggleDropdownGlobal('prioriteFilter'); }}>Basse</DropdownMenuItem>
                                 </DropdownMenu>
                             }
                         </div>
@@ -629,12 +611,12 @@ const TicketsManagementPage = () => {
                             </button>
                             {openDropdown === 'statutFilter' &&
                                 <DropdownMenu>
-                                    <DropdownMenuItem isSelected={filters.statue === 'tous'} onClick={() => { setFilters(f => ({...f, statue: 'tous'})); toggleDropdownGlobal('statutFilter'); }}>Tous</DropdownMenuItem>
-                                    <DropdownMenuItem isSelected={filters.statue === 'En_attente'} onClick={() => { setFilters(f => ({...f, statue: 'En_attente'})); toggleDropdownGlobal('statutFilter'); }}>En attente</DropdownMenuItem>
-                                    <DropdownMenuItem isSelected={filters.statue === 'Accepte'} onClick={() => { setFilters(f => ({...f, statue: 'Accepte'})); toggleDropdownGlobal('statutFilter'); }}>Accepté</DropdownMenuItem>
-                                    <DropdownMenuItem isSelected={filters.statue === 'En_cours'} onClick={() => { setFilters(f => ({...f, statue: 'En_cours'})); toggleDropdownGlobal('statutFilter'); }}>En cours</DropdownMenuItem>
-                                    <DropdownMenuItem isSelected={filters.statue === 'Termine'} onClick={() => { setFilters(f => ({...f, statue: 'Termine'})); toggleDropdownGlobal('statutFilter'); }}>Terminé</DropdownMenuItem>
-                                    <DropdownMenuItem isSelected={filters.statue === 'REFUSE'} onClick={() => { setFilters(f => ({...f, statue: 'REFUSE'})); toggleDropdownGlobal('statutFilter'); }}>Refusé</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.statue === 'tous'} onClick={() => { setFilters(f => ({ ...f, statue: 'tous' })); toggleDropdownGlobal('statutFilter'); }}>Tous</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.statue === 'En_attente'} onClick={() => { setFilters(f => ({ ...f, statue: 'En_attente' })); toggleDropdownGlobal('statutFilter'); }}>En attente</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.statue === 'Accepte'} onClick={() => { setFilters(f => ({ ...f, statue: 'Accepte' })); toggleDropdownGlobal('statutFilter'); }}>Accepté</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.statue === 'En_cours'} onClick={() => { setFilters(f => ({ ...f, statue: 'En_cours' })); toggleDropdownGlobal('statutFilter'); }}>En cours</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.statue === 'Termine'} onClick={() => { setFilters(f => ({ ...f, statue: 'Termine' })); toggleDropdownGlobal('statutFilter'); }}>Terminé</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.statue === 'REFUSE'} onClick={() => { setFilters(f => ({ ...f, statue: 'REFUSE' })); toggleDropdownGlobal('statutFilter'); }}>Refusé</DropdownMenuItem>
                                 </DropdownMenu>
                             }
                         </div>
@@ -646,9 +628,9 @@ const TicketsManagementPage = () => {
                             </button>
                             {openDropdown === 'actifFilter' &&
                                 <DropdownMenu>
-                                    <DropdownMenuItem isSelected={filters.actif === 'tous'} onClick={() => { setFilters(f => ({...f, actif: 'tous'})); toggleDropdownGlobal('actifFilter'); }}>Tous</DropdownMenuItem>
-                                    <DropdownMenuItem isSelected={filters.actif === 'actif'} onClick={() => { setFilters(f => ({...f, actif: 'actif'})); toggleDropdownGlobal('actifFilter'); }}>Actif</DropdownMenuItem>
-                                    <DropdownMenuItem isSelected={filters.actif === 'non actif'} onClick={() => { setFilters(f => ({...f, actif: 'non actif'})); toggleDropdownGlobal('actifFilter'); }}>Non actif</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.actif === 'tous'} onClick={() => { setFilters(f => ({ ...f, actif: 'tous' })); toggleDropdownGlobal('actifFilter'); }}>Tous</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.actif === 'actif'} onClick={() => { setFilters(f => ({ ...f, actif: 'actif' })); toggleDropdownGlobal('actifFilter'); }}>Actif</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.actif === 'non actif'} onClick={() => { setFilters(f => ({ ...f, actif: 'non actif' })); toggleDropdownGlobal('actifFilter'); }}>Non actif</DropdownMenuItem>
                                 </DropdownMenu>
                             }
                         </div>
@@ -781,7 +763,7 @@ const TicketsManagementPage = () => {
                             ))}
                         </tbody>
                     </table>
-                     {processedTickets.length > 0 &&
+                    {processedTickets.length > 0 &&
                         <PaginationControls
                             currentPage={currentPage}
                             totalPages={totalPages}
