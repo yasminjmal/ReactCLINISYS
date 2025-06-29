@@ -723,6 +723,7 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
     }, [ticketId, setToast]);
 
     // NOUVEL EFFET POUR VÉRIFIER ET CHARGER LES SOUS-TICKETS SI MANQUANTS
+    // Ce useEffect est un contournement si getTicketById ne renvoie pas toujours les childTickets.
     useEffect(() => {
         if (ticket && !isLoading) {
             const isParentTicketNow = ticket.idParentTicket === null;
@@ -873,8 +874,9 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
         }
     };
 
+    // La condition pour savoir si c'est un sous-ticket
     const isSubTicket = ticket && ticket.idParentTicket !== null;
-    const isParentTicket = ticket && ticket.idParentTicket === null; // Conserve cette ligne
+    const isParentTicket = ticket && ticket.idParentTicket === null; // Conserve cette ligne pour la clarté si besoin ailleurs
 
     const renderActions = () => {
         if (!ticket || isActionLoading) return <Spinner />;
@@ -912,17 +914,20 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
     if (error) return <div className="text-center text-red-500 p-8">{error}</div>;
     if (!ticket) return null;
 
-    // Ajoutez des logs de débogage pour voir les valeurs
-    console.log("--- Débug TicketUpdateView ---");
+    // Mise à jour de la définition de hasSubTickets et showSubTicketsTable
+    const hasSubTickets = ticket.childTickets && ticket.childTickets.length > 0;
+    // MODIFICATION CLÉ : showSubTicketsTable dépend maintenant directement de hasSubTickets
+    const showSubTicketsTable = hasSubTickets; 
+
+    // Ajoutez des logs de débogage pour voir les valeurs finales
+    console.log("--- Débug TicketUpdateView Final ---");
     console.log("Ticket ID:", ticketId);
     console.log("Ticket data (direct from state):", ticket);
     console.log("isSubTicket (calculated):", isSubTicket);
     console.log("isParentTicket (calculated):", isParentTicket);
-    const hasSubTickets = ticket.childTickets && ticket.childTickets.length > 0;
     console.log("hasSubTickets (calculated):", hasSubTickets);
-    const showSubTicketsTable = isParentTicket && hasSubTickets; // La logique est ici
     console.log("showSubTicketsTable (final decision):", showSubTicketsTable);
-    console.log("------------------------------");
+    console.log("------------------------------------");
 
     let affectedToValue;
     if (hasSubTickets && !ticket.idUtilisateur) {
