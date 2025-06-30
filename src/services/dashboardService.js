@@ -99,14 +99,14 @@ const dashboardService = {
         }
     },
     getClientLocations: async () => {
-    try {
-        const response = await api.get('clients/locations'); // Adaptez cet endpoint à votre backend
-        return response.data; // Attendu: [{id: 1, lat: ..., lng: ..., status: 'active'}, ...]
-    } catch (error) {
-        console.error("Erreur lors de la récupération des emplacements clients:", error);
-        throw error;
+        try {
+            const response = await api.get('clients/locations'); // Le nouvel endpoint
+            return response.data; // Attendu: [{id: 1, nomComplet: "...", lat: ..., lng: ..., status: true}, ...]
+        } catch (error) {
+            console.error("Erreur lors de la récupération des emplacements clients:", error);
+            throw error;
+        }
     }
-},
 
     
     

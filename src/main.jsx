@@ -7,7 +7,6 @@ import './index.css';
 // Import contexts and i18n config
 import { AuthProvider } from './context/AuthContext.jsx'; // Assuming you have this
 import { ThemeProvider } from './context/ThemeContext.jsx';
-import './i18n'; // This line initializes i18next
 
 import { jsPDF } from 'jspdf'; 
 

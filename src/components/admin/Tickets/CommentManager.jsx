@@ -66,7 +66,6 @@ const CommentManager = ({ ticketId, comments: initialComments, onCommentChange, 
     const [isAdding, setIsAdding] = useState(false);
     const [editingCommentId, setEditingCommentId] = useState(null);
     const [editingCommentText, setEditingCommentText] = useState('');
-    const [isCollapsed, setIsCollapsed] = useState(false);
     const [userId, setUserId] = useState(null); // Pour stocker l'ID de l'utilisateur connecté
 
     useEffect(() => {
@@ -110,7 +109,7 @@ const CommentManager = ({ ticketId, comments: initialComments, onCommentChange, 
         }
         setIsAdding(true);
         try {
-            await commentService.addComment({ commentaire: newCommentText, idTicket: ticketId , idUtilisateur: userId }); // Utilisation de userId
+            await commentService.addComment({ commentaire: newCommentText, idTicket: ticketId, idUtilisateur: userId }); // Utilisation de userId
             setToast({ type: 'success', message: 'Commentaire ajouté avec succès.' }); // Utilisation de setToast
             setNewCommentText('');
             onCommentChange();
@@ -134,7 +133,7 @@ const CommentManager = ({ ticketId, comments: initialComments, onCommentChange, 
             return;
         }
         try {
-            await commentService.updateComment(commentId, { commentaire: editingCommentText, idTicket: ticketId ,idUtilisateur: userId }); // Utilisation de userId
+            await commentService.updateComment(commentId, { commentaire: editingCommentText, idTicket: ticketId, idUtilisateur: userId }); // Utilisation de userId
             setToast({ type: 'success', message: 'Commentaire modifié avec succès.' }); // Utilisation de setToast
             setEditingCommentId(null);
             setEditingCommentText('');
@@ -166,120 +165,103 @@ const CommentManager = ({ ticketId, comments: initialComments, onCommentChange, 
     };
 
     return (
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg mb-6">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-200 flex items-center">
-                    <MessageSquare size={20} className="mr-2" /> Commentaires ({comments?.length || 0})
-                </h2>
-                <button
-                    onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
-                    title={isCollapsed ? "Afficher les commentaires" : "Masquer les commentaires"}
-                >
-                    {isCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
-                </button>
-
-            </div>
-
-            {!isCollapsed && (
-                <>
-                    {/* Zone d'ajout de commentaire */}
-                    <div className="mb-6 p-4 border border-slate-300 dark:border-slate-700 rounded-lg">
-                        <textarea
-                            ref={newCommentTextAreaRef}
-                            className="form-textarea w-full text-sm resize-none overflow-hidden"
-                            rows="2"
-                            placeholder="Ajouter un nouveau commentaire..."
-                            value={newCommentText}
-                            onChange={(e) => setNewCommentText(e.target.value)}
+        <div >
+            <>
+                {/* Zone d'ajout de commentaire */}
+                <div className="mb-6 p-4 border border-slate-300 dark:border-slate-700 rounded-lg">
+                    <textarea
+                        ref={newCommentTextAreaRef}
+                        className="form-textarea w-full text-sm resize-none overflow-hidden"
+                        rows="2"
+                        placeholder="Ajouter un nouveau commentaire..."
+                        value={newCommentText}
+                        onChange={(e) => setNewCommentText(e.target.value)}
+                        disabled={isAdding}
+                    />
+                    <div className="flex justify-end mt-2">
+                        <button
+                            onClick={handleAddComment}
+                            className="btn btn-primary-sm" // Styles standardisés
                             disabled={isAdding}
-                        />
-                        <div className="flex justify-end mt-2">
-                            <button
-                                onClick={handleAddComment}
-                                className="btn btn-primary-sm" // Styles standardisés
-                                disabled={isAdding}
-                            >
-                                {isAdding ? <Spinner /> : <PlusCircle size={16} className="mr-1" />}
-                                {isAdding ? 'Ajout...' : 'Ajouter Commentaire'}
-                            </button>
-                        </div>
+                        >
+                            {isAdding ? <Spinner /> : <PlusCircle size={16} className="mr-1" />}
+                            {isAdding ? 'Ajout...' : 'Ajouter Commentaire'}
+                        </button>
                     </div>
+                </div>
 
-                    {/* Liste des commentaires existants */}
-                    {comments && comments.length > 0 ? (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full text-sm">
-                                <thead className="bg-slate-50 dark:bg-slate-700">
-                                    <tr>
-                                        <th className="px-3 py-2 text-left font-medium">Commentaire</th>
-                                        <th className="px-3 py-2 text-left font-medium">Créé par</th>
-                                        <th className="px-3 py-2 text-left font-medium">Date</th>
-                                        <th className="px-3 py-2 text-center font-medium">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                                    {comments.map(comment => (
-                                        <tr key={comment.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 align-top">
-                                            <td className="px-3 py-2">
+                {/* Liste des commentaires existants */}
+                {comments && comments.length > 0 ? (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full text-sm">
+                            <thead className="bg-slate-50 dark:bg-slate-700">
+                                <tr>
+                                    <th className="px-3 py-2 text-left font-medium">Commentaire</th>
+                                    <th className="px-3 py-2 text-left font-medium">Créé par</th>
+                                    <th className="px-3 py-2 text-left font-medium">Date</th>
+                                    <th className="px-3 py-2 text-center font-medium">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                                {comments.map(comment => (
+                                    <tr key={comment.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 align-top">
+                                        <td className="px-3 py-2">
+                                            {editingCommentId === comment.id ? (
+                                                <textarea
+                                                    value={editingCommentText}
+                                                    onChange={(e) => setEditingCommentText(e.target.value)}
+                                                    className="form-textarea w-full text-sm resize-none overflow-hidden"
+                                                    rows="2"
+                                                />
+                                            ) : (
+                                                <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{comment.commentaire}</p>
+                                            )}
+                                        </td>
+                                        <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
+                                            {comment.utilisateur?.prenom} {comment.utilisateur?.nom}
+                                        </td>
+                                        <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
+                                            {formatDateFromArray(comment.dateCommentaire)}
+                                        </td>
+                                        <td className="px-3 py-2">
+                                            <div className="flex items-center justify-center space-x-1">
                                                 {editingCommentId === comment.id ? (
-                                                    <textarea
-                                                        value={editingCommentText}
-                                                        onChange={(e) => setEditingCommentText(e.target.value)}
-                                                        className="form-textarea w-full text-sm resize-none overflow-hidden"
-                                                        rows="2"
-                                                    />
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleSaveEdit(comment.id)}
+                                                            className="p-1.5 text-green-500 hover:text-green-700 rounded-full hover:bg-green-50 dark:hover:bg-green-900/30"
+                                                            title="Enregistrer"
+                                                        ><Check size={16} /></button>
+                                                        <button
+                                                            onClick={handleCancelEdit}
+                                                            className="p-1.5 text-slate-500 hover:text-slate-700 rounded-full hover:bg-slate-50 dark:hover:bg-slate-900/30"
+                                                            title="Annuler"
+                                                        ><X size={16} /></button>
+                                                    </>
                                                 ) : (
-                                                    <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{comment.commentaire}</p>
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleEditClick(comment)}
+                                                            className="p-1.5 text-slate-500 hover:text-blue-500 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                                                            title="Modifier"
+                                                        ><Edit size={16} /></button>
+                                                        <button
+                                                            onClick={() => handleDeleteComment(comment.id)}
+                                                            className="p-1.5 text-slate-500 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30"
+                                                            title="Supprimer"
+                                                        ><Trash2 size={16} /></button>
+                                                    </>
                                                 )}
-                                            </td>
-                                            <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
-                                                {comment.utilisateur?.prenom} {comment.utilisateur?.nom}
-                                            </td>
-                                            <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
-                                                {formatDateFromArray(comment.dateCommentaire)}
-                                            </td>
-                                            <td className="px-3 py-2">
-                                                <div className="flex items-center justify-center space-x-1">
-                                                    {editingCommentId === comment.id ? (
-                                                        <>
-                                                            <button
-                                                                onClick={() => handleSaveEdit(comment.id)}
-                                                                className="p-1.5 text-green-500 hover:text-green-700 rounded-full hover:bg-green-50 dark:hover:bg-green-900/30"
-                                                                title="Enregistrer"
-                                                            ><Check size={16} /></button>
-                                                            <button
-                                                                onClick={handleCancelEdit}
-                                                                className="p-1.5 text-slate-500 hover:text-slate-700 rounded-full hover:bg-slate-50 dark:hover:bg-slate-900/30"
-                                                                title="Annuler"
-                                                            ><X size={16} /></button>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <button
-                                                                onClick={() => handleEditClick(comment)}
-                                                                className="p-1.5 text-slate-500 hover:text-blue-500 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                                                                title="Modifier"
-                                                            ><Edit size={16} /></button>
-                                                            <button
-                                                                onClick={() => handleDeleteComment(comment.id)}
-                                                                className="p-1.5 text-slate-500 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30"
-                                                                title="Supprimer"
-                                                            ><Trash2 size={16} /></button>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    ) : (
-                        <p className="text-center text-slate-500 dark:text-slate-400 italic">Aucun commentaire pour ce ticket.</p>
-                    )}
-                </>
-            )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <p className="text-center text-slate-500 dark:text-slate-400 italic">Aucun commentaire pour ce ticket.</p>)}
+            </>
         </div>
     );
 };

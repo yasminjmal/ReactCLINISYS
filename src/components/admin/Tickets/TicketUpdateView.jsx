@@ -33,7 +33,7 @@ const formatDate = (dateInput) => {
 import {
     ArrowLeft, Check, X, GitFork, Loader, Send, PlusCircle, User, Tag, Info, Calendar,
     Package as ModuleIcon, UserCheck, Shield, Edit, Trash2, Eye, EyeOff, MessageSquare, ChevronDown, ChevronUp,
-    AlertTriangle, CheckCircle
+    AlertTriangle, CheckCircle,FileText
 } from 'lucide-react';
 
 // --- COMPOSANTS UTILITAIRES ---
@@ -184,7 +184,7 @@ const ModuleEditor = ({ ticket, onUpdate, onRemove, allModules }) => {
             </div>
         );
     }
-    
+
     if (!ticket.idModule || isSearchingModule) {
         return (
             <div className="flex items-center gap-2">
@@ -214,9 +214,9 @@ const ModuleEditor = ({ ticket, onUpdate, onRemove, allModules }) => {
                     )}
                 </div>
                 {!ticket.idModule && (
-                     <button onClick={() => { setSearchTerm(''); setIsSearchingModule(false); }} className="p-1 text-slate-400 hover:text-red-500" title="Annuler la recherche">
-                         <X size={14}/>
-                     </button>
+                    <button onClick={() => { setSearchTerm(''); setIsSearchingModule(false); }} className="p-1 text-slate-400 hover:text-red-500" title="Annuler la recherche">
+                        <X size={14} />
+                    </button>
                 )}
             </div>
         );
@@ -236,7 +236,7 @@ const ModuleEditor = ({ ticket, onUpdate, onRemove, allModules }) => {
 };
 
 const PriorityEditor = ({ ticket, onUpdate }) => {
-    const priorities = ["Basse", "Moyenne", "Haute"]; 
+    const priorities = ["Basse", "Moyenne", "Haute"];
     return (
         <select value={ticket.priorite} onChange={(e) => onUpdate('priorite', e.target.value)} className="form-select text-sm font-medium bg-transparent border-0 focus:ring-0 p-0">
             {priorities.map(p => <option key={p} value={p}>{p}</option>)}
@@ -268,7 +268,7 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast, currentUser
         // Log pour débogage
         console.log("SubTicketCommentRow: Tentative d'ajout de commentaire. Payload:", { commentaire: newCommentText, idTicket: subTicket.id, idUtilisateur: currentUserId });
         try {
-            await commentService.addComment({ commentaire: newCommentText, idTicket: subTicket.id ,idUtilisateur: currentUserId});
+            await commentService.addComment({ commentaire: newCommentText, idTicket: subTicket.id, idUtilisateur: currentUserId });
             setToast({ type: 'success', message: 'Commentaire ajouté avec succès.' });
             setNewCommentText('');
             onCommentChange(subTicket.id);
@@ -294,7 +294,7 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast, currentUser
         // Log pour débogage
         console.log("SubTicketCommentRow: Tentative de modification de commentaire. Payload:", { commentaire: editingCommentText, idTicket: subTicket.id, idUtilisateur: currentUserId });
         try {
-            await commentService.updateComment(commentId, { commentaire: editingCommentText, idTicket: subTicket.id ,idUtilisateur: currentUserId});
+            await commentService.updateComment(commentId, { commentaire: editingCommentText, idTicket: subTicket.id, idUtilisateur: currentUserId });
             setToast({ type: 'success', message: 'Commentaire modifié avec succès.' });
             setEditingCommentId(null);
             setEditingCommentText('');
@@ -366,7 +366,7 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast, currentUser
                                         <th className="px-2 py-1 text-left font-medium">Commentaire</th>
                                         <th className="px-2 py-1 text-left font-medium">Créé par</th>
                                         <th className="px-2 py-1 text-left font-medium w-32">Date</th>
-                                                                                <th className="px-2 py-1 text-center font-medium w-24">Actions</th>
+                                        <th className="px-2 py-1 text-center font-medium w-24">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -398,12 +398,12 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast, currentUser
                                                                 onClick={() => handleSaveEdit(comment.id)}
                                                                 className="p-1.5 text-green-500 hover:text-green-700 rounded-full hover:bg-green-50 dark:hover:bg-green-900/30"
                                                                 title="Enregistrer"
-                                                            ><Check size={14}/></button>
+                                                            ><Check size={14} /></button>
                                                             <button
                                                                 onClick={handleCancelEdit}
                                                                 className="p-1.5 text-slate-500 hover:text-slate-700 rounded-full hover:bg-slate-50 dark:hover:bg-slate-900/30"
                                                                 title="Annuler"
-                                                            ><X size={14}/></button>
+                                                            ><X size={14} /></button>
                                                         </>
                                                     ) : (
                                                         <>
@@ -411,12 +411,12 @@ const SubTicketCommentRow = ({ subTicket, onCommentChange, setToast, currentUser
                                                                 onClick={() => handleEditClick(comment)}
                                                                 className="p-1.5 text-slate-500 hover:text-blue-500 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30"
                                                                 title="Modifier"
-                                                            ><Edit size={14}/></button>
+                                                            ><Edit size={14} /></button>
                                                             <button
                                                                 onClick={() => handleDeleteComment(comment.id)}
                                                                 className="p-1.5 text-slate-500 hover:text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30"
                                                                 title="Supprimer"
-                                                            ><Trash2 size={14}/></button>
+                                                            ><Trash2 size={14} /></button>
                                                         </>
                                                     )}
                                                 </div>
@@ -492,7 +492,7 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModul
                                     </div>
                                 ))
                             }
-                             {allModules.filter(m => m.designation.toLowerCase().includes(moduleSearchTerm.toLowerCase())).length === 0 &&
+                            {allModules.filter(m => m.designation.toLowerCase().includes(moduleSearchTerm.toLowerCase())).length === 0 &&
                                 <p className="text-center text-xs text-slate-500 py-2">Aucun module trouvé.</p>
                             }
                         </div>
@@ -507,10 +507,10 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModul
                     <span className="text-sm text-slate-700 dark:text-slate-200">{editableData.idModule.designation}</span>
                     <div className="flex items-center space-x-1">
                         <button onClick={() => setIsEditing(true)} className="p-1 text-slate-500 hover:text-blue-600 rounded-full hover:bg-blue-100 dark:hover:bg-slate-700" title="Modifier le module">
-                            <Edit size={14}/>
+                            <Edit size={14} />
                         </button>
                         <button onClick={() => onRemoveModule(sub.id)} className="p-1 text-slate-500 hover:text-red-600 rounded-full hover:bg-red-100 dark:hover:bg-slate-700" title="Supprimer le module">
-                            <Trash2 size={14}/>
+                            <Trash2 size={14} />
                         </button>
                     </div>
                 </div>
@@ -533,7 +533,7 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModul
                 {editableData.idUtilisateur ? `${editableData.idUtilisateur.prenom} ${editableData.idUtilisateur.nom}` : 'N/A'}
             </td>
             <td className="px-2 py-2">
-                <input type="date" value={editableData.date_echeance ? new Date(editableData.date_echeance[0], editableData.date_echeance[1]-1, editableData.date_echeance[2]).toISOString().slice(0, 10) : ''} onChange={(e) => {
+                <input type="date" value={editableData.date_echeance ? new Date(editableData.date_echeance[0], editableData.date_echeance[1] - 1, editableData.date_echeance[2]).toISOString().slice(0, 10) : ''} onChange={(e) => {
                     const date = e.target.value ? new Date(e.target.value) : null;
                     handleChange('date_echeance', date ? [date.getFullYear(), date.getMonth() + 1, date.getDate()] : null);
                 }} className="form-input text-sm w-full" />
@@ -553,10 +553,10 @@ const EditableSubTicketRow = ({ sub, allModules, onSave, onCancel, onRemoveModul
             </td>
             <td className="px-2 py-2">
                 <div className="flex items-center justify-center space-x-1">
-                    <button onClick={handleSaveClick} className="p-1.5 text-green-600 hover:bg-green-100 rounded-full" title="Enregistrer" disabled={isSaving}>{isSaving ? <Spinner/> : <Check size={16}/>}</button>
-                    <button onClick={onCancel} className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full" title="Annuler" disabled={isSaving}><X size={16}/></button>
+                    <button onClick={handleSaveClick} className="p-1.5 text-green-600 hover:bg-green-100 rounded-full" title="Enregistrer" disabled={isSaving}>{isSaving ? <Spinner /> : <Check size={16} />}</button>
+                    <button onClick={onCancel} className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full" title="Annuler" disabled={isSaving}><X size={16} /></button>
                     <button onClick={() => onToggleComments(sub.id)} className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-100 rounded-full" title={isCommentsExpanded ? "Masquer les commentaires" : "Afficher les commentaires"}>
-                        <MessageSquare size={16}/>
+                        <MessageSquare size={16} />
                     </button>
                 </div>
             </td>
@@ -589,18 +589,18 @@ const DisplaySubTicketRow = ({ sub, onEdit, onDelete, allModules, isDescriptionE
                     )}
                 </div>
             </td>
-            <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{getModuleName(sub.idModule )}</td>
+            <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{getModuleName(sub.idModule)}</td>
             <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{sub.idUtilisateur ? `${sub.idUtilisateur.prenom} ${sub.idUtilisateur.nom}` : 'Aucun employé affecté'}</td>
-            <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{formatDate(sub.date_echeance) }</td>
+            <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{formatDate(sub.date_echeance)}</td>
             <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{sub.priorite}</td>
             <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{sub.statue}</td>
             <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{formatDate(sub.dateCreation)}</td>
             <td className="px-3 py-2">
                 <div className="flex items-center justify-center space-x-2">
-                    <button onClick={() => onEdit(sub.id)} className="p-1.5 text-slate-500 hover:text-blue-600 rounded-full hover:bg-blue-100 dark:hover:bg-slate-700" title="Modifier"><Edit size={16}/></button>
-                    <button onClick={() => onDelete(sub.id)} className={`p-1.5 rounded-full ${isAssigned ? 'text-slate-400 cursor-not-allowed' : 'text-slate-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-slate-700'}`} title={isAssigned ? 'Ne peut pas supprimer un sous-ticket assigné' : 'Supprimer'} disabled={isAssigned}><Trash2 size={16}/></button>
+                    <button onClick={() => onEdit(sub.id)} className="p-1.5 text-slate-500 hover:text-blue-600 rounded-full hover:bg-blue-100 dark:hover:bg-slate-700" title="Modifier"><Edit size={16} /></button>
+                    <button onClick={() => onDelete(sub.id)} className={`p-1.5 rounded-full ${isAssigned ? 'text-slate-400 cursor-not-allowed' : 'text-slate-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-slate-700'}`} title={isAssigned ? 'Ne peut pas supprimer un sous-ticket assigné' : 'Supprimer'} disabled={isAssigned}><Trash2 size={16} /></button>
                     <button onClick={() => onToggleComments(sub.id)} className="p-1.5 text-slate-500 hover:text-indigo-600 rounded-full hover:bg-indigo-100 dark:hover:bg-slate-700" title={isCommentsExpanded ? "Masquer les commentaires" : "Afficher les commentaires"}>
-                        <MessageSquare size={16}/>
+                        <MessageSquare size={16} />
                     </button>
                 </div>
             </td>
@@ -639,7 +639,7 @@ const SubTicketsTable = ({ subTickets, onSaveSubTicket, onDelete, onAdd, allModu
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-200">Sous-tickets</h2>
                 <button onClick={onAdd} className="btn btn-primary-icon" title="Ajouter un sous-ticket">
-                    <PlusCircle size={20} className="mr-2"/> Ajouter
+                    <PlusCircle size={20} className="mr-2" /> Ajouter
                 </button>
             </div>
             <div className="overflow-x-auto">
@@ -708,7 +708,7 @@ import DocumentManager from './DocumentManager';
 import CommentManager from './CommentManager';
 // import userService from '../../../services/userService'; // Importé plus haut, assurez-vous qu'il n'y a pas de doublon
 
-const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
+const TicketUpdateView = ({ ticketId, onBack, setToast, onNavigateToParent }) => {
     const [ticket, setTicket] = useState(null);
     const [allModules, setAllModules] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -716,26 +716,28 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
     const [error, setError] = useState(null);
     const [isDiffractionModalOpen, setIsDiffractionModalOpen] = useState(false);
     const [userId, setUserId] = useState(null); // Ajoute cet état
+    const [isCommentsAndDocsCollapsed, setIsCommentsAndDocsCollapsed] = useState(false);
 
-        useEffect(() => {
-            const fetchCurrentUser = async () => {
-                try {
-                    const storedUser = JSON.parse(localStorage.getItem('currentUser'));
-                    const login = storedUser?.login;
-                    if (login) {
-                        const userProfile = await userService.getUserByLogin(login); // Utilise ton userService
-                        setUserId(userProfile.id);
-                        console.log("Utilisateur connecté ID:", userProfile.id); // Log pour vérification
-                    } else {
-                        console.warn("Aucun login trouvé dans le localStorage pour récupérer l'ID utilisateur.");
-                    }
-                } catch (error) {
-                    console.error("Erreur lors de la récupération de l'utilisateur connecté:", error);
-                    setToast({type: 'error', message: "Erreur lors de la récupération de l'utilisateur."});
+
+    useEffect(() => {
+        const fetchCurrentUser = async () => {
+            try {
+                const storedUser = JSON.parse(localStorage.getItem('currentUser'));
+                const login = storedUser?.login;
+                if (login) {
+                    const userProfile = await userService.getUserByLogin(login); // Utilise ton userService
+                    setUserId(userProfile.id);
+                    console.log("Utilisateur connecté ID:", userProfile.id); // Log pour vérification
+                } else {
+                    console.warn("Aucun login trouvé dans le localStorage pour récupérer l'ID utilisateur.");
                 }
-            };
-            fetchCurrentUser();
-        }, []); // S'exécute une seule fois au montage
+            } catch (error) {
+                console.error("Erreur lors de la récupération de l'utilisateur connecté:", error);
+                setToast({ type: 'error', message: "Erreur lors de la récupération de l'utilisateur." });
+            }
+        };
+        fetchCurrentUser();
+    }, []); // S'exécute une seule fois au montage
 
 
     const fetchInitialData = useCallback(async () => {
@@ -747,7 +749,7 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
         } catch (err) {
             setError("Impossible de charger les données.");
             console.error("Erreur lors du chargement des données initiales dans TicketUpdateView:", err);
-            setToast({type: 'error', message: "Impossible de charger les détails du ticket."});
+            setToast({ type: 'error', message: "Impossible de charger les détails du ticket." });
         } finally {
             setIsLoading(false);
         }
@@ -770,13 +772,13 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
                         if (foundTicketWithChildren && foundTicketWithChildren.childTickets && foundTicketWithChildren.childTickets.length > 0) {
                             console.log("Trouvé le ticket parent avec childTickets via getAllParentTickets:", foundTicketWithChildren);
                             setTicket(foundTicketWithChildren);
-                            setToast({type: 'info', message: 'Détails du ticket mis à jour (sous-tickets chargés).'});
+                            setToast({ type: 'info', message: 'Détails du ticket mis à jour (sous-tickets chargés).' });
                         } else {
                             console.log("Le ticket parent n'a toujours pas de childTickets, même après getAllParentTickets.");
                         }
                     } catch (err) {
                         console.error("Erreur lors du re-fetch des tickets parents:", err);
-                        setToast({type: 'error', message: 'Erreur lors du chargement des sous-tickets.'});
+                        setToast({ type: 'error', message: 'Erreur lors du chargement des sous-tickets.' });
                     }
                 };
                 reFetchParents();
@@ -792,7 +794,7 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
         if (cleanedPayload.idModule && typeof cleanedPayload.idModule === 'object') cleanedPayload.idModule = cleanedPayload.idModule.id;
         if (cleanedPayload.idUtilisateur && typeof cleanedPayload.idUtilisateur === 'object') cleanedPayload.idUtilisateur = cleanedPayload.idUtilisateur.id;
         if (cleanedPayload.parentTicket && typeof cleanedPayload.parentTicket === 'object') cleanedPayload.idParentTicket = cleanedPayload.parentTicket.id;
-        
+
         if (typeof cleanedPayload.date_echeance === 'string') {
             const [year, month, day] = cleanedPayload.date_echeance.split('-').map(Number);
             cleanedPayload.date_echeance = [year, month, day, 0, 0, 0];
@@ -817,7 +819,7 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
             [fieldName]: value
         };
         const payload = cleanTicketPayload(updatedData);
-        
+
         await ticketService.updateTicket(id, payload);
     };
 
@@ -838,12 +840,12 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
             idParentTicket: ticket.id,
             idClient: ticket.idClient?.id
         });
-        
+
         try {
             await ticketService.updateTicket(originalSubTicket.id, payload);
             setToast({ type: 'success', message: 'Sous-ticket mis à jour.' });
             await fetchInitialData();
-        } catch(err) {
+        } catch (err) {
             console.error(err);
             setToast({ type: 'error', message: 'Une erreur est survenue lors de la mise à jour du sous-ticket.' });
             throw err;
@@ -888,7 +890,7 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
                     idModule: null,
                     id: subTicketToUpdate.id
                 });
-                
+
                 await ticketService.updateTicket(subTicketToUpdate.id, payload);
                 setToast({ type: 'success', message: 'Module du sous-ticket supprimé.' });
                 await fetchInitialData();
@@ -907,16 +909,16 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
         if (isSubTicket) {
             return null;
         }
-        
+
         switch (ticket.statue) {
             case 'En_attente':
                 return (
                     <div className="flex items-center space-x-3">
                         <button onClick={() => handleDirectStatusUpdate('Refuse')} className="btn btn-danger" disabled={isActionLoading}>
-                            {isActionLoading ? <Spinner /> : <X size={18} className="mr-2"/>} Refuser
+                            {isActionLoading ? <Spinner /> : <X size={18} className="mr-2" />} Refuser
                         </button>
                         <button onClick={() => handleDirectStatusUpdate('Accepte')} className="btn btn-success" disabled={isActionLoading}>
-                            {isActionLoading ? <Spinner /> : <Check size={18} className="mr-2"/>} Accepter
+                            {isActionLoading ? <Spinner /> : <Check size={18} className="mr-2" />} Accepter
                         </button>
                     </div>
                 );
@@ -924,7 +926,7 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
                 if (!ticket.childTickets || ticket.childTickets.length === 0) {
                     return (
                         <button onClick={() => setIsDiffractionModalOpen(true)} className="btn btn-primary" disabled={isActionLoading}>
-                            {isActionLoading ? <Spinner /> : <GitFork size={18} className="mr-2"/>} Diffracter
+                            {isActionLoading ? <Spinner /> : <GitFork size={18} className="mr-2" />} Diffracter
                         </button>
                     );
                 }
@@ -939,7 +941,7 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
     if (!ticket) return null;
 
     const hasSubTickets = ticket.childTickets && ticket.childTickets.length > 0;
-    const showSubTicketsTable = hasSubTickets; 
+    const showSubTicketsTable = hasSubTickets;
 
     console.log("--- Débug TicketUpdateView Final ---");
     console.log("Ticket ID:", ticketId);
@@ -969,53 +971,89 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
     return (
         <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
             <div className="flex justify-between items-center mb-6">
-                <button onClick={onBack} className="btn btn-secondary"><ArrowLeft size={18} className="mr-2"/> Retour</button>
+                <button onClick={onBack} className="btn btn-secondary"><ArrowLeft size={18} className="mr-2" /> Retour</button>
                 <div>{renderActions()}</div>
             </div>
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg mb-6">
-                 <div className="flex flex-col md:flex-row gap-8">
-                     <div className="flex-grow md:w-2/3 space-y-6">
-                         <EditableField initialValue={ticket.titre} onSave={handleUpdateParentField} fieldName="titre" />
-                         <div><h3 className="text-sm font-semibold uppercase text-slate-400 mb-2">Description</h3><EditableField initialValue={ticket.description} onSave={handleUpdateParentField} fieldName="description" isTextarea={true} /></div>
-                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 border-t border-slate-200 dark:border-slate-700">
-                              <DetailItem icon={<ModuleIcon size={14} className="mr-2"/>} label="Module"><ModuleEditor ticket={ticket} onUpdate={handleUpdateParentField} onRemove={() => handleUpdateParentField('idModule', null)} allModules={allModules} /></DetailItem>
-                              <DetailItem icon={<UserCheck size={14} className="mr-2"/>} label="Affecté à">{affectedToValue}</DetailItem>
-                              <DetailItem icon={<Calendar size={14} className="mr-2"/>} label="Échéance">{dueDateValue}</DetailItem>
-                         </div>
-                     </div>
-                     <div className="flex-shrink-0 md:w-1/3 space-y-4">
-                         <div className="grid grid-cols-2 gap-x-4 gap-y-4 bg-slate-100 dark:bg-slate-900/50 p-4 rounded-lg">
-                              <DetailItem icon={<Tag size={14} className="mr-2"/>} label="Priorité">
-                                   <PriorityEditor ticket={ticket} onUpdate={handleUpdateParentField} />
-                              </DetailItem>
-                              <DetailItem icon={<Info size={14} className="mr-2"/>} label="Statut" value={ticket.statue} />
-                         </div>
-                         <div className="pt-4 space-y-4 border-t border-slate-200 dark:border-slate-700">
-                              <div className="grid grid-cols-2 gap-x-4 gap-y-4"><DetailItem icon={<User size={14} className="mr-2"/>} label="Client" value={ticket.idClient?.nomComplet} /><DetailItem icon={<User size={14} className="mr-2"/>} label="Créé par" value={ticket.userCreation} /></div>
-                              <div className="grid grid-cols-2 gap-x-4 gap-y-4"><DetailItem icon={<Calendar size={14} className="mr-2"/>} label="Créé le" value={formatDate(ticket.dateCreation)} /><DetailItem icon={<Shield size={14} className="mr-2"/>} label="Actif"><select value={ticket.actif.toString()} onChange={(e) => handleUpdateParentField('actif', e.target.value === 'true')} className="form-select text-sm font-medium bg-transparent border-0 focus:ring-0 p-0"><option value="true">Oui</option><option value="false">Non</option></select></DetailItem></div>
-                         </div>
-                     </div>
-                 </div>
+                <div className="flex flex-col md:flex-row gap-8">
+                    <div className="flex-grow md:w-2/3 space-y-6">
+                        <EditableField initialValue={ticket.titre} onSave={handleUpdateParentField} fieldName="titre" />
+                        <div><h3 className="text-sm font-semibold uppercase text-slate-400 mb-2">Description</h3><EditableField initialValue={ticket.description} onSave={handleUpdateParentField} fieldName="description" isTextarea={true} /></div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+                            <DetailItem icon={<ModuleIcon size={14} className="mr-2" />} label="Module"><ModuleEditor ticket={ticket} onUpdate={handleUpdateParentField} onRemove={() => handleUpdateParentField('idModule', null)} allModules={allModules} /></DetailItem>
+                            <DetailItem icon={<UserCheck size={14} className="mr-2" />} label="Affecté à">{affectedToValue}</DetailItem>
+                            <DetailItem icon={<Calendar size={14} className="mr-2" />} label="Échéance">{dueDateValue}</DetailItem>
+                        </div>
+                    </div>
+                    <div className="flex-shrink-0 md:w-1/3 space-y-4">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-4 bg-slate-100 dark:bg-slate-900/50 p-4 rounded-lg">
+                            <DetailItem icon={<Tag size={14} className="mr-2" />} label="Priorité">
+                                <PriorityEditor ticket={ticket} onUpdate={handleUpdateParentField} />
+                            </DetailItem>
+                            <DetailItem icon={<Info size={14} className="mr-2" />} label="Statut" value={ticket.statue} />
+                        </div>
+                        <div className="pt-4 space-y-4 border-t border-slate-200 dark:border-slate-700">
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-4"><DetailItem icon={<User size={14} className="mr-2" />} label="Client" value={ticket.idClient?.nomComplet} /><DetailItem icon={<User size={14} className="mr-2" />} label="Créé par" value={ticket.userCreation} /></div>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-4"><DetailItem icon={<Calendar size={14} className="mr-2" />} label="Créé le" value={formatDate(ticket.dateCreation)} /><DetailItem icon={<Shield size={14} className="mr-2" />} label="Actif"><select value={ticket.actif.toString()} onChange={(e) => handleUpdateParentField('actif', e.target.value === 'true')} className="form-select text-sm font-medium bg-transparent border-0 focus:ring-0 p-0"><option value="true">Oui</option><option value="false">Non</option></select></DetailItem></div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Nouvelle section pour Documents et Commentaires côte à côte */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                {/* Zone des commentaires du ticket (toujours présente) */}
-                <CommentManager
-                    ticketId={ticket.id}
-                    comments={ticket.commentaireList}
-                    onCommentChange={fetchInitialData}
-                    setToast={setToast}
-                />
+            <div className="mt-8 bg-white dark:bg-slate-800 rounded-lg shadow-lg">
+                {/* --- DÉBUT DU NOUVEL EN-TÊTE COMMUN --- */}
+                <div
+                    className="flex justify-between items-center p-4 cursor-pointer"
+                    onClick={() => setIsCommentsAndDocsCollapsed(!isCommentsAndDocsCollapsed)}
+                >
+                    <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-200 flex items-center">
+                        <MessageSquare size={20} className="mr-2" />
+                        <span className="mr-1">Commentaires</span>
+                        <span className="text-slate-400 dark:text-slate-500">({ticket.commentaireList?.length || 0})</span>
+                        <span className="mx-2 text-slate-300 dark:text-slate-600">|</span>
+                        <FileText size={20} className="mr-2" />
+                        <span className="mr-1">Documents</span>
+                        <span className="text-slate-400 dark:text-slate-500">({ticket.documentJointesList?.length || 0})</span>
+                    </h2>
+                    <button
+                        className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
+                        title={isCommentsAndDocsCollapsed ? "Afficher" : "Masquer"}
+                    >
+                        {isCommentsAndDocsCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+                    </button>
+                </div>
+                {/* --- FIN DU NOUVEL EN-TÊTE --- */}
 
-                {/* Zone des documents joints (toujours présente) */}
-                <DocumentManager
-                    ticketId={ticket.id}
-                    documents={ticket.documentJointesList}
-                    onDocumentChange={fetchInitialData}
-                    setToast={setToast}
-                />
+                {/* --- DÉBUT DU CONTENU CONDITIONNEL --- */}
+                {!isCommentsAndDocsCollapsed && (
+                    <div className="grid grid-cols-1 lg:grid-cols-5 border-t border-slate-200 dark:border-slate-700">
+                        {/* Colonne des commentaires (plus large) */}
+                        <div className="lg:col-span-3 p-6 lg:border-r lg:border-slate-200 lg:dark:border-slate-700">
+                            <CommentManager
+                                ticketId={ticket.id}
+                                comments={ticket.commentaireList}
+                                onCommentChange={fetchInitialData}
+                                setToast={setToast}
+                                userId={userId}
+                            />
+                        </div>
+
+                        {/* Colonne des documents (plus étroite) */}
+                        <div className="lg:col-span-2 p-6">
+                            <DocumentManager
+                                ticketId={ticket.id}
+                                documents={ticket.documentJointesList}
+                                onDocumentChange={fetchInitialData}
+                                setToast={setToast}
+                            />
+                        </div>
+                    </div>
+                )}
+                {/* --- FIN DU CONTENU CONDITIONNEL --- */}
             </div>
+
+
             {/* Tableau des sous-tickets - Conditionnel si présence de sous-tickets */}
             {showSubTicketsTable && (
                 <div className="mt-8">
@@ -1027,7 +1065,7 @@ const TicketUpdateView = ({ ticketId, onBack, setToast }) => {
                         allModules={allModules}
                         onRemoveModule={handleRemoveSubTicketModule}
                         onRefreshTicketData={fetchInitialData}
-                        currentUserId={userId} 
+                        currentUserId={userId}
                         setToast={setToast}
                     />
                 </div>

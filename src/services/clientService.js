@@ -1,4 +1,5 @@
 // src/services/clientService.js
+import axios from 'axios';
 import api from './api'; // Assurez-vous que ce chemin est correct pour votre instance Axios
 
 const BASE_URL = '/clients'; // Correspond à @RequestMapping("/api/clients") dans ClientResource
@@ -29,7 +30,7 @@ const clientService = {
    * @returns {Promise<object>} Le client créé
    */
   createClient: async (clientData) => {
-    const response = await api.post(BASE_URL, clientData);
+    const response = await axios.post("http://localhost:9010/template-core/api/clients", clientData);
     return response.data;
   },
 

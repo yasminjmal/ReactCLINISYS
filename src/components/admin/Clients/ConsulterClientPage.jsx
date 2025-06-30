@@ -1,3 +1,4 @@
+
 // src/pages/Admin/Clients/ConsulterClientPage.jsx
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
@@ -143,9 +144,69 @@ const EditClientModal = ({ client, onUpdate, onCancel }) => {
     }, [selectedCountry]);
 
 
-    const handleInputChange = (e) => { /* ... code inchangé ... */ };
-    const handleSubmit = (e) => { /* ... code inchangé ... */ };
-    const selectStyles = { /* ... code inchangé ... */ };
+    const handleInputChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setError(''); // Clear previous errors
+        if (!formData.nomComplet || !formData.email) {
+            setError("Le nom complet et l'email sont requis.");
+            return;
+        }
+
+        const updatedClientData = {
+            ...formData,
+            countryCode: selectedCountry ? selectedCountry.value : null,
+            regionName: selectedRegion ? selectedRegion.label : null, // Send the region name, not code
+        };
+
+        onUpdate(client.id, updatedClientData);
+    };
+
+    const selectStyles = {
+        control: (provided, state) => ({
+            ...provided,
+            backgroundColor: 'var(--bg-white-dark-slate-900-50)',
+            borderColor: 'var(--border-slate-300-dark-slate-600)',
+            color: 'var(--text-slate-900-dark-slate-100)',
+            boxShadow: state.isFocused ? '0 0 0 1px var(--ring-blue-500)' : 'none',
+            '&:hover': {
+                borderColor: 'var(--border-blue-500)',
+            },
+        }),
+        option: (provided, state) => ({
+            ...provided,
+            backgroundColor: state.isSelected
+                ? 'var(--bg-blue-500)'
+                : state.isFocused
+                    ? 'var(--bg-blue-50)'
+                    : 'var(--bg-white-dark-slate-800)',
+            color: state.isSelected
+                ? 'var(--text-white)'
+                : 'var(--text-slate-900-dark-slate-100)',
+            '&:active': {
+                backgroundColor: 'var(--bg-blue-600)',
+            },
+        }),
+        singleValue: (provided) => ({
+            ...provided,
+            color: 'var(--text-slate-900-dark-slate-100)',
+        }),
+        input: (provided) => ({
+            ...provided,
+            color: 'var(--text-slate-900-dark-slate-100)',
+        }),
+        placeholder: (provided) => ({
+            ...provided,
+            color: 'var(--placeholder-slate-400)',
+        }),
+    };
 
     if (!client) return null;
 
@@ -153,18 +214,18 @@ const EditClientModal = ({ client, onUpdate, onCancel }) => {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-full max-w-md">
                 <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6">Modifier le Client</h2>
-                {isLoading ? <Spinner/> : (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Le reste du formulaire est inchangé */}
-                    <div> <label htmlFor="edit-nomComplet" className="form-label mb-1">Nom Complet</label> <input type="text" id="edit-nomComplet" name="nomComplet" value={formData.nomComplet} onChange={handleInputChange} className="form-input"/> </div>
-                    <div> <label htmlFor="edit-email" className="form-label mb-1">Email</label> <input type="email" id="edit-email" name="email" value={formData.email} onChange={handleInputChange} className="form-input"/> </div>
-                    <div> <label className="form-label mb-1">Pays</label> <Select options={countries} value={selectedCountry} onChange={setSelectedCountry} styles={selectStyles} placeholder="Rechercher un pays..."/> </div>
-                    <div> <label className="form-label mb-1">Région</label> <Select options={regions} value={selectedRegion} onChange={setSelectedRegion} styles={selectStyles} isDisabled={!selectedCountry} placeholder="Sélectionner une région..."/> </div>
-                    <div> <label htmlFor="edit-adress" className="form-label mb-1">Adresse</label> <textarea id="edit-adress" name="adress" value={formData.adress} onChange={handleInputChange} className="form-textarea" rows="2"></textarea> </div>
-                    <div className="flex items-center pt-2"> <input type="checkbox" id="edit-actif" name="actif" checked={formData.actif} onChange={handleInputChange} className="form-checkbox" /> <label htmlFor="edit-actif" className="ml-3 form-label cursor-pointer">Actif</label> </div>
-                    {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
-                    <div className="pt-6 flex justify-end space-x-2 border-t border-slate-200 dark:border-slate-700"> <button type="button" onClick={onCancel} className="btn btn-secondary"><XCircle size={16} className="mr-1.5" /> Annuler</button> <button type="submit" className="btn btn-primary"><Save size={16} className="mr-1.5" /> Confirmer</button> </div>
-                </form>
+                {isLoading ? <Spinner /> : (
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {/* Le reste du formulaire est inchangé */}
+                        <div> <label htmlFor="edit-nomComplet" className="form-label mb-1">Nom Complet</label> <input type="text" id="edit-nomComplet" name="nomComplet" value={formData.nomComplet} onChange={handleInputChange} className="form-input" /> </div>
+                        <div> <label htmlFor="edit-email" className="form-label mb-1">Email</label> <input type="email" id="edit-email" name="email" value={formData.email} onChange={handleInputChange} className="form-input" /> </div>
+                        <div> <label className="form-label mb-1">Pays</label> <Select options={countries} value={selectedCountry} onChange={setSelectedCountry} styles={selectStyles} placeholder="Rechercher un pays..." /> </div>
+                        <div> <label className="form-label mb-1">Région</label> <Select options={regions} value={selectedRegion} onChange={setSelectedRegion} styles={selectStyles} isDisabled={!selectedCountry} placeholder="Sélectionner une région..." /> </div>
+                        <div> <label htmlFor="edit-adress" className="form-label mb-1">Adresse</label> <textarea id="edit-adress" name="adress" value={formData.adress} onChange={handleInputChange} className="form-textarea" rows="2"></textarea> </div>
+                        <div className="flex items-center pt-2"> <input type="checkbox" id="edit-actif" name="actif" checked={formData.actif} onChange={handleInputChange} className="form-checkbox" /> <label htmlFor="edit-actif" className="ml-3 form-label cursor-pointer">Actif</label> </div>
+                        {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+                        <div className="pt-6 flex justify-end space-x-2 border-t border-slate-200 dark:border-slate-700"> <button type="button" onClick={onCancel} className="btn btn-secondary"><XCircle size={16} className="mr-1.5" /> Annuler</button> <button type="submit" className="btn btn-primary"><Save size={16} className="mr-1.5" /> Confirmer</button> </div>
+                    </form>
                 )}
             </div>
         </div>
@@ -199,7 +260,7 @@ const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => {
         <thead className="text-sm text-black bg-sky-100 dark:bg-blue-200">
             <tr>
                 {/* On itère sur les clés de columnNames pour garder un ordre défini */}
-                {Object.keys(columnNames).map((key) => 
+                {Object.keys(columnNames).map((key) =>
                     visibleColumns[key] && ( // On utilise la clé pour vérifier la visibilité
                         <th key={key} scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">
                             {key === 'dateCreation' ? (
@@ -296,7 +357,7 @@ const ConsulterClientPage = () => {
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownsRef.current && !dropdownsRef.current.contains(event.target)) {
-                 const isExportButton = event.target.closest('.btn-export-dropdown');
+                const isExportButton = event.target.closest('.btn-export-dropdown');
                 if (!isExportButton) {
                     setOpenDropdown(null);
                 }
@@ -329,7 +390,7 @@ const ConsulterClientPage = () => {
     // --- LOGIQUE D'AFFICHAGE (FILTRE, TRI, PAGINATION) ---
     const processedClients = useMemo(() => {
         let filtered = [...clients];
-        
+
         // Filtre par statut
         if (filterStatus !== 'tous') {
             filtered = filtered.filter(c => (c.actif ? 'actif' : 'inactif') === filterStatus);
@@ -390,7 +451,7 @@ const ConsulterClientPage = () => {
             }
         }
     }, [processedClients, entriesPerPage, currentPage, setCurrentPage]);
-    
+
 
     const totalPages = Math.ceil(processedClients.length / entriesPerPage);
 
@@ -404,19 +465,18 @@ const ConsulterClientPage = () => {
     }, [entriesPerPage, filterStatus, searchTerm]);
 
     // --- HANDLERS POUR LES ACTIONS CRUD ---
-    const handleAddClient = async (clientData) => {
+    const handleAddClient = async (newClientId) => { // <-- Ajoutez newClientId ici
         try {
-            const response = await clientService.createClient(clientData);
-            setView('list');
-            await fetchClients();
-            const newClientId = response.data?.id;
+            setView('list'); // Revenir à la vue liste
+            await fetchClients(); // Rafraîchir la liste des clients
             if (newClientId) {
-                highlightClientRef.current = newClientId;
+                highlightClientRef.current = newClientId; // Utilisez l'ID pour le surlignage
             }
             setToast({ message: "Client ajouté avec succès !", type: 'success' });
         } catch (err) {
-            console.error("Erreur lors de l'ajout du client:", err);
-            setToast({ message: err.response?.data?.message || "Erreur lors de l'ajout du client.", type: 'error' });
+            console.error("Erreur lors de l'ajout du client (post-création):", err);
+            // Ce bloc catch gère les erreurs qui pourraient survenir APRES l'appel API (p.ex. rafraîchissement de la liste)
+            setToast({ message: "Client ajouté, mais erreur lors du rafraîchissement. Veuillez recharger la page.", type: 'error' });
         }
     };
 
@@ -534,7 +594,11 @@ const ConsulterClientPage = () => {
 
     // --- RENDU PRINCIPAL ---
     if (view === 'add') {
-        return <AjouterClientPage onAddClient={handleAddClient} onCancel={() => { setView('list'); setToast({ message: "Ajout de client annulé.", type: 'info' }); }} />;
+        return <AjouterClientPage onAddClient={handleAddClient}
+            onCancel={() => {
+                setView('list');
+                setToast({ message: "Ajout de client annulé.", type: 'info' });
+            }} />;
     }
 
     return (
