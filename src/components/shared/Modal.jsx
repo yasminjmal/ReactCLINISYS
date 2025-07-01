@@ -1,6 +1,7 @@
 // src/components/shared/Modal.jsx
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
+import './Modal.css'; // <-- AJOUTEZ CETTE LIGNE : Importez le fichier CSS créé
 
 const Modal = ({ isOpen, onClose, title, children, footerActions, size = 'md' }) => {
   useEffect(() => {
@@ -31,11 +32,11 @@ const Modal = ({ isOpen, onClose, title, children, footerActions, size = 'md' })
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4 animate-fadeIn"
-      onClick={onClose} // Ferme le modal si on clique à l'extérieur (sur l'overlay)
+      onClick={onClose}
     >
       <div
         className={`bg-white dark:bg-slate-800 rounded-lg shadow-2xl w-full ${sizeClasses[size] || sizeClasses.md} flex flex-col animate-scaleUp max-h-[90vh]`}
-        onClick={(e) => e.stopPropagation()} // Empêche la fermeture si on clique à l'intérieur du modal
+        onClick={(e) => e.stopPropagation()}
       >
         {/* En-tête du Modal */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
@@ -61,15 +62,7 @@ const Modal = ({ isOpen, onClose, title, children, footerActions, size = 'md' })
           </div>
         )}
       </div>
-      <style jsx>{`
-        .animate-fadeIn { animation: fadeInModal 0.2s ease-out forwards; }
-        .animate-scaleUp { animation: scaleUpModal 0.2s ease-out forwards; }
-        @keyframes fadeInModal { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes scaleUpModal { 
-          from { opacity: 0; transform: scale(0.95) translateY(10px); } 
-          to { opacity: 1; transform: scale(1) translateY(0); } 
-        }
-      `}</style>
+      {/* <style jsx>...</style> <-- LIGNE SUPPRIMÉE */}
     </div>
   );
 };

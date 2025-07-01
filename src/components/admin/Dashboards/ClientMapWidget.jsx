@@ -10,20 +10,20 @@ import { scaleQuantile } from "d3-scale";
 import { interpolateGreens } from "d3-scale-chromatic";
 import { ResponsiveContainer } from 'recharts';
 import dashboardService from '../../../services/dashboardService';
-// geoService n'est plus nécessaire ici pour le géocodage à la volée // <<--- C'est ICI qu'il faut supprimer cette ligne
 
-const WORLD_GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
-const TUNISIA_GOVERNORATES_GEO_URL = "https://raw.githubusercontent.com/datasets/geo-countries-regions-tunisia/main/data/tunisia.geojson";
+// Chemins vers les fichiers GeoJSON locaux
+const WORLD_GEO_URL = "/assets/geo/countries-110m.json"; 
+const TUNISIA_GOVERNORATES_GEO_URL = "/assets/geo/tunisia.geojson"; 
 
-// Composant de marqueur animé, inchangé
+// Composant de marqueur animé
 const AnimatedClientMarker = memo(({ coordinates, status }) => {
-  const color = status ? 'bg-blue-500' : 'bg-slate-400';
-  const pingClass = status ? 'animate-ping-green' : 'animate-ping-red'; // Utilisez vos classes CSS
+  const staticCircleColor = status ? '#4299E1' : '#A0AEC0'; 
+  const pingClass = status ? 'animate-ping-red' : ''; 
 
   return (
     <g transform={`translate(${coordinates[0]}, ${coordinates[1]})`}>
-      <circle r={8} fill={color} stroke="#fff" strokeWidth={1} />
-      <circle r={8} fill={color} className={pingClass} />
+      <circle r={8} fill={staticCircleColor} stroke="#fff" strokeWidth={1} />
+      {status && <circle r={8} fill={staticCircleColor} className={pingClass} />}
     </g>
   );
 });
@@ -32,18 +32,18 @@ const ClientMapWidget = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [mapType, setMapType] = useState('world');
-  const [clientStats, setClientStats] = useState([]); // Pour les statistiques par pays/région
-  const [individualClients, setIndividualClients] = useState([]); // Pour les marqueurs individuels avec lat/lng
+  const [clientStats, setClientStats] = useState([]); 
+  const [individualClients, setIndividualClients] = useState([]); 
   const [tooltipContent, setTooltipContent] = useState("");
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const mapRef = useRef(null);
 
-  // useEffect pour charger les statistiques par pays/région
   useEffect(() => {
     const fetchMapStats = async () => {
       setLoading(true);
       try {
         const stats = await dashboardService.getClientStatsByRegion(mapType);
+        console.log("Données clientStats reçues:", stats); 
         setClientStats(stats);
       } catch (err) {
         setError("Erreur lors du chargement des statistiques de la carte.");
@@ -55,15 +55,14 @@ const ClientMapWidget = () => {
     fetchMapStats();
   }, [mapType]);
 
-  // NOUVEAU useEffect pour charger les localisations individuelles des clients
   useEffect(() => {
     const fetchIndividualClientLocations = async () => {
       setLoading(true);
       setError(null);
       try {
-        // Appelle le nouveau endpoint du backend qui retourne ClientLocationDTOs
         const data = await dashboardService.getClientLocations();
-        setIndividualClients(data); // data contient déjà id, nomComplet, lat, lng, status
+        console.log("Données individualClients reçues:", data); 
+        setIndividualClients(data); 
       } catch (err) {
         setError("Erreur lors du chargement des emplacements des clients.");
         console.error(err);
@@ -73,11 +72,11 @@ const ClientMapWidget = () => {
     };
 
     fetchIndividualClientLocations();
-  }, []); // Se déclenche une seule fois au montage du composant
+  }, []); 
 
   const colorScale = scaleQuantile()
-    .domain(clientStats.map(d => d.count))
-    .range(interpolateGreens(clientStats.length / 10));
+    .domain(clientStats.map(d => d.totalClients))
+    .range(["#ECEFF1", "#8DE28D", "#6CCF6C", "#4BBF4B", "#2AA62A", "#0C8C0C"]);
 
   const handleMouseLeave = () => {
     setTooltipContent("");
@@ -90,18 +89,20 @@ const ClientMapWidget = () => {
   const handleMouseEnter = (geo) => {
     const d = clientStats.find(s => {
       if (mapType === 'world') {
-        return geo.properties.iso_a2 === s.countryCode;
+        // CORRECTION ICI : Utilise geo.properties.name pour les pays du monde
+        return geo.properties.name === s.regionName.trim(); 
       } else if (mapType === 'tunisia') {
-        return geo.properties.name === s.regionName;
+        return geo.properties.gouv_fr === s.regionName.trim();
       }
       return false;
     });
 
     if (d) {
-      let content = `<b>${d.name}</b><br/>Clients: ${d.count}`;
+      let content = `<b>${d.regionName.trim()}</b><br/>Clients: ${d.totalClients}`;
       setTooltipContent(content);
     } else {
-      setTooltipContent(`<b>${geo.properties.name}</b><br/>Aucun client`);
+      const geoName = mapType === 'world' ? geo.properties.name : geo.properties.gouv_fr;
+      setTooltipContent(`<b>${geoName || 'Inconnu'}</b><br/>Aucun client`);
     }
   };
 
@@ -143,26 +144,35 @@ const ClientMapWidget = () => {
             <ZoomableGroup center={[10, 34]} zoom={mapType === 'world' ? 1 : 8}>
               <Geographies geography={currentGeoUrl}>
                 {({ geographies }) =>
-                  geographies.map((geo) => (
-                    <Geography
-                      key={geo.rsmKey}
-                      geography={geo}
-                      fill={
-                        mapType === 'world' && clientStats.length > 0
-                          ? colorScale(clientStats.find(s => geo.properties.iso_a2 === s.countryCode)?.count || 0)
-                          : mapType === 'tunisia' && clientStats.length > 0
-                            ? colorScale(clientStats.find(s => geo.properties.name === s.regionName)?.count || 0)
-                            : "#DDD"
+                  geographies.map((geo) => {
+                    const relatedStat = clientStats.find(s => {
+                      if (mapType === 'world') {
+                        // CORRECTION ICI : Utilise geo.properties.name pour les pays du monde
+                        return geo.properties.name === s.regionName.trim();
+                      } else if (mapType === 'tunisia') {
+                        return geo.properties.gouv_fr === s.regionName.trim();
                       }
-                      onMouseEnter={() => handleMouseEnter(geo)}
-                      onMouseLeave={handleMouseLeave}
-                      style={{
-                        default: { outline: "none" },
-                        hover: { outline: "none", fill: "#FFC107" },
-                        pressed: { outline: "none", fill: "#FFA000" },
-                      }}
-                    />
-                  ))
+                      return false;
+                    });
+                    
+                    const fillColor = relatedStat 
+                                      ? colorScale(relatedStat.totalClients) 
+                                      : "#ECEFF1"; 
+                    return (
+                      <Geography
+                        key={geo.rsmKey}
+                        geography={geo}
+                        fill={fillColor}
+                        onMouseEnter={() => handleMouseEnter(geo)}
+                        onMouseLeave={handleMouseLeave}
+                        style={{
+                          default: { outline: "none" },
+                          hover: { outline: "none", fill: "#FFC107" }, 
+                          pressed: { outline: "none", fill: "#FFA000" }, 
+                        }}
+                      />
+                    );
+                  })
                 }
               </Geographies>
 
@@ -170,8 +180,8 @@ const ClientMapWidget = () => {
               {individualClients.map((client) => (
                 <AnimatedClientMarker
                   key={client.id}
-                  coordinates={[client.lng, client.lat]} // Utilise lat/lng du DTO
-                  status={client.status} // 'active' ou 'inactive'
+                  coordinates={[client.lng, client.lat]} 
+                  status={client.status} 
                 />
               ))}
             </ZoomableGroup>

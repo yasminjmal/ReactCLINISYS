@@ -2,79 +2,89 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useAuth } from './AuthContext';
-import userService from '../services/userService'; // Import the new user service
 
 const WebSocketContext = createContext(null);
 
 export const useWebSocket = () => useContext(WebSocketContext);
 
 export const WebSocketProvider = ({ children }) => {
-    // Note: `incompleteUser` from `useAuth` is missing the 'id' field.
-    const { currentUser: incompleteUser, token } = useAuth(); 
-    const [notifications, setNotifications] = useState([]);
+    const { currentUser, token } = useAuth();
     const [isConnected, setIsConnected] = useState(false);
+    // On utilise une `ref` pour conserver l'instance du client STOMP.
+    // Cela évite de recréer le client à chaque rendu du composant et stabilise la connexion.
     const stompClientRef = useRef(null);
 
     useEffect(() => {
-        const connectAndSubscribe = async () => {
-            // Only proceed if we have a token and a user object with a login.
-            if (incompleteUser && token && incompleteUser.login) {
-                
-                let fullUserProfile;
-                try {
-                    // Fetch the full user profile to get the essential user ID.
-                    fullUserProfile = await userService.getUserByLogin(incompleteUser.login);
-                    if (!fullUserProfile || !fullUserProfile.id) {
-                        console.error("WebSocket Error: Could not retrieve a valid user profile with an ID. Aborting connection.");
-                        return;
-                    }
-                } catch (error) {
-                    console.error("WebSocket Error: Failed to fetch user profile before connecting.", error);
-                    return; // Stop if the profile fetch fails.
-                }
+        // On ne tente de se connecter que si un utilisateur est authentifié et qu'on a un token.
+        if (currentUser && token) {
+            // Et seulement s'il n'y a pas déjà un client actif.
+            if (!stompClientRef.current) {
+                console.log("Création d'une nouvelle instance de client STOMP et tentative de connexion...");
 
-                // Now that we have the full profile, we can connect.
-                const socketFactory = () => new SockJS('http://localhost:9010/template-core/api/ws');
-                const stompClient = new Client({
-                    webSocketFactory: socketFactory,
-                    connectHeaders: { Authorization: `Bearer ${token}` },
-                    reconnectDelay: 5000,
-                    onConnect: () => {
-                        setIsConnected(true);
-                        // Subscribe to the private channel using the correct ID from the full profile.
-                        stompClient.subscribe(`/topic/private/${fullUserProfile.id}`, (message) => {
-                            const newNotification = JSON.parse(message.body);
-                            setNotifications(prev => [newNotification, ...prev]);
-                        });
+                const client = new Client({
+                    // On utilise une factory pour créer la connexion SockJS.
+                    // Assurez-vous que REACT_APP_API_BASE_URL est bien défini dans votre fichier .env (ex: http://localhost:8080)
+                    webSocketFactory: () => new SockJS(`${process.env.REACT_APP_API_BASE_URL}/api/ws`),
+                    connectHeaders: {
+                        Authorization: `Bearer ${token}`,
                     },
-                    onDisconnect: () => setIsConnected(false),
-                    onStompError: (frame) => {
-                        console.error('Broker reported error: ' + frame.headers['message']);
-                        console.error('Additional details: ' + frame.body);
+                    debug: (str) => {
+                        console.log('STOMP DEBUG: ' + str);
                     },
+                    reconnectDelay: 5000, // Tente de se reconnecter toutes les 5 secondes si la connexion est perdue.
                 });
 
-                stompClient.activate();
-                stompClientRef.current = stompClient;
+                client.onConnect = (frame) => {
+                    console.log('Succès : Connecté au WebSocket:', frame);
+                    setIsConnected(true);
+                };
+
+                client.onStompError = (frame) => {
+                    console.error('Erreur STOMP:', frame.headers['message']);
+                    console.error('Détails de l\'erreur:', frame.body);
+                    setIsConnected(false);
+                };
+
+                client.onWebSocketClose = (event) => {
+                    console.log("La connexion WebSocket a été fermée.", event);
+                    setIsConnected(false);
+                };
+                
+                client.onWebSocketError = (error) => {
+                    console.error('Erreur WebSocket:', error);
+                    setIsConnected(false);
+                };
+
+                // On stocke l'instance du client dans la ref pour y accéder plus tard.
+                stompClientRef.current = client;
+                
+                // On active le client, ce qui démarre la tentative de connexion.
+                client.activate();
             }
-        };
-
-        connectAndSubscribe();
-
-        // Cleanup function to deactivate the connection when the component unmounts or the user changes.
-        return () => {
+        } else {
+            // Si l'utilisateur se déconnecte (plus de currentUser ou de token),
+            // on désactive et on nettoie le client s'il existe.
             if (stompClientRef.current) {
+                console.log("Déconnexion du client STOMP demandée.");
                 stompClientRef.current.deactivate();
+                stompClientRef.current = null;
                 setIsConnected(false);
             }
-        };
-    }, [incompleteUser, token]); // This effect will re-run if the user logs in or out.
+        }
 
-    const value = {
-        notifications,
-        isConnected,
-        clearNotifications: () => setNotifications([])
-    };
+        // Fonction de nettoyage : s'exécute lorsque le composant est démonté.
+        return () => {
+            if (stompClientRef.current && stompClientRef.current.active) {
+                 console.log("Nettoyage : Déconnexion du client STOMP lors du démontage.");
+                 stompClientRef.current.deactivate();
+                 stompClientRef.current = null;
+            }
+        };
+    // Cet effet s'exécute à chaque fois que l'utilisateur ou le token change.
+    }, [currentUser, token]);
+
+    // On fournit aux composants enfants l'instance actuelle du client et l'état de la connexion.
+    const value = { stompClient: stompClientRef.current, isConnected };
 
     return (
         <WebSocketContext.Provider value={value}>

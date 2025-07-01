@@ -1,6 +1,6 @@
 // Dans src/services/equipeService.js
 import api from './api';
-
+const API_URL = '/equipes';
 const getAllEquipes = () => {
     return api.get('/equipes');
 };
@@ -36,6 +36,8 @@ const updateEquipe = (id, equipeData) => {
 const deleteEquipe = (id) => {
     return api.delete(`/equipes/${id}`);
 };
+
+
 
 const equipeService = {
     getAllEquipes,

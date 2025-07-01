@@ -1,144 +1,169 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Sun, Moon, LogOut, User as UserIcon, ChevronDown } from 'lucide-react'; 
-import { useTranslation } from 'react-i18next';
-import { useTheme } from '../../context/ThemeContext';
-import defaultUserProfileImage from '../../assets/images/default-profile.png';
+import { Link, useNavigate } from 'react-router-dom';
+import { Bell, MessageSquare, User, Settings, LogOut, Search, Menu } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import LanguageSwitcher from '../shared/LanguageSwitcher';
 import { useWebSocket } from '../../context/WebSocketContext';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../shared/LanguageSwitcher';
+import ThemeToggleButton from '../shared/ThemeToggleButton';
+import chatService from '../../services/chatService';
 
-const MetaAiIcon = () => {
-  return (
-    <div className="meta-ai-icon"></div>
-  );
-};
+const NavbarAdmin = ({ toggleSidebar }) => {
+    const { currentUser, logout } = useAuth();
+    const navigate = useNavigate();
+    const { t } = useTranslation();
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
+    const [messagesOpen, setMessagesOpen] = useState(false);
+    const [unreadMessages, setUnreadMessages] = useState([]);
+    const { stompClient, isConnected } = useWebSocket();
 
-const NavbarAdmin = ({ onSearch, isSidebarOpen }) => { 
-  const { t } = useTranslation();
-  const { theme, toggleTheme } = useTheme();
-  const { currentUser, logout } = useAuth();
-  
-  const { notifications, clearNotifications } = useWebSocket(); 
+    const dropdownRef = useRef(null);
+    const notificationsRef = useRef(null);
+    const messagesRef = useRef(null);
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
-  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
+    useEffect(() => {
+        const fetchUnreadMessages = async () => {
+            if (currentUser?.id) {
+                try {
+                    // La fonction de service peut retourner `undefined` en cas d'erreur.
+                    const messages = await chatService.getUnreadMessages(currentUser.id);
+                    // On s'assure de toujours définir un tableau pour éviter les erreurs.
+                    setUnreadMessages(messages || []);
+                } catch (error) {
+                    console.error("Erreur lors de la récupération des messages non lus:", error);
+                    setUnreadMessages([]); // En cas d'erreur, on initialise avec un tableau vide.
+                }
+            }
+        };
 
-  const profileDropdownRef = useRef(null);
-  const notificationDropdownRef = useRef(null);
+        fetchUnreadMessages();
+    }, [currentUser]);
 
-  const handleSearch = (e) => {
-    if (e.key === 'Enter' && searchQuery.trim()) {
-      onSearch(searchQuery);
-    }
-  };
+    useEffect(() => {
+        if (isConnected && stompClient && currentUser?.login) {
+            // S'abonner aux messages privés
+            const subscription = stompClient.subscribe(`/user/${currentUser.login}/queue/messages`, (message) => {
+                const newMessage = JSON.parse(message.body);
+                // Mettre à jour la liste des messages non lus
+                setUnreadMessages(prev => [...prev, newMessage]);
+            });
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
-        setIsProfileDropdownOpen(false);
-      }
-      if (notificationDropdownRef.current && !notificationDropdownRef.current.contains(event.target)) {
-        setIsNotificationDropdownOpen(false);
-      }
+            return () => {
+                if (subscription) {
+                    subscription.unsubscribe();
+                }
+            };
+        }
+    }, [isConnected, stompClient, currentUser]);
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
-  const userName = currentUser ? `${currentUser.prenom || ''} ${currentUser.nom || ''}`.trim() : 'Utilisateur';
-  const userProfilePic = currentUser?.photo ? `data:image/jpeg;base64,${currentUser.photo}` : defaultUserProfileImage;
+    const handleClickOutside = (event) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+            setDropdownOpen(false);
+        }
+        if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+            setNotificationsOpen(false);
+        }
+        if (messagesRef.current && !messagesRef.current.contains(event.target)) {
+            setMessagesOpen(false);
+        }
+    };
 
-  const handleNotificationClick = () => {
-      setIsNotificationDropdownOpen(!isNotificationDropdownOpen);
-  };
+    useEffect(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+    
+    const handleMessagesClick = () => {
+        setMessagesOpen(!messagesOpen);
+    };
+    
+    const onMessageDropdownItemClick = () => {
+        setMessagesOpen(false);
+        // Marquer les messages comme lus après avoir cliqué sur un message
+        setUnreadMessages([]);
+    };
 
-  return (
-    // La nav est fixe en haut de son conteneur parent (qui est décalé par la sidebar).
-    // Elle a relative z-20 pour que son contenu soit correctement positionné.
-    <nav className="fixed w-full top-0 left-0 bg-white dark:bg-slate-800 shadow-md h-16 flex items-center justify-between px-6 relative z-20">
-      
-      {/* Le bouton de bascule de la sidebar a été déplacé dans InterfaceAdmin.jsx */}
-      
-      
-
-      {/* Zone de recherche: ml-auto mr-auto pour la pousser et la centrer dans l'espace restant */}
-      <div className="flex-grow flex justify-center ml-auto mr-auto px-4"> 
-        <div className="search-container relative flex items-center w-full max-w-md bg-slate-900 rounded-full px-3 py-1.5">
-          <MetaAiIcon />
-          <input
-            type="text"
-            placeholder="Ask CliniAI or Search"
-            className="w-full ml-3 bg-transparent text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-0"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={handleSearch}
-          />
-        </div>
-      </div>
-
-      <div className="flex items-center space-x-2">
-        <LanguageSwitcher />
-        
-        <button onClick={toggleTheme} title={t('pages.navbar.lightMode')} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
-          {theme === 'dark' ? <Sun className="text-slate-300" size={20} /> : <Moon className="text-slate-600" size={20} />}
-        </button>
-
-        <div className="relative" ref={notificationDropdownRef}>
-            <button onClick={handleNotificationClick} title={t('pages.navbar.notifications')} className="relative p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
-                <Bell className="text-slate-600 dark:text-slate-300" size={20} />
-                {notifications.length > 0 && (
-                    <span className="absolute top-1 right-1 block h-3 w-3 rounded-full bg-red-500 border-2 border-white dark:border-slate-800" />
-                )}
-            </button>
-            {isNotificationDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-md shadow-lg border dark:border-slate-700 z-50">
-                    <div className="p-3 border-b dark:border-slate-700 flex justify-between items-center">
-                        <p className="font-semibold text-slate-800 dark:text-slate-100">Notifications</p>
-                        {notifications.length > 0 && (
-                            <button onClick={clearNotifications} className="text-xs text-blue-500 hover:underline">Clear all</button>
-                        )}
-                    </div>
-                    <div className="max-h-80 overflow-y-auto">
-                        {notifications.length > 0 ? (
-                            notifications.map((notif, index) => (
-                                <div key={index} className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">
-                                    <p className="text-sm text-slate-700 dark:text-slate-300">{notif.content}</p>
-                                </div>
-                            ))
-                        ) : (
-                            <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">No new notifications</p>
-                        )}
-                    </div>
+    return (
+        <nav className="bg-white dark:bg-gray-800 shadow-md h-16 flex items-center justify-between px-6 fixed top-0 left-0 right-0 z-40">
+            <div className="flex items-center">
+                <button onClick={toggleSidebar} className="text-gray-600 dark:text-gray-300 focus:outline-none lg:hidden">
+                    <Menu />
+                </button>
+                <div className="relative ml-4 hidden sm:block">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center">
+                        <Search className="h-5 w-5 text-gray-400" />
+                    </span>
+                    <input
+                        type="text"
+                        placeholder={t('search')}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100 dark:bg-gray-700"
+                    />
                 </div>
-            )}
-        </div>
+            </div>
 
-        <div className="relative" ref={profileDropdownRef}>
-          <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="flex items-center space-x-2">
-            <img src={userProfilePic} alt="Profil" className="h-9 w-9 rounded-full object-cover" onError={(e) => { e.currentTarget.src = defaultUserProfileImage; }}/>
-            <ChevronDown size={16} className={`transition-transform text-slate-500 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
-          </button>
-          {isProfileDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-md shadow-lg border dark:border-slate-700 py-1 z-50">
-              <div className="px-4 py-2 border-b dark:border-slate-700">
-                <p className="font-semibold text-slate-800 dark:text-slate-100">{userName}</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{currentUser?.email}</p>
-              </div>
-              <button onClick={() => {/* Navigate to profile */}} className="w-full text-left flex items-center px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
-                <UserIcon size={16} className="mr-2" />
-                {t('pages.navbar.profile')}
-              </button>
-              <button onClick={logout} className="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50">
-                <LogOut size={16} className="mr-2" />
-                {t('pages.navbar.logout')}
-              </button>
-            </div>  
-          )}
-        </div>
-      </div>
-    </nav>
-  );
+            <div className="flex items-center gap-4">
+                <LanguageSwitcher />
+                <ThemeToggleButton />
+                
+                <div className="relative" ref={messagesRef}>
+                    <button onClick={handleMessagesClick} className="relative text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white">
+                        <MessageSquare />
+                        {unreadMessages && unreadMessages.length > 0 && (
+                            <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center">
+                                {unreadMessages.length}
+                            </span>
+                        )}
+                    </button>
+                    {messagesOpen && (
+                        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-700 rounded-lg shadow-xl overflow-hidden z-50">
+                            <div className="p-3 font-semibold text-sm text-gray-800 dark:text-white border-b border-gray-200 dark:border-gray-600">
+                                {unreadMessages.length} {t('unreadMessages')}
+                            </div>
+                            <div className="max-h-80 overflow-y-auto">
+                                {unreadMessages && unreadMessages.length > 0 ? (
+                                    unreadMessages.map(msg => (
+                                        <Link to={`/admin/chat`} onClick={onMessageDropdownItemClick} key={msg.id} className="flex items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                            <div className="flex-shrink-0">
+                                                <User className="h-8 w-8 rounded-full bg-gray-200 p-1"/>
+                                            </div>
+                                            <div className="ml-3 flex-1">
+                                                <p className="text-sm font-semibold text-gray-800 dark:text-white">{msg.sender?.prenom || 'Utilisateur inconnu'}</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{msg.content}</p>
+                                            </div>
+                                        </Link>
+                                    ))
+                                ) : (
+                                    <p className="p-4 text-sm text-gray-500 dark:text-gray-400">{t('noUnreadMessages')}</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <div className="relative" ref={dropdownRef}>
+                    <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-2">
+                        <User className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-600 p-1" />
+                        <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-200">{currentUser?.prenom} {currentUser?.nom}</span>
+                    </button>
+                    {dropdownOpen && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-md shadow-xl z-50">
+                            <Link to="/admin/profil" onClick={() => setDropdownOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"><User size={16} />{t('profile')}</Link>
+                            <Link to="/admin/settings" onClick={() => setDropdownOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"><Settings size={16} />{t('settings')}</Link>
+                            <button onClick={handleLogout} className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"><LogOut size={16} />{t('logout')}</button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </nav>
+    );
 };
 
 export default NavbarAdmin;

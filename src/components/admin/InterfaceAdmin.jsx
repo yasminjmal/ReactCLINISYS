@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import utilisateurService from '../../services/utilisateurService';
 import aiSearchService from '../../services/aiSearchService';
+import ChatInterface from './../chat/ChatInterface'; // <--- AJOUTEZ CETTE LIGNE
+
 
 // Component Imports
 import NavbarAdmin from './NavbarAdmin';
@@ -19,6 +21,7 @@ import GoodbyePage from '../shared/GoodbyePage';
 import FloatingActionButton from '../../components/FloatingActionButton';
 import { ExportProvider } from '../../context/ExportContext';
 import DashboardPage from './Dashboards/DashboardPage';
+// import Toast from '../shared/Toast';
 
 const LoadingIndicator = () => (
   <div className="loading-indicator-container">
@@ -45,7 +48,7 @@ const AdminInterface = () => {
   const [searchEntityType, setSearchEntityType] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [disconnect,setDisconnect]=useState(false);
-  
+  const [toast, setToast] = useState(null); 
   const [usersData, setUsersData] = useState([]);
   const fetchUsersForAdmin = useCallback(async () => {
     try {
@@ -204,6 +207,7 @@ const AdminInterface = () => {
               onDismiss={clearNotification}
             />
           )}
+          {/* {toast && <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} />} */}
           {isLoading ? <LoadingIndicator /> : (
             // ENVELOPPER LE CONTENU DES PAGES DANS LE EXPORTPROVIDER
             <ExportProvider>
@@ -219,6 +223,7 @@ const AdminInterface = () => {
                   case 'postes_consulter_postes': return <ConsulterPostesPage initialPostes={searchEntityType === 'poste' ? searchResults : null} />;
                   case 'tickets_management': return <TicketsManagementPage showTemporaryMessage={showNotification} initialFilterStatus={filter} initialTickets={searchEntityType === 'ticket' ? searchResults : null} />;
                   case 'consulter_profil_admin': return currentUser ? <ConsultProfilPage user={currentUser} onUpdateProfile={handleUpdateUserProfile} onNavigateHome={handleNavigateToHome} /> : <div className="p-6 text-center">Utilisateur non trouvé.</div>;
+                  case 'discussions': return <ChatInterface setToast={setToast} />;
                   default: return <div className="p-6 text-xl font-bold">Page "{pageId}" non trouvée</div>;
                 }
               })()}

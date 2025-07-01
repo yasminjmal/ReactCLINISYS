@@ -19,19 +19,21 @@ import logoClinisys from '../../assets/images/logoTRANSPARENT.png';
 
 
 const menuItems = [
-    { type: 'header', label: 'MENU PRINCIPAL' },
-    { id: 'home', label: 'HOME', icon: Home },
-    { id: 'dashboards', label: 'DASHBOARDS', icon: LayoutDashboard },
-    { id: 'tickets_management', label: 'TICKETS', icon: Ticket},
-    {
-      id: 'equipes_consulter_equipes',
-      label: 'EQUIPES',
-      icon: Users,
-    },
-    { id: 'utilisateurs_consulter_utilisateurs', label: 'UTILISATEURS', icon: UserCircle },
-    { id: 'modules_consulter_modules', label: 'MODULES', icon: Package },
-    { id: 'postes_consulter_postes', label: 'POSTES', icon: Briefcase },
-    { id: 'clients_consulter_clients', label: 'CLIENTS', icon: Users },
+  { type: 'header', label: 'MENU PRINCIPAL' },
+  { id: 'home', label: 'HOME', icon: Home },
+  { id: 'dashboards', label: 'DASHBOARDS', icon: LayoutDashboard },
+  { id: 'tickets_management', label: 'TICKETS', icon: Ticket },
+  {
+    id: 'equipes_consulter_equipes',
+    label: 'EQUIPES',
+    icon: Users,
+  },
+  { id: 'utilisateurs_consulter_utilisateurs', label: 'UTILISATEURS', icon: UserCircle },
+  { id: 'modules_consulter_modules', label: 'MODULES', icon: Package },
+  { id: 'postes_consulter_postes', label: 'POSTES', icon: Briefcase },
+  { id: 'clients_consulter_clients', label: 'CLIENTS', icon: Users },
+  { id: 'discussions', icon: MessageSquare }, // <--- AJOUTEZ CETTE LIGNE
+
 ];
 
 
@@ -42,8 +44,8 @@ const profileBackgroundImage = 'https://images.unsplash.com/photo-1531306728370-
 const SidebarAdmin = ({
   activePage,
   setActivePage,
-  isSidebarOpen, 
-  isSidebarPinned, 
+  isSidebarOpen,
+  isSidebarPinned,
   currentUser,
 }) => {
   const [openDropdownKey, setOpenDropdownKey] = useState(null);
@@ -84,7 +86,7 @@ const SidebarAdmin = ({
   const userProfilePic = currentUser?.photo ? `data:image/jpeg;base64,${currentUser.photo}` : defaultUserProfileImage;
 
   const getBadgeColor = (color) => {
-    switch(color) {
+    switch (color) {
       case 'blue': return 'bg-blue-500 text-white';
       case 'green': return 'bg-green-500 text-white';
       default: return 'bg-slate-500 text-white';
@@ -99,15 +101,15 @@ const SidebarAdmin = ({
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
       `}
     >
-        <div className="flex-shrink-0">
-            <div className="h-16 flex items-center px-4 space-x-2 border-b border-black/10">
-                <img 
-                    src={logoClinisys} 
-                    alt="Logo CliniSYS" 
-                    className="h-15 w-auto object-contain" // Ajustez la hauteur (h-X) et la largeur (w-auto) selon votre logo
-                />
-            </div>
+      <div className="flex-shrink-0">
+        <div className="h-16 flex items-center px-4 space-x-2 border-b border-black/10">
+          <img
+            src={logoClinisys}
+            alt="Logo CliniSYS"
+            className="h-15 w-auto object-contain" // Ajustez la hauteur (h-X) et la largeur (w-auto) selon votre logo
+          />
         </div>
+      </div>
       <nav className="flex-grow p-2 space-y-1 overflow-y-auto">
         {menuItems.map((item, index) => {
           if (item.type === 'header') {
@@ -117,16 +119,16 @@ const SidebarAdmin = ({
               </div>
             );
           }
-          
+
           const isItemActive = isActive(item);
           return (
             <div key={item.id}>
               <button
                 onClick={() => handleMainMenuClick(item)}
                 className={`group w-full flex items-center justify-between space-x-3 px-3 py-2.5 rounded-md text-sm transition-colors duration-200
-                  ${ isItemActive
-                      ? 'bg-blue-500/20 text-blue-800 font-semibold border-l-4 border-blue-500'
-                      : 'text-slate-600 hover:bg-blue-500/10 hover:text-slate-800'
+                  ${isItemActive
+                    ? 'bg-blue-500/20 text-blue-800 font-semibold border-l-4 border-blue-500'
+                    : 'text-slate-600 hover:bg-blue-500/10 hover:text-slate-800'
                   }`
                 }
                 style={isItemActive ? { paddingLeft: '8px' } : {}}
@@ -136,14 +138,14 @@ const SidebarAdmin = ({
                   <span>{item.label}</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                    {item.badge && (
-                      <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${getBadgeColor(item.badge.color)}`}>
-                        {item.badge.text}
-                      </span>
-                    )}
-                    {item.subItems && (
-                      openDropdownKey === item.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />
-                    )}
+                  {item.badge && (
+                    <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${getBadgeColor(item.badge.color)}`}>
+                      {item.badge.text}
+                    </span>
+                  )}
+                  {item.subItems && (
+                    openDropdownKey === item.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />
+                  )}
                 </div>
               </button>
               {/* Sous-menu */}
@@ -156,11 +158,10 @@ const SidebarAdmin = ({
                         key={subItem.id}
                         href="#"
                         onClick={(e) => { e.preventDefault(); handleSubMenuClick(subItem); }}
-                        className={`group flex items-center space-x-3 py-2 px-3 rounded-md text-xs font-medium transition-colors duration-150 ${
-                          isSubItemActive
+                        className={`group flex items-center space-x-3 py-2 px-3 rounded-md text-xs font-medium transition-colors duration-150 ${isSubItemActive
                             ? 'text-blue-600 font-semibold'
                             : 'text-slate-500 hover:text-slate-800'
-                        }`}
+                          }`}
                       >
                         <div className={`w-1.5 h-1.5 rounded-full transition-colors ${isSubItemActive ? 'bg-blue-500' : 'bg-slate-400 group-hover:bg-slate-500'}`}></div>
                         <span>{subItem.label}</span>
@@ -174,19 +175,19 @@ const SidebarAdmin = ({
         })}
       </nav>
 
-        <div className="flex-shrink-0 p-2 border-t border-black/10">
-            <div className="flex items-center justify-around">
-                <button className="p-2 rounded-md text-slate-500 hover:bg-blue-500/10 hover:text-blue-700 transition-colors">
-                    <MessageSquare size={20} />
-                </button>
-                <button className="p-2 rounded-md text-slate-500 hover:bg-blue-500/10 hover:text-blue-700 transition-colors">
-                    <HelpCircle size={20} />
-                </button>
-                <button className="p-2 rounded-md text-slate-500 hover:bg-blue-500/10 hover:text-blue-700 transition-colors">
-                    <Phone size={20} />
-                </button>
-            </div>
+      <div className="flex-shrink-0 p-2 border-t border-black/10">
+        <div className="flex items-center justify-around">
+          <button className="p-2 rounded-md text-slate-500 hover:bg-blue-500/10 hover:text-blue-700 transition-colors">
+            <MessageSquare size={20} />
+          </button>
+          <button className="p-2 rounded-md text-slate-500 hover:bg-blue-500/10 hover:text-blue-700 transition-colors">
+            <HelpCircle size={20} />
+          </button>
+          <button className="p-2 rounded-md text-slate-500 hover:bg-blue-500/10 hover:text-blue-700 transition-colors">
+            <Phone size={20} />
+          </button>
         </div>
+      </div>
 
     </aside>
   );
