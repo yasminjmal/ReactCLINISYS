@@ -2,7 +2,7 @@
 import React from 'react';
 import { Tag as TagIcon, Eye, User, Clock, CheckCircle, XCircle } from 'lucide-react';
 
-const TicketSuiviRow = ({ ticket }) => {
+const TicketSuiviRow = ({ ticket , onModifyAssign}) => {
     
   const getStatusStyling = (status) => {
     switch (status) {
@@ -43,6 +43,14 @@ const TicketSuiviRow = ({ ticket }) => {
             <Clock size={14} className="mr-2 text-slate-400"/>
             <span>{dateModificationFormatted}</span>
         </div>
+      </td>
+        <td className="text-center px-4 py-3">
+        <button
+          className="btn btn-xs btn-primary-outline"
+          onClick={() => onModifyAssign(ticket)}
+        >
+          Modifier
+        </button>
       </td>
       <td className={`${cellClass} text-center`}>
         <button className="p-2 text-slate-500 hover:bg-slate-200 rounded-full" title="Voir les détails">

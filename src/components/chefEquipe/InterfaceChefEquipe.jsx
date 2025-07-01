@@ -120,6 +120,19 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
     }
   };
 
+const handleReassignTicket = async (ticketId, newUser) => {
+  try {
+    await ticketService.updateTicket(ticketId, {
+      idUtilisateur: newUser ? newUser.id : 0 // ✅ null, not 0
+    });
+    showTemporaryMessage('success', newUser ? `Ticket réassigné à ${newUser.prenom}.` : 'Affectation retirée.');
+    fetchAllData(currentUserState.id);
+  } catch (error) {
+    showTemporaryMessage('error', 'Erreur lors de la réassignation.');
+  }
+};
+
+
   const handleRefuserTicketParChef = async (ticketId, motif) => {
     try {
       await ticketService.updateTicket(ticketId, {
@@ -154,9 +167,10 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
               onRefuserTicketParChef={handleRefuserTicketParChef}
           />;
     case 'suivi_affectations_chef':
-      return <SuiviAffectationsChefPage 
-              ticketsAssignesParChef={ticketsAssignesParChefPourSuivi} 
-          />;
+      return <SuiviAffectationsChefPage
+  ticketsAssignesParChef={ticketsAssignesParChefPourSuivi}
+  onReassignTicket={handleReassignTicket}
+/>;
     case 'ticket_refuse': {
       return <TicketsRefuse ticketRefuse={ticketsRefuseParChefPourSuivi} />;
     }
