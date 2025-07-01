@@ -1,60 +1,40 @@
-// src/pages/Admin/Dashboards/DashboardPage.jsx
+// src/components/admin/Dashboards/DashboardPage.jsx
 import React from 'react';
 import TicketsByStatusDonutChart from './TicketsByStatusDonutChart';
 import SubscriptionsHourlyBarChart from './SubscriptionsHourlyBarChart';
 import LiveFeedsAreaChart from './LiveFeedsAreaChart';
-import EventsCalendar from './EventsCalendar';
-import GlobalTicketStatsWidget from './GlobalTicketStatsWidget';
 import ActiveTicketsByCategoryBarChart from './ActiveTicketsByCategoryBarChart';
-import TeamPerformanceChart from './TeamPerformanceChart';
-import OverdueTicketsList from './OverdueTicketsList';
 import ClientMapWidget from './ClientMapWidget';
 
 const DashboardPage = () => {
   return (
     <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
-      <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Tableau de Bord Global</h1>
-      <GlobalTicketStatsWidget />
+      <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Tableaux de Bord Analytiques</h1>
+      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Exemple d'intégration du graphique en beignet */}
+        {/* Graphique en beignet: Tickets par Statut */}
         <TicketsByStatusDonutChart />
         
-        {/* Exemple d'intégration du graphique en aires */}
+        {/* Graphique en aires: Flux en direct */}
         <LiveFeedsAreaChart />
       </div>
 
       <div className="grid grid-cols-1 gap-6 mb-6">
-        {/* Exemple d'intégration du graphique à barres */}
+        {/* Graphique à barres: Abonnements horaires (ou autre métrique horaire) */}
         <SubscriptionsHourlyBarChart />
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        {/* Exemple d'intégration du calendrier */}
-        <EventsCalendar />
-      </div>
       <div className="grid grid-cols-1 gap-6 mb-6">
-        {/* Utilisation du composant renommé */}
+        {/* Tickets actifs par catégorie */}
         <ActiveTicketsByCategoryBarChart />
       </div>
+      
       <div className="grid grid-cols-1 gap-6 mb-6">
-        <TeamPerformanceChart />
-      </div>
-      <div className="grid grid-cols-1 gap-6 mb-6">
-        <OverdueTicketsList />
-      </div>
-      <div className="grid grid-cols-1 gap-6 mb-6">
+        {/* Widget carte client */}
         <ClientMapWidget />
       </div>
 
-
-      {/* Tu peux ajouter d'autres métriques comme dans la capture (My Tasks, Transferred, etc.) ici */}
-      {/* <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
-        <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-4">Autres Métriques</h3>
-        <p>My Tasks: 130 / 500</p>
-        <p>Transferred: 440 TB</p>
-        <p>Bugs Squashed: 77%</p>
-        <p>User Testing: 7 days</p>
-      </div> */}
+      {/* Tu peux ajouter d'autres métriques ou graphiques ici */}
     </div>
   );
 };

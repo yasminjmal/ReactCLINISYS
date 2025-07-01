@@ -1,76 +1,63 @@
-// src/pages/Admin/Dashboards/TicketsByStatusDonutChart.jsx
+// src/components/admin/Dashboards/TicketsByStatusDonutChart.jsx (Exemple adapté)
 import React, { useState, useEffect } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import dashboardService from '../../../services/dashboardService';
+import { Doughnut } from 'react-chartjs-2';
+import DashboardService from '../../../services/dashboardService'; // Assurez-vous du bon chemin
 
-const COLORS_MAP = {
-    'En_attente': '#FFBB28', // Jaune
-    'En_cours': '#00C49F',   // Cyan/Turquoise
-    'Accepte': '#82CA9D',    // Vert clair
-    'Termine': '#0088FE',    // Bleu
-    'Refuse': '#FF8042',     // Orange
-    // Assurez-vous que ces clés correspondent exactement aux noms de vos enums Status du backend
-    // Ajoutez d'autres statuts si nécessaire
-};
-
-const TicketsByStatusDonutChart = () => {
-  const [data, setData] = useState([]);
+const TicketsByStatusDonutChart = ({ period }) => { // Accepte la prop 'period'
+  const [chartData, setChartData] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchTicketStats = async () => {
+    const fetchTicketStatusData = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        setLoading(true);
-        // Appel à votre service pour récupérer les données réelles
-        const rawData = await dashboardService.getTicketCountsByStatus(); // Attendu: { "En_attente": 10, ... }
+        // Utilisez la prop 'period' lors de l'appel au service
+        const data = await DashboardService.getTicketsByStatus(period); 
+        
+        // Supposons que 'data' est un tableau d'objets { status: "Ouvert", count: 15 }
+        const labels = data.map(item => item.status);
+        const counts = data.map(item => item.count);
+        const backgroundColors = [
+          'rgba(255, 99, 132, 0.6)', // Rouge
+          'rgba(54, 162, 235, 0.6)', // Bleu
+          'rgba(255, 206, 86, 0.6)', // Jaune
+          'rgba(75, 192, 192, 0.6)', // Vert
+          'rgba(153, 102, 255, 0.6)',// Violet
+        ];
 
-        // Formater les données pour Recharts
-        const formattedData = Object.keys(rawData).map((statusKey) => ({
-          name: statusKey.replace('_', ' '), // Formate les noms (ex: "En_attente" -> "En attente")
-          value: rawData[statusKey],
-          fill: COLORS_MAP[statusKey] || '#CCCCCC' // Utilise la couleur du map, ou gris par défaut
-        }));
-        setData(formattedData);
+        setChartData({
+          labels: labels,
+          datasets: [{
+            data: counts,
+            backgroundColor: backgroundColors.slice(0, labels.length),
+            borderColor: backgroundColors.map(color => color.replace('0.6', '1')),
+            borderWidth: 1,
+          }],
+        });
       } catch (err) {
-        console.error("Erreur lors de la récupération des stats de tickets par statut:", err);
-        setError("Impossible de charger les statistiques par statut.");
+        setError("Erreur lors du chargement des données des tickets par statut.");
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTicketStats();
-  }, []);
+    fetchTicketStatusData();
+  }, [period]); // Déclenchez l'effet lorsque 'period' change
 
-  if (loading) return <div className="text-center py-4 text-slate-600 dark:text-slate-400">Chargement des statistiques...</div>;
-  if (error) return <div className="text-center py-4 text-red-500">{error}</div>;
-  if (data.length === 0) return <div className="text-center py-4 text-slate-600 dark:text-slate-400">Aucune donnée de ticket par statut disponible.</div>;
+  if (loading) return <div className="p-4">Chargement du graphique...</div>;
+  if (error) return <div className="p-4 text-red-500">{error}</div>;
 
   return (
     <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
-      <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-4">Répartition des Tickets par Statut</h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <PieChart>
-          <Pie
-            data={data}
-            cx="50%"
-            cy="50%"
-            innerRadius={60}
-            outerRadius={90}
-            paddingAngle={5}
-            dataKey="value"
-            label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-            animationDuration={500}
-          >
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.fill} />
-            ))}
-          </Pie>
-          <Tooltip formatter={(value, name) => [`${value} tickets`, name]}/> {/* Amélioration du Tooltip */}
-          <Legend />
-        </PieChart>
-      </ResponsiveContainer>
+      <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-4">Tickets par Statut ({period === 'all' ? 'Toutes Périodes' : period})</h3>
+      {chartData.labels && chartData.labels.length > 0 ? (
+        <Doughnut data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
+      ) : (
+        <p className="text-slate-500 dark:text-slate-400">Aucune donnée disponible pour cette période.</p>
+      )}
     </div>
   );
 };

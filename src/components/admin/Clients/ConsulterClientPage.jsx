@@ -247,7 +247,7 @@ const DropdownMenuItem = ({ children, onClick, isSelected, disabled }) => (
 const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => {
     // Ce dictionnaire permet de mapper les clés de l'objet de données aux noms d'affichage
     const columnNames = {
-        nomComplet: "Nom Complet",
+        nomComplet: "Nom Client",
         regionName: "Région", // La clé est bien 'regionName'
         email: "Email",
         adress: "Adresse",
@@ -262,7 +262,7 @@ const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => {
                 {/* On itère sur les clés de columnNames pour garder un ordre défini */}
                 {Object.keys(columnNames).map((key) =>
                     visibleColumns[key] && ( // On utilise la clé pour vérifier la visibilité
-                        <th key={key} scope="col" className="px-6 py-3 font-sans text-left separateur-colonne-leger">
+                        <th key={key} scope="col" className="px-6 py-1 font-sans text-left separateur-colonne-leger">
                             {key === 'dateCreation' ? (
                                 <button onClick={() => handleSort('dateCreation')} className="flex items-center justify-between w-full hover:text-blue-200">
                                     <span>{columnNames[key]}</span>

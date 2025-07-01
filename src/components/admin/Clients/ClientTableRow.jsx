@@ -26,7 +26,6 @@ const ClientTableRow = ({ client, onEdit, onDelete, visibleColumns, highlightedC
             {visibleColumns.nomComplet && (
                 <td scope="row" className="px-6 py-1 text-slate-800 dark:text-slate-100 whitespace-nowrap separateur-colonne-leger">
                     <div className="font-medium">{client.nomComplet}</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">{client.email || 'N/A'}</div>
                 </td>
             )}
             {visibleColumns.regionName && (

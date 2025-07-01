@@ -106,10 +106,67 @@ const dashboardService = {
             console.error("Erreur lors de la récupération des emplacements clients:", error);
             throw error;
         }
-    }
+    },
+    getStatsByPeriod: async (periodType = 'all', startDate = null, endDate = null) => {
+        try {
+            const response = await api.get(`/api/dashboard/stats`, {
+                params: {
+                    period: periodType, // ex: 'day', 'week', 'month', 'year', 'all'
+                    startDate, // pour des périodes personnalisées
+                    endDate,   // pour des périodes personnalisées
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error("Erreur lors de la récupération des stats par période:", error);
+            throw error;
+        }
+    },
 
-    
-    
+    // Vous pouvez aussi avoir des méthodes plus spécifiques si vous le souhaitez
+    getDailyStats: async () => {
+        return await DashboardService.getStatsByPeriod('day');
+    },
+    getWeeklyStats: async () => {
+        return await DashboardService.getStatsByPeriod('week');
+    },
+    getMonthlyStats: async () => {
+        return await DashboardService.getStatsByPeriod('month');
+    },
+    getYearlyStats: async () => {
+        return await DashboardService.getStatsByPeriod('year');
+    },
+    getAllTimeStats: async () => {
+        return await DashboardService.getStatsByPeriod('all');
+    },
+    // ... autres méthodes existantes (ex: pour les tickets par statut, etc.)
+    getTicketsByStatus: async (periodType = 'all', startDate = null, endDate = null) => {
+        try {
+            const response = await api.get(`/api/dashboard/tickets-by-status`, {
+                params: { period: periodType, startDate, endDate }
+            });
+            return response.data;
+        } catch (error) {
+            console.error("Erreur lors de la récupération des tickets par statut:", error);
+            throw error;
+        }
+    },
+
+    // Ajoutez des méthodes similaires pour LiveFeedsAreaChart, SubscriptionsHourlyBarChart, etc.
+    getLiveFeedsData: async (periodType = 'all', startDate = null, endDate = null) => {
+        try {
+            const response = await api.get(`/api/dashboard/live-feeds`, {
+                params: { period: periodType, startDate, endDate }
+            });
+            return response.data;
+        } catch (error) {
+            console.error("Erreur lors de la récupération des flux en direct:", error);
+            throw error;
+        }
+    },
+
+
+
 };
 
 export default dashboardService;    
