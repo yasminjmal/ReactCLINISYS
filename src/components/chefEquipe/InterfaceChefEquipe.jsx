@@ -16,6 +16,7 @@ import TicketsATraiterChefPage from './TicketsATraiterChefPage';
 import SuiviAffectationsChefPage from './SuiviAffectationsChefPage';
 import ConsultProfilPage from '../admin/profil/ConsultProfilPage'; 
 import { Menu as MenuIconLucide, XCircle as XCircleLucide } from 'lucide-react';
+import TicketsRefuse from './TicketsRefuse';
 
 const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
   const [activePage, setActivePage] = useState('tickets_a_traiter_chef');
@@ -45,6 +46,7 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
       setAllEquipes(equipesRes.data || []);
       setAllTickets(Array.isArray(ticketsRes) ? ticketsRes : []);
       setAllModules(modulesRes.data || []);
+      
     } catch (error) {
       console.error("Erreur de chargement des données:", error);
       showTemporaryMessage('error', 'Impossible de charger les données.');
@@ -83,16 +85,17 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
   // Règle 1: Le chef voit tous les tickets de ses modules, SAUF ceux avec le statut "En_attente"
   const ticketsVisiblesPourChef = useMemo(() => {
     if (idsModulesGeresParLeChef.length === 0 || !Array.isArray(allTickets)) return [];
+   
     return allTickets.filter(ticket =>
       ticket.idModule &&
-      idsModulesGeresParLeChef.includes(ticket.idModule.id) &&
-      ticket.statue !== 'En_attente' // Respect strict de votre enum
+      idsModulesGeresParLeChef.includes(ticket.idModule.id)
     );
   }, [allTickets, idsModulesGeresParLeChef]);
 
+
   // Règle 2: Les tickets "À Traiter" sont les tickets visibles qui ne sont pas encore assignés
   const ticketsPourChefATraiter = useMemo(() => {
-    return ticketsVisiblesPourChef.filter(ticket => !ticket.idUtilisateur);
+    return ticketsVisiblesPourChef.filter(ticket => !ticket.idUtilisateur && ticket.statue !== 'Refuse');
   }, [ticketsVisiblesPourChef]);
 
   // Règle 3: Les tickets "en Suivi" sont les tickets visibles qui sont déjà assignés
@@ -100,6 +103,9 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
     return ticketsVisiblesPourChef.filter(ticket => !!ticket.idUtilisateur);
   }, [ticketsVisiblesPourChef]);
 
+  const ticketsRefuseParChefPourSuivi = useMemo(() => {
+    return ticketsVisiblesPourChef.filter(ticket => ticket.statue=="Refuse");
+  }, [ticketsVisiblesPourChef]);
   // --- Actions ---
   const handleAssignerTicketAEmploye = async (ticketId, employe) => {
     try {
@@ -118,7 +124,8 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
     try {
       await ticketService.updateTicket(ticketId, {
         statue: 'Refuse', // Passage au statut "Refuse"
-        description: motif // Assurez-vous que votre backend gère ce champ
+        description: motif ,// Assurez-vous que votre backend gère ce champ
+        priorite: 'Basse'
       });
       showTemporaryMessage('info', `Ticket refusé.`);
       fetchAllData(currentUserState.id);
@@ -131,30 +138,33 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
   const toggleSidebar = () => setIsSidebarOpen(p => !p);
 
   const renderActivePageChef = () => {
-    if (isLoading) {
-        return <div className="p-6 text-center text-slate-500">Chargement...</div>;
+  if (isLoading) {
+    return <div className="p-6 text-center text-slate-500">Chargement...</div>;
+  }
+  switch (activePage) {
+    case 'home_chef': 
+      return <div className="p-6"><h1 className="text-2xl">Tableau de Bord</h1></div>;
+    case 'mes_equipes_chef': 
+      return <MesEquipesChefPage equipesChef={equipesDuChefConnecte} allModules={allModules} />;
+    case 'tickets_a_traiter_chef':
+      return <TicketsATraiterChefPage 
+              ticketsNonAssignes={ticketsPourChefATraiter}
+              equipesDuChef={equipesDuChefConnecte} 
+              onAssignerTicketAEmploye={handleAssignerTicketAEmploye}
+              onRefuserTicketParChef={handleRefuserTicketParChef}
+          />;
+    case 'suivi_affectations_chef':
+      return <SuiviAffectationsChefPage 
+              ticketsAssignesParChef={ticketsAssignesParChefPourSuivi} 
+          />;
+    case 'ticket_refuse': {
+      return <TicketsRefuse ticketRefuse={ticketsRefuseParChefPourSuivi} />;
     }
-    switch (activePage) {
-      case 'home_chef': 
-        return <div className="p-6"><h1 className="text-2xl">Tableau de Bord</h1></div>;
-      case 'mes_equipes_chef': 
-        return <MesEquipesChefPage equipesChef={equipesDuChefConnecte} allModules={allModules} />;
-      case 'tickets_a_traiter_chef':
-        return <TicketsATraiterChefPage 
-                ticketsNonAssignes={ticketsPourChefATraiter}
-                equipesDuChef={equipesDuChefConnecte} 
-                onAssignerTicketAEmploye={handleAssignerTicketAEmploye}
-                onRefuserTicketParChef={handleRefuserTicketParChef}
-            />;
-      case 'suivi_affectations_chef':
-        return <SuiviAffectationsChefPage 
-                ticketsAssignesParChef={ticketsAssignesParChefPourSuivi} 
-            />;
-      // ... Autres pages
-      default: 
-        return <div className="p-6">Page non trouvée.</div>;
-    }
-  };
+    default: 
+      return <div className="p-6">Page non trouvée.</div>;
+  }
+};
+
 
   return (
     <div className={`flex h-screen bg-slate-100 dark:bg-slate-950 ${isDarkMode ? 'dark' : ''}`}>

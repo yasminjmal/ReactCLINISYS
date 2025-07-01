@@ -35,7 +35,33 @@ const PriorityBadge = ({ priority }) => {
     </span>
   );
 };
+const formatDate = (dateInput) => {
+    if (!dateInput) return 'N/A';
 
+    let date;
+
+    if (Array.isArray(dateInput) && dateInput.length >= 3) {
+        const [year, month, day, hours = 0, minutes = 0, seconds = 0] = dateInput;
+        date = new Date(year, month - 1, day, hours, minutes, seconds);
+    } else {
+        // ISO 8601 string like "2025-07-04T00:00:00"
+        date = new Date(dateInput);
+    }
+
+    if (isNaN(date.getTime())) {
+        console.error('Invalid date input:', dateInput);
+        return 'Date invalide';
+    }
+
+    return date.toLocaleString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    });
+};
 
 const StatusBadge = ({ status }) => {
   const normalizedStatus = status?.toUpperCase();
@@ -151,12 +177,12 @@ const TicketTableRow = ({
             )}
             {visibleColumns.dateEcheance && (
                 <td className="px-2 py-1 text-sm text-slate-500 separateur-colonne-leger">
-                    {formatDateFromArray(ticket.date_echeance)}
+                    {formatDate(ticket.date_echeance)}
                 </td>
             )}
             {visibleColumns.dateCreation && (
                 <td className="px-2 py-1 text-sm text-slate-500 separateur-colonne-leger">
-                    {formatDateFromArray(ticket.dateCreation)}
+                    {formatDate(ticket.dateCreation)}
                 </td>
             )}
             {visibleColumns.priorite &&(

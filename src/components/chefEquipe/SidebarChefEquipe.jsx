@@ -1,7 +1,7 @@
 // src/components/chefEquipe/SidebarChefEquipe.jsx
 import React from 'react';
 // Icônes mises à jour et X pour fermer
-import { Home, Users, Briefcase, UserCheck, ShieldCheck, ClipboardEdit, ListChecks, X } from 'lucide-react'; 
+import { Home, Users, Briefcase, UserCheck, ShieldCheck, ClipboardEdit, ListChecks, X ,BadgeX } from 'lucide-react'; 
 
 // Logo (optionnel, à remplacer par votre logo)
 // import logoClinisys from '../../assets/images/logo-clinisys-transparent.png'; 
@@ -12,6 +12,7 @@ const SidebarChefEquipe = ({ activePage, setActivePage, isSidebarOpen, toggleSid
     { id: 'mes_equipes_chef', label: 'Mes Équipes', icon: Users }, // Pour voir ses équipes, membres, modules
     { id: 'tickets_a_traiter_chef', label: 'Tickets à Traiter', icon: ClipboardEdit }, // Tickets acceptés par admin, à assigner/refuser
     { id: 'suivi_affectations_chef', label: 'Suivi des Affectations', icon: ListChecks }, // Suivi des tickets assignés aux employés
+    {id:'ticket_refuse',label:'Tickets Refusés',icon: BadgeX}
     // { id: 'valider_conges_absences_chef', label: 'Congés & Absences', icon: CalendarCheck }, // Si vous souhaitez ajouter cette fonctionnalité plus tard
   ];
 
@@ -40,6 +41,7 @@ const SidebarChefEquipe = ({ activePage, setActivePage, isSidebarOpen, toggleSid
             <X size={24} /> 
           </button>
         </div>
+        
 
         <nav className="flex-1 py-4 space-y-1.5 overflow-y-auto" style={{height: 'calc(100% - 4rem)'}}>
           {menuItemsChef.map(item => (

@@ -63,6 +63,7 @@ const TicketsATraiterChefPage = ({
                 <th scope="col" className={tableHeaderClass}>Titre / Client</th>
                 <th scope="col" className={tableHeaderClass}>Priorité</th>
                 <th scope="col" className={tableHeaderClass}>Module</th>
+                <th scope="col" className={tableHeaderClass}>statut</th>
                 <th scope="col" className={tableHeaderClass}>Demandeur</th>
                 <th scope="col" className={tableHeaderClass}>Créé le</th>
                 <th scope="col" className={`${tableHeaderClass} text-center`}>Actions</th>

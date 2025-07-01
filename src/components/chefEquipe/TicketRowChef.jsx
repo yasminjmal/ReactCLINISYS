@@ -57,6 +57,7 @@ const TicketRowChef = ({ ticket, onAssigner, onRefuser, equipeMembres }) => {
         <td className={cellClass}>
           {ticket.idModule?.designation || <span className="text-slate-400 italic">Non spécifié</span>}
         </td>
+        <td className={cellClass}>{ticket.statue || 'N/A'}</td>
         <td className={cellClass}>{demandeurNom}</td>
         <td className={cellClass}>{dateCreationFormatted}</td>
         <td className={`${cellClass} text-center`}>

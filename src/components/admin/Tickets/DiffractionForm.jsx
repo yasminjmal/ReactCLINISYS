@@ -1,37 +1,29 @@
 // src/components/admin/Tickets/DiffractionForm.jsx
 import React, { useState } from 'react';
-import { PlusCircle, X, Send, Trash2, AlertTriangle, CheckCircle } from 'lucide-react'; // Importez AlertTriangle et CheckCircle pour ToastMessage
+import { PlusCircle, X, Send, Trash2, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import ticketService from '../../../services/ticketService';
 
-// Composant Spinner (réutilisé de TicketUpdateView ou de la page de gestion principale)
+// Composant Spinner
 const Spinner = () => <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>;
 
-// Composant de message de notification (Toast) - Réutilisé pour être cohérent
+// Composant Toast (identique, juste pour la complétude)
 const ToastMessage = ({ message, type, onClose }) => {
     let bgColor, icon, titleColor, borderColor;
     switch (type) {
         case 'success':
-            bgColor = 'bg-green-500';
-            titleColor = 'text-white';
-            borderColor = 'border-green-600';
+            bgColor = 'bg-green-500'; titleColor = 'text-white'; borderColor = 'border-green-600';
             icon = <CheckCircle size={20} className="text-white" />;
             break;
         case 'error':
-            bgColor = 'bg-red-500';
-            titleColor = 'text-white';
-            borderColor = 'border-red-600';
+            bgColor = 'bg-red-500'; titleColor = 'text-white'; borderColor = 'border-red-600';
             icon = <AlertTriangle size={20} className="text-white" />;
             break;
         case 'info':
-            bgColor = 'bg-blue-500';
-            titleColor = 'text-white';
-            borderColor = 'border-blue-600';
-            icon = <Info size={20} className="text-white" />; // Si Info n'est pas importé, ajoutez-le ici
+            bgColor = 'bg-blue-500'; titleColor = 'text-white'; borderColor = 'border-blue-600';
+            icon = <Info size={20} className="text-white" />;
             break;
         default:
-            bgColor = 'bg-gray-500';
-            titleColor = 'text-white';
-            borderColor = 'border-gray-600';
+            bgColor = 'bg-gray-500'; titleColor = 'text-white'; borderColor = 'border-gray-600';
             icon = null;
     }
 
@@ -46,31 +38,40 @@ const ToastMessage = ({ message, type, onClose }) => {
     );
 };
 
-
-const DiffractionForm = ({ parentTicket, onClose, onSuccess, setToast }) => { // showTemporaryMessage remplacé par setToast
-    const [subTickets, setSubTickets] = useState([{ titre: '', description: '', priorite: 'MOYENNE' }]);
+const DiffractionForm = ({ parentTicket, onClose, onSuccess, setToast }) => {
+    const [subTickets, setSubTickets] = useState([{ titre: '', description: '', priorite: 'Moyenne' }]);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const priorities = ["BASSE", "MOYENNE", "HAUTE"]; // Utiliser les majuscules pour correspondre à l'enum si c'est le cas
+    const priorities = ["Basse", "Moyenne", "Haute"];
 
     const handleAddSubTicket = () => {
-        setSubTickets([...subTickets, { titre: '', description: '', priorite: 'MOYENNE' }]);
+        setSubTickets([...subTickets, { titre: '', description: '', priorite: 'Moyenne' }]);
     };
     
-    const handleRemoveSubTicket = (indexToRemove) => { // Nouvelle fonction pour supprimer un sous-ticket
+    const handleRemoveSubTicket = (indexToRemove) => {
+        if (subTickets.length <= 1) return; // Empêche de supprimer le dernier champ
         setSubTickets(prev => prev.filter((_, index) => index !== indexToRemove));
     };
 
+    /**
+     * MODIFICATION : Mise à jour de l'état de manière immuable pour plus de stabilité.
+     * On crée une copie de l'objet à modifier au lieu de le muter directement.
+     */
     const handleSubTicketChange = (index, field, value) => {
-        const newSubTickets = [...subTickets];
-        newSubTickets[index][field] = value;
+        const newSubTickets = subTickets.map((ticket, i) => {
+            if (i === index) {
+                return { ...ticket, [field]: value };
+            }
+            return ticket;
+        });
         setSubTickets(newSubTickets);
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        e.preventDefault(); // Toujours appeler preventDefault dans un handler de formulaire
+        
         const ticketsToCreate = subTickets.filter(t => t.titre.trim() !== '');
         if (ticketsToCreate.length === 0) {
-            setToast({ type: 'error', message: 'Veuillez renseigner au moins un sous-ticket.' }); // Utilisation de setToast
+            setToast({ type: 'error', message: 'Veuillez renseigner au moins un sous-ticket.' });
             return;
         }
 
@@ -78,21 +79,24 @@ const DiffractionForm = ({ parentTicket, onClose, onSuccess, setToast }) => { //
         const creationPromises = ticketsToCreate.map(subTicket => {
             const payload = {
                 ...subTicket,
-                statue: 'EN_ATTENTE', // Statut par défaut pour un nouveau sous-ticket
+                // Assurez-vous que les valeurs correspondent à ce que le backend attend (ex: 'EN_ATTENTE')
+                priorite: subTicket.priorite,
+                statue: 'En_attente',
                 idParentTicket: parentTicket.id,
-                idClient: parentTicket.idClient?.id, // Assurez-vous que l'ID du client parent est bien passé
-                actif: true, // Par défaut actif
+                idClient: parentTicket.idClient?.id,
+                actif: true,
             };
+            console.log(payload)
             return ticketService.createTicket(payload);
         });
 
         try {
             await Promise.all(creationPromises);
-            onSuccess(); // Appelle la fonction de succès du parent (rafraîchit et ferme le modal)
-            setToast({ type: 'success', message: 'Sous-tickets créés avec succès !' }); // Utilisation de setToast
+            onSuccess(); // Appelle la fonction de succès du parent
+            // Le toast de succès est maintenant géré par le composant parent `TicketUpdateView`
         } catch (error) {
             console.error("Erreur lors de la création des sous-tickets:", error);
-            setToast({ type: 'error', message: error.response?.data?.message || "Une erreur est survenue lors de la création d'un ou plusieurs sous-tickets." }); // Utilisation de setToast
+            setToast({ type: 'error', message: error.response?.data?.message || "Erreur lors de la création des sous-tickets." });
         } finally {
             setIsSubmitting(false);
         }
@@ -105,38 +109,45 @@ const DiffractionForm = ({ parentTicket, onClose, onSuccess, setToast }) => { //
                     <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Créer des Sous-tickets</h3>
                     <button onClick={onClose} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400"><X size={20}/></button>
                 </div>
-                <form onSubmit={handleSubmit} className="flex-grow overflow-y-auto space-y-4 pr-2">
+                
+                {/* L'ID ici permet de lier le bouton de soumission externe au formulaire */}
+                <form id="diffraction-form" onSubmit={handleSubmit} className="flex-grow overflow-y-auto space-y-4 pr-2">
                     {subTickets.map((st, index) => (
                         <div key={index} className="p-4 border border-slate-200 dark:border-slate-700 rounded-md space-y-3 bg-slate-50 dark:bg-slate-800/50 relative">
-                            {subTickets.length > 1 && ( // Afficher le bouton de suppression seulement si plus d'un sous-ticket
+                            {subTickets.length > 1 && (
                                 <button type="button" onClick={() => handleRemoveSubTicket(index)} className="absolute top-2 right-2 p-1 text-red-500 hover:text-red-700 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30" title="Supprimer ce sous-ticket">
                                     <Trash2 size={16} />
                                 </button>
                             )}
                             <h4 className="font-semibold text-slate-700 dark:text-slate-200">Sous-ticket #{index + 1}</h4>
                             <div>
-                                <label className="form-label">Titre *</label> {/* Utilisation de form-label */}
-                                <input type="text" value={st.titre} onChange={(e) => handleSubTicketChange(index, 'titre', e.target.value)} className="form-input" placeholder="Titre du sous-ticket" required /> {/* Utilisation de form-input */}
-                            </div>
-                             <div>
-                                <label className="form-label">Description</label> {/* Utilisation de form-label */}
-                                <textarea value={st.description} onChange={(e) => handleSubTicketChange(index, 'description', e.target.value)} className="form-textarea" rows="2" placeholder="Description (optionnel)"></textarea> {/* Utilisation de form-textarea */}
+                                <label className="form-label">Titre *</label>
+                                <input type="text" value={st.titre} onChange={(e) => handleSubTicketChange(index, 'titre', e.target.value)} className="form-input" placeholder="Titre du sous-ticket" required />
                             </div>
                             <div>
-                                <label className="form-label">Priorité</label> {/* Utilisation de form-label */}
-                                <select value={st.priorite} onChange={(e) => handleSubTicketChange(index, 'priorite', e.target.value)} className="form-select"> {/* Utilisation de form-select */}
-                                    {priorities.map(p => <option key={p} value={p}>{p}</option>)}
+                                <label className="form-label">Description</label>
+                                <textarea value={st.description} onChange={(e) => handleSubTicketChange(index, 'description', e.target.value)} className="form-textarea" rows="2" placeholder="Description (optionnel)"></textarea>
+                            </div>
+                            <div>
+                                <label className="form-label">Priorité</label>
+                                <select value={st.priorite} onChange={(e) => handleSubTicketChange(index, 'priorite', e.target.value)} className="form-select">
+                                    {priorities.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()}</option>)}
                                 </select>
                             </div>
                         </div>
                     ))}
-                     <button type="button" onClick={handleAddSubTicket} className="btn btn-secondary w-full"> {/* Styles standardisés */}
+                    <button type="button" onClick={handleAddSubTicket} className="btn btn-secondary w-full">
                         <PlusCircle size={18} className="mr-2"/> Ajouter un autre sous-ticket
                     </button>
                 </form>
-                 <div className="flex-shrink-0 flex justify-end space-x-3 mt-6 pt-4 border-t border-slate-200 dark:border-slate-700"> {/* Styles standardisés */}
+
+                <div className="flex-shrink-0 flex justify-end space-x-3 mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
                     <button type="button" onClick={onClose} className="btn btn-secondary" disabled={isSubmitting}>Annuler</button>
-                    <button type="submit" onClick={handleSubmit} className="btn btn-primary" disabled={isSubmitting}> {/* Styles standardisés */}
+                    {/*
+                      * MODIFICATION : Le onClick a été retiré. Le type="submit" et l'attribut `form` suffisent.
+                      * Cela résout le problème du double appel de la fonction handleSubmit.
+                    */}
+                    <button type="submit" form="diffraction-form" className="btn btn-primary" disabled={isSubmitting}>
                         {isSubmitting ? <Spinner /> : <Send size={16} className="mr-2"/>}
                         {isSubmitting ? "Création..." : "Confirmer la Création"}
                     </button>
