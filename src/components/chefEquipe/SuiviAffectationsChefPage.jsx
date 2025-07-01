@@ -1,9 +1,11 @@
 // src/components/chefEquipe/SuiviAffectationsChefPage.jsx
+
 import React, { useState, useMemo } from 'react';
 import { Search, Info } from 'lucide-react';
-import TicketSuiviRow from './TicketSuiviRow'; // Importer le nouveau composant
+import TicketSuiviRow from './TicketSuiviRow';
 
-const SuiviAffectationsChefPage = ({ ticketsAssignesParChef, onReassignTicket }) => {
+// --- MODIFIÉ : On reçoit la nouvelle prop 'tousLesMembresDesEquipes' ---
+const SuiviAffectationsChefPage = ({ ticketsAssignesParChef, onReassignTicket, tousLesMembresDesEquipes }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({ statue: '', employeId: '' });
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -33,15 +35,23 @@ const SuiviAffectationsChefPage = ({ ticketsAssignesParChef, onReassignTicket })
   }, [ticketsAssignesParChef, searchTerm, filters]);
 
   const uniqueStatuts = useMemo(() => Array.from(new Set((ticketsAssignesParChef || []).map(t => t.statue).filter(Boolean))), [ticketsAssignesParChef]);
+  
+  // --- MODIFIÉ : 'uniqueEmployes' utilise maintenant la prop complète 'tousLesMembresDesEquipes' pour les filtres et la modale ---
   const uniqueEmployes = useMemo(() => {
     const employesMap = new Map();
+    // On peuple d'abord avec tous les membres possibles pour s'assurer que tout le monde est dans la liste
+    (tousLesMembresDesEquipes || []).forEach(membre => {
+        employesMap.set(membre.id, membre);
+    });
+    // On s'assure que les employés déjà assignés (même s'ils sont inactifs maintenant) sont présents
     (ticketsAssignesParChef || []).forEach(t => {
-      if (t.idUtilisateur) {
+      if (t.idUtilisateur && !employesMap.has(t.idUtilisateur.id)) {
         employesMap.set(t.idUtilisateur.id, t.idUtilisateur);
       }
     });
     return Array.from(employesMap.values());
-  }, [ticketsAssignesParChef]);
+  }, [ticketsAssignesParChef, tousLesMembresDesEquipes]);
+
 
   const handleFilterChange = (e) => setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -59,6 +69,7 @@ const SuiviAffectationsChefPage = ({ ticketsAssignesParChef, onReassignTicket })
           </select>
           <select name="employeId" value={filters.employeId} onChange={handleFilterChange} className="form-select">
             <option value="">Tous les employés</option>
+            {/* Utilise bien la liste complète maintenant */}
             {uniqueEmployes.map(emp => <option key={emp.id} value={emp.id}>{emp.prenom} {emp.nom}</option>)}
           </select>
         </div>
@@ -73,7 +84,7 @@ const SuiviAffectationsChefPage = ({ ticketsAssignesParChef, onReassignTicket })
               <th scope="col" className={tableHeaderClass}>Statut</th>
               <th scope="col" className={tableHeaderClass}>Assigné à</th>
               <th scope="col" className={tableHeaderClass}>Dernière MàJ</th>
-              <th scope="col" className={`${tableHeaderClass} text-center`}>Détails</th>
+              <th scope="col" className={`${tableHeaderClass} text-center`}>Actions</th>
             </tr>
           </thead>
           {ticketsFiltres.length === 0 ? (
@@ -110,7 +121,9 @@ const SuiviAffectationsChefPage = ({ ticketsAssignesParChef, onReassignTicket })
               onChange={(e) => setNewAssigneeId(e.target.value)}
               className="form-select w-full mb-4"
             >
-              <option value="0">-- Aucun employé --</option>
+              {/* --- MODIFIÉ : Option pour désassigner --- */}
+              <option value="">-- Retirer l'affectation --</option>
+              {/* Utilise la liste complète d'employés */}
               {uniqueEmployes.map(emp => (
                 <option key={emp.id} value={emp.id}>
                   {emp.prenom} {emp.nom}
@@ -123,8 +136,16 @@ const SuiviAffectationsChefPage = ({ ticketsAssignesParChef, onReassignTicket })
               <button
                 className="btn btn-primary"
                 onClick={() => {
-                  const employeIdToSend = newAssigneeId ? parseInt(newAssigneeId) : 0; // ✅ 0 if no selection
-                  onReassignTicket(selectedTicket.id, employeIdToSend);
+                  // --- MODIFIÉ : Logique de soumission corrigée ---
+                  const employeIdNum = newAssigneeId ? parseInt(newAssigneeId) : null;
+                  // On trouve l'objet employé complet ou on envoie null
+                  const nouvelEmploye = employeIdNum 
+                    ? uniqueEmployes.find(emp => emp.id === employeIdNum) 
+                    : null;
+                  
+                  // On envoie bien l'objet employé complet ou null
+                  onReassignTicket(selectedTicket.id, nouvelEmploye);
+                  
                   setSelectedTicket(null);
                   setNewAssigneeId('');
                 }}
@@ -135,7 +156,6 @@ const SuiviAffectationsChefPage = ({ ticketsAssignesParChef, onReassignTicket })
           </div>
         </div>
       )}
-
     </div>
   );
 };
