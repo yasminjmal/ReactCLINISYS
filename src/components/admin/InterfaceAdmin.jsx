@@ -1,8 +1,9 @@
+// src/components/admin/InterfaceAdmin.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import utilisateurService from '../../services/utilisateurService';
 import aiSearchService from '../../services/aiSearchService';
-import ChatInterface from './../chat/ChatInterface'; // <--- AJOUTEZ CETTE LIGNE
+import ChatInterface from './../chat/ChatInterface'; 
 
 
 // Component Imports
@@ -21,7 +22,8 @@ import GoodbyePage from '../shared/GoodbyePage';
 import FloatingActionButton from '../../components/FloatingActionButton';
 import { ExportProvider } from '../../context/ExportContext';
 import DashboardPage from './Dashboards/DashboardPage';
-// import Toast from '../shared/Toast';
+import HomePage from './HomePage'; // Importez le nouveau composant HomePage
+
 
 const LoadingIndicator = () => (
   <div className="loading-indicator-container">
@@ -215,7 +217,8 @@ const AdminInterface = () => {
                 const pageId = typeof activePage === 'object' ? activePage.id : activePage;
                 const filter = typeof activePage === 'object' ? activePage.filter : null;
                 switch (pageId) {
-                  case 'home': return <DashboardPage />;
+                  case 'home': return <HomePage />; {/* Affiche la page d'accueil avec les stats clés */}
+                  case 'dashboards': return <DashboardPage />; {/* Affiche la page des tableaux de bord analytiques */}
                   case 'utilisateurs_consulter_utilisateurs': return <ConsulterUsersPage initialUsers={searchEntityType === 'utilisateur' ? searchResults : null} />;
                   case 'equipes_consulter_equipes': return <ConsulterEquipesPage users={usersData} initialEquipes={searchEntityType === 'equipe' ? searchResults : null} />;
                   case 'modules_consulter_modules': return <ConsulterModulesPage initialModules={searchEntityType === 'module' ? searchResults : null} />;
