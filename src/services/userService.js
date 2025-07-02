@@ -16,9 +16,13 @@ const getUserByLogin = async (login) => {
     throw error;
   }
 };
+const getAllUtilisateurs = () => {
+    return api.get('/utilisateurs');
+};
 
 const userService = {
   getUserByLogin,
+  getAllUtilisateurs,
 };
 
 export default userService;

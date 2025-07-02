@@ -230,7 +230,6 @@ const AdminInterface = () => {
                   default: return <div className="p-6 text-xl font-bold">Page "{pageId}" non trouvée</div>;
                 }
               })()}
-              <FloatingActionButton />
             </ExportProvider>
           )}
         </main>

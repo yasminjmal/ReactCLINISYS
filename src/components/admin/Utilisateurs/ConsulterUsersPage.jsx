@@ -381,6 +381,7 @@ const ConsulterUsersPage = ({ initialUsers = null }) => {
                     break;
             }
             console.log("Mise à jour de l'utilisateur avec ID:", id, "et données:", userData);
+            await utilisateurService.updateUtilisateur(id, userData, photoFile);
             setUserToEdit(null);
             await fetchUsers(); // Rafraîchit les données
             highlightUserRef.current = id;
