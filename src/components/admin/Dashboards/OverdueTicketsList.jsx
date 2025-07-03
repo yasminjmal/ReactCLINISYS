@@ -29,6 +29,34 @@ const OverdueTicketsList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const formatDate = (dateInput) => {
+    if (!dateInput) return 'N/A';
+
+    let date;
+
+    if (Array.isArray(dateInput) && dateInput.length >= 3) {
+        const [year, month, day, hours = 0, minutes = 0, seconds = 0] = dateInput;
+        date = new Date(year, month - 1, day, hours, minutes, seconds);
+    } else {
+        // ISO 8601 string like "2025-07-04T00:00:00"
+        date = new Date(dateInput);
+    }
+
+    if (isNaN(date.getTime())) {
+        console.error('Invalid date input:', dateInput);
+        return 'Date invalide';
+    }
+
+    return date.toLocaleString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    });
+};
+
   useEffect(() => {
     const fetchOverdueTickets = async () => {
       try {
@@ -84,7 +112,7 @@ const OverdueTicketsList = () => {
                   </td>
                   <td className="px-4 py-2"><PriorityBadge priority={ticket.priorite} /></td>
                   <td className="px-4 py-2 text-red-600 dark:text-red-400 font-semibold">
-                    <div className="flex items-center"><Clock size={14} className="mr-1"/>{formatDisplayDate(ticket.date_echeance)}</div>
+                    <div className="flex items-center"><Clock size={14} className="mr-1"/>{formatDate(ticket.date_echeance)}</div>
                   </td>
                 </tr>
               ))}

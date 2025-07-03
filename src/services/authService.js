@@ -24,7 +24,7 @@ const login = async (credentials) => {
 
       if (decodedPayload && decodedPayload.sub && decodedPayload.roles && decodedPayload.roles.length > 0) {
         // Extrait le premier rôle/autorité. Votre backend renvoie un tableau.
-        const authority = decodedPayload.roles[0].authority;
+        const authority = decodedPayload.roles[0];
         
         // Créer un objet utilisateur simplifié basé sur le token
         const user = {

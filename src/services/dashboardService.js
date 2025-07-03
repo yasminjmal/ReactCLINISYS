@@ -109,7 +109,7 @@ const dashboardService = {
     },
     getStatsByPeriod: async (periodType = 'all', startDate = null, endDate = null) => {
         try {
-            const response = await api.get(`/api/dashboard/stats`, {
+            const response = await api.get(`/dashboard/stats`, {
                 params: {
                     period: periodType, // ex: 'day', 'week', 'month', 'year', 'all'
                     startDate, // pour des périodes personnalisées
@@ -142,7 +142,7 @@ const dashboardService = {
     // ... autres méthodes existantes (ex: pour les tickets par statut, etc.)
     getTicketsByStatus: async (periodType = 'all', startDate = null, endDate = null) => {
         try {
-            const response = await api.get(`/api/dashboard/tickets-by-status`, {
+            const response = await api.get(`/dashboard/tickets-by-status`, {
                 params: { period: periodType, startDate, endDate }
             });
             return response.data;
@@ -155,7 +155,7 @@ const dashboardService = {
     // Ajoutez des méthodes similaires pour LiveFeedsAreaChart, SubscriptionsHourlyBarChart, etc.
     getLiveFeedsData: async (periodType = 'all', startDate = null, endDate = null) => {
         try {
-            const response = await api.get(`/api/dashboard/live-feeds`, {
+            const response = await api.get(`/dashboard/live-feeds`, {
                 params: { period: periodType, startDate, endDate }
             });
             return response.data;

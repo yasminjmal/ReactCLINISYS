@@ -7,6 +7,7 @@ import commentService from '../../../services/commentService';
 import documentService from '../../../services/documentService';
 import userService from '../../../services/userService';
 import utilisateurService from '../../../services/utilisateurService';
+import equipeService from '../../../services/equipeService';
 
 
 // Utilisation de la fonction de formatage de date universelle
@@ -87,7 +88,7 @@ const Spinner = () => <div className="animate-spin rounded-full h-6 w-6 border-b
 
 // Composant de message de notification (Toast) - Réutilisé pour afficher des messages temporaires
 const ToastMessage = ({ message, type, onClose }) => {
-    
+
     let bgColor, icon, titleColor, borderColor;
     switch (type) {
         case 'success':
@@ -892,7 +893,20 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
     const [error, setError] = useState(null); // Gère les erreurs
     const [isDiffractionModalOpen, setIsDiffractionModalOpen] = useState(false); // État de la modale de diffraction
     const [userId, setUserId] = useState(null); // ID de l'utilisateur connecté
-    const [isCommentsAndDocsCollapsed, setIsCommentsAndDocsCollapsed] = useState(false); // État de collapse des sections commentaires/documents
+    const [isCommentsAndDocsCollapsed, setIsCommentsAndDocsCollapsed] = useState(false);
+    const [allEquipes, setAllEquipes] = useState([]);
+    useEffect(() => {
+        const fetchEquipes = async () => {
+            try {
+                const equipesData = await equipeService.getAllEquipes();
+                setAllEquipes(equipesData.data || []);
+            } catch (err) {
+                console.error("Erreur lors de la récupération des équipes:", err);
+            }
+        };
+        fetchEquipes();
+    }, []);
+    console.log("All Equipes:", allEquipes);// État de collapse des sections commentaires/documents
 
     const descriptionTextAreaRef = useRef(null); // Référence pour le textarea de description
     useAutosizeTextArea(descriptionTextAreaRef, editableData?.description); // Applique le hook d'auto-redimensionnement
@@ -959,9 +973,9 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
         if (cleanedPayload.idModule && typeof cleanedPayload.idModule === 'object') cleanedPayload.idModule = cleanedPayload.idModule.id;
         if (cleanedPayload.idUtilisateur && typeof cleanedPayload.idUtilisateur === 'object') cleanedPayload.idUtilisateur = cleanedPayload.idUtilisateur.id;
         if (cleanedPayload.parentTicket && typeof cleanedPayload.parentTicket === 'object') cleanedPayload.idParentTicket = cleanedPayload.parentTicket.id;
-        
+
         // Assure que date_echeance est au format tableau [année, mois, jour, 0, 0, 0] ou null
-           cleanedPayload.date_echeance = formatForBackend(cleanedPayload.date_echeance);
+        cleanedPayload.date_echeance = formatForBackend(cleanedPayload.date_echeance);
 
 
         // Supprime les propriétés qui ne doivent pas être envoyées dans le DTO de mise à jour
@@ -974,7 +988,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
         delete cleanedPayload.client;
         delete cleanedPayload.id;
         delete cleanedPayload.dateCreation;
-        
+
         return cleanedPayload;
     };
 
@@ -1000,7 +1014,8 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
             setToast({ type: 'success', message: 'Ticket mis à jour avec succès !' });
             setDirtyFields({}); // Réinitialise les champs modifiés
             // NOUVEAU: Retourne à la page de liste après succès
-            onBack(ticketId, 'Ticket mis à jour avec succès !');        } catch (err) {
+            onBack(ticketId, 'Ticket mis à jour avec succès !');
+        } catch (err) {
             console.error("Erreur lors de la mise à jour du ticket principal:", err);
             setToast({ type: 'error', message: err.response?.data?.message || 'Échec de la mise à jour du ticket.' });
         } finally {
@@ -1122,12 +1137,13 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
 
     const isSubTicket = ticket && ticket.idParentTicket !== null;
     const hasSubTickets = ticket?.childTickets && ticket.childTickets.length > 0;
-    const isTicketLocked = [ 'Refuse', 'Termine',"En_attente"].includes(ticket?.statue);
+    const isTicketLocked = ['Refuse', 'Termine', "En_attente"].includes(ticket?.statue);
     const isPending = ticket?.statue === 'En_attente';
 
     if (isLoading) return <div className="flex justify-center items-center h-screen"><Spinner /></div>;
     if (error) return <div className="text-center text-red-500 p-8">{error}</div>;
     if (!ticket || !editableData) return null;
+
 
     return (
         <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-900 min-h-screen">
@@ -1141,7 +1157,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                     background-color: #0c4a6e !important; /* Bleu foncé pour le mode sombre */
                 }
             `}</style>
-            
+
             {toast && <ToastMessage message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
             {/* Section d'en-tête */}
@@ -1155,7 +1171,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                     </h1>
                 </div>
                 <div className="flex space-x-2">
-                    {editableData.statue=="En_attente"&& (
+                    {editableData.statue == "En_attente" && (
                         <>
                             <button onClick={handleAcceptTicket} className="btn btn-primary bg-green-600 hover:bg-green-700" disabled={isSavingMainTicket}>
                                 <Check size={16} className="mr-1" /> Accepter
@@ -1165,17 +1181,17 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                             </button>
                         </>
                     )}
-                    {!editableData.idModule && !editableData.idUtilisateur &&(
+                    {!editableData.idModule && !editableData.idUtilisateur && (
                         <button onClick={handleDiffractTicket} className="btn btn-secondary" disabled={isSavingMainTicket}>
                             <GitFork size={16} className="mr-1" /> Diffracter
                         </button>
                     )}
-                    {editableData.statue!="En_attente" &&(<><button onClick={handleCancelMainTicketEdit} className="btn btn-secondary" disabled={isSavingMainTicket || isTicketLocked}>
+                    {editableData.statue != "En_attente" && (<><button onClick={handleCancelMainTicketEdit} className="btn btn-secondary" disabled={isSavingMainTicket || isTicketLocked}>
                         <X size={16} className="mr-1" /> Annuler
                     </button>
-                    <button onClick={handleSaveMainTicket} className="btn btn-primary" disabled={isSavingMainTicket || isTicketLocked}>
-                        {isSavingMainTicket ? <Spinner /> : <Check size={16} className="mr-1" />} Confirmer les modifications
-                    </button></>)}
+                        <button onClick={handleSaveMainTicket} className="btn btn-primary" disabled={isSavingMainTicket || isTicketLocked}>
+                            {isSavingMainTicket ? <Spinner /> : <Check size={16} className="mr-1" />} Confirmer les modifications
+                        </button></>)}
                 </div>
             </div>
 
@@ -1235,7 +1251,11 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                                 isEditable={true}
                                 onUpdate={(userId) => handleEditableDataChange('idUtilisateur', allUsers.find(u => u.id === parseInt(userId)) || null)}
                                 type="select"
-                                options={allUsers}
+                                options={allEquipes
+                                    .filter(equipe =>
+                                        equipe.moduleList?.some(module => module.designation === editableData.idModule?.designation) && equipe.utilisateurs.length > 0
+                                    )
+                                    .flatMap(equipe => equipe.utilisateurs)}
                                 disabled={isTicketLocked}
                                 // MODIFIÉ: Ajout de la prop isDirty
                                 isDirty={!!dirtyFields.idUtilisateur}
@@ -1298,7 +1318,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                                 />
                             </DetailItem>
                         </div>
-                        
+
                         <div className="pt-3 space-y-3 border-t border-slate-200 dark:border-slate-700">
                             <DetailItem icon={<User size={14} className="mr-2" />} label="Client" value={ticket.idClient?.nomComplet} />
                             <DetailItem icon={<User size={14} className="mr-2" />} label="Créé par" value={ticket.userCreation} />
@@ -1312,7 +1332,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                     <>
                         <div className="mt-6 bg-white dark:bg-slate-800 rounded-lg shadow-lg">
                             <div
-                                className="flex justify-between items-center p-3 cursor-pointer border-b border-slate-200 dark:border-slate-700" 
+                                className="flex justify-between items-center p-3 cursor-pointer border-b border-slate-200 dark:border-slate-700"
                                 onClick={() => setIsCommentsAndDocsCollapsed(!isCommentsAndDocsCollapsed)}
                             >
                                 <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200 flex items-center">
@@ -1325,7 +1345,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                                     <span className="text-slate-400 dark:text-slate-500">({ticket.documentJointesList?.length || 0})</span>
                                 </h2>
                                 <button
-                                    className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400" 
+                                    className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
                                     title={isCommentsAndDocsCollapsed ? "Afficher" : "Masquer"}
                                 >
                                     {isCommentsAndDocsCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
@@ -1411,7 +1431,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                     />
                 )}
             </div></div>
-        );
-    };
+    );
+};
 
 export default TicketUpdateView;

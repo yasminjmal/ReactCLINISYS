@@ -6,8 +6,8 @@ const AddTicketModal = ({ onAddTicket, onCancel, availableClients, availableUser
     const [formData, setFormData] = useState({
         titre: '',
         description: '',
-        priorite: 'MOYENNE', // Valeur par défaut
-        statue: 'EN_ATTENTE', // Valeur par défaut
+        priorite: 'Moyenne', // Valeur par défaut
+        statue: 'En_attente', // Valeur par défaut
         date_echeance: '', // Format string 'YYYY-MM-DD'
         idClient: '',
         idModule: '',
@@ -163,9 +163,9 @@ const AddTicketModal = ({ onAddTicket, onCancel, availableClients, availableUser
                                 onChange={handleInputChange}
                                 className="form-select"
                             >
-                                <option value="BASSE">Basse</option>
-                                <option value="MOYENNE">Moyenne</option>
-                                <option value="HAUTE">Haute</option>
+                                <option value="Basse">Basse</option>
+                                <option value="Moyenne">Moyenne</option>
+                                <option value="Haute">Haute</option>
                             </select>
                         </div>
                     </div>

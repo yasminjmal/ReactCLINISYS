@@ -11,7 +11,7 @@ api.interceptors.request.use(
   (config) => {
     // Tente de récupérer le token d'authentification depuis le localStorage.
     const token = localStorage.getItem('authToken'); // Assurez-vous que cette clé 'authToken' est bien celle que vous utilisez lors de la connexion.
-
+    console.log("api.js: Token récupéré:", token);
     // Si un token est trouvé, il est ajouté à l'en-tête 'Authorization'.
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

@@ -117,6 +117,15 @@ const EditEquipeModal = ({ equipe, onUpdate, onCancel, onRefreshEquipes, setToas
         };
         fetchResources();
     }, [equipe.id, setToast]);
+    const userwithrolechef = useMemo(() => {
+        return allUsers.filter(user => user.role?.includes('C'));
+    }, [allUsers]);
+
+    const userWithJustEmployeeRole = useMemo(() => {
+        return allUsers.filter(user => user.role?.includes('E'));
+    }, [allUsers]);
+
+
 
     const handleUpdate = async (e) => {
         e.preventDefault(); // Empêcher le rechargement de la page
@@ -236,7 +245,7 @@ const EditEquipeModal = ({ equipe, onUpdate, onCancel, onRefreshEquipes, setToas
                             className="form-select"
                         >
                             <option value="">Sélectionner un chef</option>
-                            {allUsers.map(user => (
+                            {userwithrolechef.map(user => (
                                 <option key={user.id} value={user.id}>
                                     {user.prenom} {user.nom}
                                 </option>
@@ -274,7 +283,7 @@ const EditEquipeModal = ({ equipe, onUpdate, onCancel, onRefreshEquipes, setToas
                                 className="form-select"
                             >
                                 <option value="">Sélectionner un utilisateur</option>
-                                {allUsers.map(user => (
+                                {userWithJustEmployeeRole.map(user => (
                                     <option key={user.id} value={user.id}>
                                         {user.prenom} {user.nom}
                                     </option>

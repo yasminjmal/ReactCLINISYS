@@ -30,7 +30,7 @@ const clientService = {
    * @returns {Promise<object>} Le client créé
    */
   createClient: async (clientData) => {
-    const response = await axios.post("http://localhost:9010/template-core/api/clients", clientData);
+    const response = await api.post(`${BASE_URL}`, clientData);
     return response.data;
   },
 

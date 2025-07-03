@@ -28,6 +28,34 @@ const GlobalTicketStatsWidget = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const formatDate = (dateInput) => {
+    if (!dateInput) return 'N/A';
+
+    let date;
+
+    if (Array.isArray(dateInput) && dateInput.length >= 3) {
+        const [year, month, day, hours = 0, minutes = 0, seconds = 0] = dateInput;
+        date = new Date(year, month - 1, day, hours, minutes, seconds);
+    } else {
+        // ISO 8601 string like "2025-07-04T00:00:00"
+        date = new Date(dateInput);
+    }
+
+    if (isNaN(date.getTime())) {
+        console.error('Invalid date input:', dateInput);
+        return 'Date invalide';
+    }
+
+    return date.toLocaleString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    });
+};
+
     useEffect(() => {
         const fetchStats = async () => {
             try {
