@@ -366,18 +366,18 @@ const ConsulterUsersPage = ({ initialUsers = null }) => {
     const handleUpdateUser = async (id, userData, photoFile) => {
         try {
             switch (userData.role) {
-                case "Admin":
+                case "A":
                     userData.role = "A";
                     break // Convertit le rôle en code
-                case "Chef d'équipe":
+                case "C":
                     userData.role = "C";
                     break // Convertit le rôle en code
-                case "Utilisateur":
+                case "E":
                     userData.role = "E"; // Convertit le rôle en code
                     break;
             
                 default:
-                    userData.role = "E"; // Défaut à Utilisateur si le rôle n'est pas reconnu
+                    userData.role = ""; // Défaut à Utilisateur si le rôle n'est pas reconnu
                     break;
             }
             console.log("Mise à jour de l'utilisateur avec ID:", id, "et données:", userData);

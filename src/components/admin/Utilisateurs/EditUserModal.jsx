@@ -28,7 +28,7 @@ const EditUserModal = ({ user, onUpdateUser, onCancel, showTemporaryMessage }) =
         email: user?.email || '',
         motDePasse: '',
         numTelephone: user?.numTelephone || '',
-        role: user?.role || 'E',
+        role: user?.role ?? '',
         actif: user?.actif ?? true,
     });
     const [photoFile, setPhotoFile] = useState(null);
@@ -101,10 +101,10 @@ const EditUserModal = ({ user, onUpdateUser, onCancel, showTemporaryMessage }) =
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
                         <div className="md:col-span-1 flex flex-col items-center space-y-2">
                             <div className="w-28 h-28 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center bg-slate-50 dark:bg-slate-700 overflow-hidden">
-                                <img src={imagePreview} alt="Aperçu" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultProfilePic; }}/>
+                                <img src={imagePreview} alt="Aperçu" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultProfilePic; }} />
                             </div>
                             <label htmlFor="photo" className="inline-flex items-center px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-xs font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150">
-                                <ImageIcon size={14} className="mr-1.5"/> Changer l'image
+                                <ImageIcon size={14} className="mr-1.5" /> Changer l'image
                             </label>
                             <input type="file" id="photo" name="photo" accept="image/*" onChange={handleImageChange} className="hidden" />
                         </div>
@@ -117,11 +117,13 @@ const EditUserModal = ({ user, onUpdateUser, onCancel, showTemporaryMessage }) =
                             <InputField label="N° Téléphone" name="numTelephone" value={formData.numTelephone} onChange={handleInputChange} icon={Phone} />
                             <div>
                                 <label className="form-label">Rôle</label>
-                                <select name="role" value={formData.role} onChange={handleInputChange} className="form-select">
+                                <select name="role" value={formData.role || ""} onChange={handleInputChange} className="form-select">
+                                    <option value="" disabled>Choisir un rôle</option>
                                     <option value="E">Utilisateur</option>
                                     <option value="A">Administrateur</option>
                                     <option value="C">Chef d'équipe</option>
                                 </select>
+
                             </div>
                             <div className="flex items-center pt-6">
                                 <input type="checkbox" id="actif" name="actif" checked={formData.actif} onChange={handleInputChange} className="form-checkbox" />
@@ -130,8 +132,8 @@ const EditUserModal = ({ user, onUpdateUser, onCancel, showTemporaryMessage }) =
                         </div>
                     </div>
                     <div className="pt-4 flex justify-end space-x-2 border-t border-slate-200 dark:border-slate-700">
-                        <button type="button" onClick={onCancel} className="btn btn-secondary"><XCircle size={16} className="mr-1.5"/> Annuler</button>
-                        <button type="submit" className="btn btn-primary"><Save size={16} className="mr-1.5"/> Sauvegarder</button>
+                        <button type="button" onClick={onCancel} className="btn btn-secondary"><XCircle size={16} className="mr-1.5" /> Annuler</button>
+                        <button type="submit" className="btn btn-primary"><Save size={16} className="mr-1.5" /> Sauvegarder</button>
                     </div>
                 </form>
             </div>
