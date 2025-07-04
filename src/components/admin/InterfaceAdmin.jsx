@@ -1,7 +1,5 @@
 // src/components/admin/InterfaceAdmin.jsx
-
 import React, { useState, useEffect, useCallback } from 'react';
-// import { useOutletContext } from 'react-router-dom'; // Supprimé : n'est plus nécessaire
 import utilisateurService from '../../services/utilisateurService';
 import aiSearchService from '../../services/aiSearchService';
 import ChatInterface from './../chat/ChatInterface';
@@ -40,11 +38,7 @@ const LoadingIndicator = () => (
     </div>
 );
 
-// --- MODIFICATION 1 : Accepter 'user' et 'onLogout' comme props ---
 const AdminInterface = ({ user, onLogout }) => {
-    // --- MODIFICATION 2 : Supprimer l'appel à useOutletContext ---
-    // const { currentUser, logout: appLogoutHandler } = useOutletContext(); 
-
     const [activePage, setActivePage] = useState('home');
     const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -146,12 +140,10 @@ const AdminInterface = ({ user, onLogout }) => {
     useEffect(() => { if (isDarkMode) document.documentElement.classList.add('dark');
         else document.documentElement.classList.remove('dark'); }, [isDarkMode]);
 
-    // --- MODIFICATION 3 : Utiliser la prop 'onLogout' ---
     const handleActualLogout = () => {
         if (onLogout) {
             onLogout();
         } else {
-            // Fallback au cas où la prop ne serait pas passée
             localStorage.clear();
             window.location.reload();
         }
@@ -159,11 +151,23 @@ const AdminInterface = ({ user, onLogout }) => {
     
     const handleNavigateToUserProfile = useCallback(() => setActivePage('consulter_profil_admin'), []);
     const handleNavigateToHome = useCallback(() => setActivePage('home'), []);
-    const handleUpdateUserProfile = useCallback((updatedUserData) => {
-        setUsersData(prev => prev.map(u => u.id === updatedUserData.id ? updatedUserData : u));
-        showNotification('success', 'Profil modifié avec succès.');
-        setActivePage('consulter_profil_admin');
-    }, [showNotification]);
+
+    const handleUpdateUserProfile = useCallback(async (userId, updatedUserData, photoFile) => {
+        try {
+            await utilisateurService.updateUtilisateur(userId, updatedUserData, photoFile);
+            setUsersData(prev => prev.map(u => u.id === userId ? { ...u, ...updatedUserData } : u));
+            showNotification('success', 'Profil mis à jour avec succès.');
+            // After successful update, it's good to re-fetch the current user to get latest photo/details if needed
+            // This also ensures the Navbar/Sidebar display the updated info immediately.
+            // A full refresh of all user data is also good in case this user is displayed in other lists.
+            fetchUsersForAdmin(); // Re-fetch all users to reflect changes globally
+            // Optionally, navigate back or keep on profile page. Current setup keeps on profile page.
+        } catch (error) {
+            console.error("Error updating user profile:", error);
+            showNotification('error', error.response?.data?.message || 'Failed to update profile.');
+        }
+    }, [showNotification, fetchUsersForAdmin]);
+
 
     if (disconnect) {
         return <GoodbyePage />;
@@ -175,7 +179,7 @@ const AdminInterface = ({ user, onLogout }) => {
           activePage={activePage} 
           setActivePage={handleSetActivePage} 
           isSidebarOpen={isSidebarOpen} 
-          currentUser={user} // MODIFIÉ: user au lieu de currentUser
+          currentUser={user} 
         />
         
         {isSidebarOpen && <div onClick={toggleSidebar} className="fixed inset-0 bg-black/50 z-30 md:hidden"></div>}
@@ -195,10 +199,11 @@ const AdminInterface = ({ user, onLogout }) => {
                       ${isSidebarOpen ? 'md:ml-64' : 'md:ml-0'} md:w-full`}>
           
           <NavbarAdmin 
-            user={user} // MODIFIÉ: user au lieu de currentUser
+            user={user} 
             onLogout={handleActualLogout} 
             onSearch={handleAiSearch} 
             isSidebarOpen={isSidebarOpen} 
+            onNavigate={handleNavigateToUserProfile} // Pass the navigation function for profile
           />
           
           <main className="flex-1 overflow-x-hidden overflow-y-auto pt-0 relative">
@@ -224,7 +229,6 @@ const AdminInterface = ({ user, onLogout }) => {
                     case 'clients_consulter_clients': return <ConsulterClientPage />;   
                     case 'postes_consulter_postes': return <ConsulterPostesPage initialPostes={searchEntityType === 'poste' ? searchResults : null} />;
                     case 'tickets_management': return <TicketsManagementPage showTemporaryMessage={showNotification} initialFilterStatus={filter} initialTickets={searchEntityType === 'ticket' ? searchResults : null} />;
-                    // MODIFIÉ: user au lieu de currentUser
                     case 'consulter_profil_admin': return user ? <ConsultProfilPage user={user} onUpdateProfile={handleUpdateUserProfile} onNavigateHome={handleNavigateToHome} /> : <div className="p-6 text-center">Utilisateur non trouvé.</div>;
                     case 'discussions': return <ChatInterface setToast={setToast} />;
                     default: return <div className="p-6 text-xl font-bold">Page "{pageId}" non trouvée</div>;

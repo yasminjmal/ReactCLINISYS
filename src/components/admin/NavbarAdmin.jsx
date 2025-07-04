@@ -1,13 +1,14 @@
 // src/components/admin/NavbarAdmin.jsx
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef,onNavigate } from 'react';
 import { Link } from 'react-router-dom';
-import { AlignJustify, Bell, ChevronDown, User, Settings, LogOut, Sun, Moon } from 'lucide-react';
+import { AlignJustify, Bell, ChevronDown, User, Settings, LogOut, Sun, Moon , UserCircle} from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import ConsultProfilPage from './profil/ConsultProfilPage';
 
 
-const NavbarAdmin = ({ toggleSidebar }) => {
+const NavbarAdmin = ({ toggleSidebar,user, onLogout, onSearch, isSidebarOpen, onNavigate }) => {
     const { currentUser, logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -122,9 +123,16 @@ const NavbarAdmin = ({ toggleSidebar }) => {
                     </button>
                     {dropdownOpen && (
                         <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-md shadow-lg py-1 border border-slate-200 dark:border-slate-700">
-                            <Link to="/admin/profile" className="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">
-                                <Settings size={16} /> Profile
-                            </Link>
+                            <button
+                    onClick={() => onNavigate('consulter_profil_admin')} // <-- C'est la clé !
+                    className="flex items-center text-slate-700 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors duration-200"
+                    title="Voir le profil"
+                >
+                    <UserCircle className="h-6 w-6 mr-2" />
+                    <span className="hidden md:inline">{user?.prenom || 'Profil'}</span>
+
+                </button>
+
                             <button onClick={logout} className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">
                                 <LogOut size={16} /> Logout
                             </button>

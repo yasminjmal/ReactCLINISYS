@@ -1,14 +1,12 @@
-// src/components/employe/pages/MesTicketsResolusPage.jsx
+// src/components/employe/pages/MesTicketsEnAttentePage.jsx
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { FileText, Search, Tag, CalendarDays, User, Layers, CheckCircle, XCircle } from 'lucide-react';
+import { FileText, Search, Tag, CalendarDays, User, Layers, PlayCircle, XCircle } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import ticketService from '../../../services/ticketService';
 import Modal from '../../shared/Modal';
-import CommentManager from '../../admin/Tickets/CommentManager'; // Si vous avez besoin de gérer les commentaires
-import DocumentManager from '../../admin/Tickets/DocumentManager'; // Si vous avez besoin de gérer les documents
 
-// Composant TicketCard en lecture seule pour "Tickets Résolus"
-const TicketCard = ({ ticket, onViewDetails }) => {
+// Composant TicketCard adapté (avec bouton "Commencer le traitement")
+const TicketCard = ({ ticket, onStartTreatmentClick }) => {
   const getPriorityColor = (priority) => {
     switch (priority?.toLowerCase()) {
       case 'haute': return 'bg-red-100 text-red-700 dark:bg-red-700/30 dark:text-red-400 border-red-300 dark:border-red-600';
@@ -29,10 +27,10 @@ const TicketCard = ({ ticket, onViewDetails }) => {
   };
 
   return (
-    <div onClick={() => onViewDetails(ticket)} className="bg-white dark:bg-slate-800 shadow-lg rounded-lg p-5 border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-shadow duration-300 flex flex-col justify-between cursor-pointer">
+    <div className="bg-white dark:bg-slate-800 shadow-lg rounded-lg p-5 border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-shadow duration-300 flex flex-col justify-between">
       <div>
         <div className="flex justify-between items-start mb-3">
-          <h3 className="text-lg font-semibold text-sky-600 dark:text-sky-400 hover:underline truncate" title={ticket.titre}>
+          <h3 className="text-lg font-semibold text-sky-600 dark:text-sky-400 hover:underline cursor-pointer truncate" title={ticket.titre}>
             {ticket.titre}
           </h3>
           <span className={`px-3 py-1 text-xs font-semibold rounded-full border whitespace-nowrap ${getPriorityColor(ticket.priorite)}`}>
@@ -69,53 +67,60 @@ const TicketCard = ({ ticket, onViewDetails }) => {
               Statut: {ticket.statue?.replace(/_/g, ' ')}
             </span>
           </div>
-          {ticket.dateCloture && (
-            <div className="flex items-center col-span-2 truncate" title={`Date de Clôture: ${new Date(ticket.dateCloture).toLocaleDateString()}`}>
-              <CheckCircle size={14} className="mr-1.5 text-slate-400 dark:text-slate-500" />
-              Clôturé le: {new Date(ticket.dateCloture).toLocaleDateString()}
-            </div>
-          )}
         </div>
       </div>
-      {/* Pas de boutons d'action sur cette page */}
+      {/* Bouton "Commencer le traitement" */}
+      {/* Affiché si le ticket est en_cours MAIS n'a PAS encore de dateTraitement (donc pas encore "commencé") */}
+      {ticket.statue === 'En_cours' && !ticket.dateTraitement && (
+        <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-700/50">
+          <button
+            onClick={() => onStartTreatmentClick(ticket)} // Passer l'objet ticket entier
+            className="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-3 rounded-md transition-colors duration-200 text-sm flex items-center justify-center space-x-2"
+            title="Commencer le traitement de ce ticket"
+          >
+            <PlayCircle size={16} />
+            <span>Commencer le traitement</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };
 
 
-const MesTicketsResolusPage = () => { // Plus de prop onFetchTickets ici
+const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
   const { currentUser } = useAuth();
-  const [tickets, setTickets] = useState([]);
+  const [tickets, setTickets] = useState([]); // Tous les tickets assignés à l'utilisateur
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortConfig, setSortConfig] = useState({ key: 'dateCloture', direction: 'descending' }); // Tri par date de clôture par défaut
+  const [sortConfig, setSortConfig] = useState({ key: 'dateCreation', direction: 'descending' });
+  
+  // États pour le modal de confirmation de traitement
+  const [isStartTreatmentModalOpen, setIsStartTreatmentModalOpen] = useState(false);
+  const [ticketToStartTreatment, setTicketToStartTreatment] = useState(null);
+  const [isLoadingModal, setIsLoadingModal] = useState(false);
 
-  // États pour le modal de détails du ticket
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedTicketForDetail, setSelectedTicketForDetail] = useState(null);
 
-
-  const fetchTicketsResolus = useCallback(async () => {
+  const fetchTicketsAssignedToUser = useCallback(async () => {
     if (!currentUser || !currentUser.id) {
       setLoading(false);
       setError("Utilisateur non connecté ou ID utilisateur manquant.");
       return;
     }
-    console.log("DEBUG MesTicketsResolusPage: Début du fetch pour l'utilisateur:", currentUser.id); // DEBUG
     try {
       setLoading(true);
       const allUserTickets = await ticketService.getTicketsByUserId(currentUser.id);
-      console.log("DEBUG MesTicketsResolusPage: Tous les tickets de l'utilisateur:", allUserTickets); // DEBUG
-      // Filtrer pour n'afficher que les tickets "Termine"
-      const resolusTickets = allUserTickets.filter(ticket => ticket.statue === 'Termine');
-      console.log("DEBUG MesTicketsResolusPage: Tickets 'Termine' filtrés:", resolusTickets); // DEBUG
-      setTickets(resolusTickets || []);
+      // Les tickets "en attente" sont ceux qui sont 'En_cours' mais n'ont pas encore de 'dateTraitement'
+      const enAttenteTicketsFiltered = allUserTickets.filter(
+        ticket => ticket.statue === 'En_cours' && !ticket.dateTraitement
+      );
+      setTickets(enAttenteTicketsFiltered || []);
       setError(null);
     } catch (err) {
-      console.error("DEBUG MesTicketsResolusPage: Échec du chargement des tickets résolus:", err); // DEBUG
-      setError("Échec du chargement de vos tickets résolus. Veuillez réessayer plus tard.");
+      console.error("Échec du chargement des tickets en attente:", err);
+      setError("Échec du chargement de vos tickets en attente. Veuillez réessayer plus tard.");
       setTickets([]);
     } finally {
       setLoading(false);
@@ -124,20 +129,43 @@ const MesTicketsResolusPage = () => { // Plus de prop onFetchTickets ici
 
   // S'auto-charge au montage et si l'utilisateur change
   useEffect(() => {
-    fetchTicketsResolus();
-  }, [fetchTicketsResolus]);
+    fetchTicketsAssignedToUser();
+  }, [fetchTicketsAssignedToUser]);
 
-  const handleViewDetails = (ticket) => {
-    setSelectedTicketForDetail(ticket);
-    setIsDetailModalOpen(true);
+  const handleStartTreatmentClick = (ticket) => {
+    setTicketToStartTreatment(ticket);
+    setIsStartTreatmentModalOpen(true);
   };
 
-  const closeDetailModal = () => {
-    setIsDetailModalOpen(false);
-    setSelectedTicketForDetail(null);
-    // Pas besoin de recharger ici, car c'est une vue en lecture seule
-    // Si des commentaires/documents peuvent être ajoutés en lecture seule, il faudrait re-fetch
+  const closeStartTreatmentModal = () => {
+    setIsStartTreatmentModalOpen(false);
+    setTicketToStartTreatment(null);
   };
+
+  const handleConfirmStartTreatment = async () => {
+    if (!ticketToStartTreatment) return;
+
+    setIsLoadingModal(true);
+    try {
+      // Le payload n'inclut que dateTraitement selon la nouvelle spécification
+      const payload = {
+        dateTraitement: new Date().toISOString(), 
+      };
+
+      await ticketService.updateTicket(ticketToStartTreatment.id, payload);
+      fetchTicketsAssignedToUser(); // Recharger les tickets pour mettre à jour la liste sur cette page
+      closeStartTreatmentModal();
+      // Appeler le callback pour notifier InterfaceEmploye de naviguer
+      if(onStartTreatmentCallback) onStartTreatmentCallback(ticketToStartTreatment.id);
+      
+    } catch (err) {
+      console.error("Erreur lors du démarrage du traitement:", err);
+      setError("Échec du démarrage du traitement. Veuillez réessayer.");
+    } finally {
+      setIsLoadingModal(false);
+    }
+  };
+
 
   const sortedAndFilteredTickets = useMemo(() => {
     if (!Array.isArray(tickets)) return [];
@@ -156,9 +184,9 @@ const MesTicketsResolusPage = () => { // Plus de prop onFetchTickets ici
       sortableTickets.sort((a, b) => {
         let valA = a[sortConfig.key];
         let valB = b[sortConfig.key];
-        if (sortConfig.key === 'dateCloture' || sortConfig.key === 'dateCreation') {
-            valA = a[sortConfig.key] ? new Date(a[sortConfig.key]).getTime() : 0;
-            valB = b[sortConfig.key] ? new Date(b[sortConfig.key]).getTime() : 0;
+        if (sortConfig.key === 'dateCreation') {
+            valA = new Date(valA).getTime();
+            valB = new Date(valB).getTime();
         }
         if (sortConfig.key === 'priorite') {
             const priorityOrder = { 'haute': 3, 'moyenne': 2, 'basse': 1 };
@@ -193,7 +221,7 @@ const MesTicketsResolusPage = () => { // Plus de prop onFetchTickets ici
     return (
       <div className="p-6 md:p-10 text-center bg-slate-50 dark:bg-slate-800/50 rounded-lg shadow-inner">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto mb-4"></div>
-        <h2 className="text-2xl font-semibold text-slate-700 dark:text-slate-200 mb-3">Chargement des tickets résolus...</h2>
+        <h2 className="text-2xl font-semibold text-slate-700 dark:text-slate-200 mb-3">Chargement des tickets en attente...</h2>
         <p className="text-slate-500 dark:text-slate-400">Veuillez patienter pendant que nous récupérons vos tickets.</p>
       </div>
     );
@@ -214,8 +242,8 @@ const MesTicketsResolusPage = () => { // Plus de prop onFetchTickets ici
     return (
       <div className="p-6 md:p-10 text-center bg-slate-50 dark:bg-slate-800/50 rounded-lg shadow-inner">
         <FileText size={48} className="mx-auto mb-4 text-sky-500" />
-        <h2 className="text-2xl font-semibold text-slate-700 dark:text-slate-200 mb-3">Aucun ticket résolu</h2>
-        <p className="text-slate-500 dark:text-slate-400">Vous n'avez actuellement aucun ticket résolu.</p>
+        <h2 className="text-2xl font-semibold text-slate-700 dark:text-slate-200 mb-3">Aucun ticket en attente</h2>
+        <p className="text-slate-500 dark:text-slate-400">Vous n'avez actuellement aucun nouveau ticket en attente.</p>
       </div>
     );
   }
@@ -240,7 +268,7 @@ const MesTicketsResolusPage = () => { // Plus de prop onFetchTickets ici
           </div>
           <div className="mt-3 text-xs text-slate-500 dark:text-slate-400 flex flex-wrap gap-x-2">
               <span>Trier par:</span>
-              <button onClick={() => requestSort('dateCloture')} className="font-medium hover:text-sky-500">Date de Clôture {getSortIndicator('dateCloture')}</button>
+              <button onClick={() => requestSort('dateCreation')} className="font-medium hover:text-sky-500">Date de Création {getSortIndicator('dateCreation')}</button>
               <span>|</span>
               <button onClick={() => requestSort('priorite')} className="font-medium hover:text-sky-500">Priorité {getSortIndicator('priorite')}</button>
               <span>|</span>
@@ -254,7 +282,7 @@ const MesTicketsResolusPage = () => { // Plus de prop onFetchTickets ici
               <TicketCard 
                 key={ticket.id} 
                 ticket={ticket} 
-                onViewDetails={handleViewDetails}
+                onStartTreatmentClick={handleStartTreatmentClick}
               />
             ))}
           </div>
@@ -267,45 +295,33 @@ const MesTicketsResolusPage = () => { // Plus de prop onFetchTickets ici
         )}
       </div>
 
-      {/* Modal de détails du ticket en lecture seule */}
+      {/* Modal pour le démarrage du traitement */}
       <Modal
-        isOpen={isDetailModalOpen}
-        onClose={closeDetailModal}
-        title={`Détails du Ticket : ${selectedTicketForDetail?.titre || ''}`}
-        size="lg"
+        isOpen={isStartTreatmentModalOpen}
+        onClose={closeStartTreatmentModal}
+        title="Confirmer le démarrage du traitement"
         footerActions={
-          <button onClick={closeDetailModal} className="btn btn-secondary py-2 text-sm">
-            Fermer
-          </button>
+          <>
+            <button onClick={closeStartTreatmentModal} className="btn btn-secondary py-2 text-sm" disabled={isLoadingModal}>
+              Annuler
+            </button>
+            <button 
+              onClick={handleConfirmStartTreatment} 
+              className="btn btn-primary bg-sky-600 hover:bg-sky-700 py-2 text-sm" 
+              disabled={isLoadingModal}
+            >
+              {isLoadingModal ? 'Démarrage...' : 'Confirmer le Démarrage'}
+            </button>
+          </>
         }
       >
-        {selectedTicketForDetail && (
-          <div className="space-y-6">
-            {/* Informations principales du ticket */}
-            <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border border-slate-100 dark:border-slate-600">
-              <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-2">Description</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">{selectedTicketForDetail.description}</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-500 dark:text-slate-400">
-                <p><strong>Référence:</strong> {selectedTicketForDetail.id}</p>
-                <p><strong>Priorité:</strong> {selectedTicketForDetail.priorite}</p>
-                <p><strong>Statut:</strong> {selectedTicketForDetail.statue?.replace(/_/g, ' ')}</p>
-                <p><strong>Créé le:</strong> {new Date(selectedTicketForDetail.dateCreation).toLocaleDateString()}</p>
-                {selectedTicketForDetail.dateCloture && <p><strong>Clôturé le:</strong> {new Date(selectedTicketForDetail.dateCloture).toLocaleDateString()}</p>}
-                {selectedTicketForDetail.idClient && <p><strong>Client:</strong> {selectedTicketForDetail.idClient.nomComplet}</p>}
-                {selectedTicketForDetail.idModule && <p><strong>Module:</strong> {selectedTicketForDetail.idModule.designation}</p>}
-              </div>
-            </div>
-
-            {/* Gestionnaire de commentaires (lecture seule) */}
-            <CommentManager ticketId={selectedTicketForDetail.id} />
-
-            {/* Gestionnaire de documents (lecture seule) */}
-            <DocumentManager ticketId={selectedTicketForDetail.id} />
-          </div>
-        )}
+        <p className="text-sm text-slate-600 dark:text-slate-300">
+          Êtes-vous sûr de vouloir commencer le traitement du ticket : <strong className="text-slate-700 dark:text-slate-100">{ticketToStartTreatment?.titre}</strong> (ID: {ticketToStartTreatment?.id}) ?
+          <br/>Son statut passera à "En cours".
+        </p>
       </Modal>
     </>
   );
 };
 
-export default MesTicketsResolusPage;
+export default MesTicketsEnAttentePage;

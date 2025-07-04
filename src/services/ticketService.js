@@ -47,6 +47,17 @@ const ticketService = {
         const response = await api.post(`${BASE_URL}/${id}/diffracter`, subTicketsData);
         return response.data;
     },
+
+
+     getTicketsByUserId: async (userId) => {
+        try {
+            const response = await api.get(`${BASE_URL}/by-user/${userId}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Failed to fetch tickets for user ID ${userId}`, error);
+            throw error;
+        }
+    },
 };
 
 export default ticketService;

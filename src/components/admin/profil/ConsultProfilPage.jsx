@@ -1,3 +1,4 @@
+// src/components/admin/profil/ConsultProfilPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { 
     ArrowLeft, 
@@ -9,11 +10,13 @@ import {
     Phone, 
     Briefcase,
     ChevronDown,
-    Copy
+    Copy,
+    Key, 
+    Eye, 
+    EyeOff 
 } from 'lucide-react';
 import defaultUserProfileImage from '../../../assets/images/default-profile.png';
-
-// --- Helper Components for the new design ---
+import userService from '../../../services/userService'; // Changed from utilisateurService to userService
 
 const ToggleSwitch = ({ enabled, setEnabled, label }) => (
     <div className="flex items-center justify-between">
@@ -53,7 +56,7 @@ const ProgressBar = ({ value, label }) => (
 );
 
 
-const DetailInput = ({ label, name, value, onChange, icon, type = 'text', placeholder = '' }) => (
+const DetailInput = ({ label, name, value, onChange, icon, type = 'text', placeholder = '', hasToggle, onToggle, show, error, readOnly = false }) => (
     <div>
         <label htmlFor={name} className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">{label}</label>
         <div className="relative">
@@ -67,106 +70,136 @@ const DetailInput = ({ label, name, value, onChange, icon, type = 'text', placeh
                 value={value || ''}
                 onChange={onChange}
                 placeholder={placeholder}
-                className="form-input pl-10 w-full bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600 focus:border-sky-500 focus:ring-sky-500"
+                readOnly={readOnly} // Add readOnly prop
+                className={`form-input pl-10 w-full bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600 focus:border-sky-500 focus:ring-sky-500 ${error ? 'border-red-500' : ''} ${readOnly ? 'bg-slate-100 dark:bg-slate-700 cursor-not-allowed' : ''}`}
             />
-             {(name === "email" || name === "num_telephone") && (
+             {(name === "email" || name === "numTelephone") && ( 
                 <button type="button" onClick={() => navigator.clipboard.writeText(value)} className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-sky-500">
-                    <Copy size={16} />
+                        <Copy size={16} />
                 </button>
              )}
+             {hasToggle && (
+                <button type="button" onClick={onToggle} className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500">
+                    {show ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+            )}
         </div>
-    </div>
-);
-
-const TeamMemberSelector = ({ label, options, selected, onChange }) => (
-    <div>
-        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">{label}</label>
-        <div className="relative">
-            <select
-                value={selected}
-                onChange={onChange}
-                className="form-select w-full appearance-none bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600 focus:border-sky-500 focus:ring-sky-500"
-            >
-                {options.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
-                <ChevronDown size={20} />
-            </div>
-        </div>
-    </div>
-);
-
-const OnboardingTask = ({ task, onToggle }) => (
-    <div className="flex items-center justify-between py-2">
-        <div className="flex items-center">
-            <ToggleSwitch enabled={task.completed} setEnabled={onToggle} label="" />
-            <span className="ml-3 text-sm font-medium text-slate-700 dark:text-slate-300">{task.label}</span>
-        </div>
-        <span className="text-sm text-slate-500 dark:text-slate-400 font-mono">{task.progress}%</span>
+        {error && <p className="form-error-text">{error}</p>}
     </div>
 );
 
 
-// --- Main Profile Page Component ---
-
-const ConsultProfilPage = ({ user: initialUser, onUpdateProfile, onNavigateHome }) => {
+const ConsultProfilPage = ({ user, onUpdateProfile, onNavigateHome }) => {
   const [formData, setFormData] = useState({});
   const [previewImage, setPreviewImage] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
   const fileInputRef = useRef(null);
-  
-  // --- MOCK DATA for new UI elements ---
-  // This data is not in your current user object. 
-  // You will need to fetch this from your backend.
-  const [teamData, setTeamData] = useState({
-      hr: 'hr_kate',
-      manager: 'mgr_kirk',
-      lead: 'lead_eugene'
-  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [isLoadingDetails, setIsLoadingDetails] = useState(true); // New loading state for details
+  const [fetchedUser, setFetchedUser] = useState(null); // New state for fetched user data
 
-  const [onboardingRequired, setOnboardingRequired] = useState(true);
-
-  const [onboardingScripts, setOnboardingScripts] = useState([
-    { id: 1, label: 'Office Tour', completed: true, progress: 100 },
-    { id: 2, label: 'Management Introductory', completed: false, progress: 0 },
-    { id: 3, label: 'Work Tools', completed: false, progress: 20 },
-    { id: 4, label: 'Meet Your Colleagues', completed: false, progress: 0 },
-    { id: 5, label: 'Duties Journal', completed: false, progress: 0 },
-    { id: 6, label: 'Requests Handling', completed: false, progress: 0 },
-    { id: 7, label: 'Activity Tracking', completed: false, progress: 0 },
-  ]);
-
-  const mockTeamMembers = [
-      { id: 'hr_kate', name: 'Kate Middleton' },
-      { id: 'hr_john', name: 'John Doe' },
-      { id: 'mgr_kirk', name: 'Kirk Mitrohin' },
-      { id: 'mgr_jane', name: 'Jane Smith' },
-      { id: 'lead_eugene', name: 'Eugene Hummell' },
-      { id: 'lead_sara', name: 'Sara Connor' },
-  ];
-  // --- END MOCK DATA ---
 
   useEffect(() => {
-    if (initialUser) {
-      setFormData({
-        prenom: initialUser.prenom || '',
-        nom: initialUser.nom || '',
-        email: initialUser.email || '',
-        num_telephone: initialUser.num_telephone || '',
-        poste: initialUser.poste || '',
-        role: initialUser.role || 'E',
-      });
-      if (initialUser.photo) {
-          setPreviewImage(`data:image/jpeg;base64,${initialUser.photo}`);
-      } else {
-          setPreviewImage(defaultUserProfileImage);
-      }
-    }
-  }, [initialUser]);
+    const fetchUserDetails = async () => {
+        if (!user || !user.login) { 
+            setIsLoadingDetails(false);
+            return;
+        }
+        setIsLoadingDetails(true);
+        try {
+            const response = await userService.getUserByLogin(user.login); 
+            const detailedUserData = response.data;
+            
+            // Vérifier si detailedUserData est valide avant d'y accéder
+            if (!detailedUserData) {
+                console.warn("userService.getUserByLogin returned no data for user:", user.login);
+                // Fallback to basic user data from AuthContext if no detailed data
+                setFetchedUser(user); 
+                setFormData({
+                    prenom: user.prenom || '',
+                    nom: user.nom || '',
+                    login: user.login || '', 
+                    email: user.email || '',
+                    numTelephone: user.numTelephone || '', 
+                    role: user.role || 'E',
+                    actif: user.actif || true, 
+                    poste: '', // Pas de poste connu sans detailedUserData
+                    motDePasse: '', 
+                    confirmPassword: '' 
+                });
+                if (user.photo) {
+                    setPreviewImage(`data:image/jpeg;base64,${user.photo}`);
+                } else {
+                    setPreviewImage(defaultUserProfileImage);
+                }
+                return; // Sort early
+            }
+
+            setFetchedUser(detailedUserData); // Store fetched user data
+
+            // Extraire la désignation du poste de manière sécurisée
+            const posteDesignation = detailedUserData.equipePosteSet && detailedUserData.equipePosteSet.length > 0
+                ? detailedUserData.equipePosteSet[0].poste?.designation || ''
+                : '';
+
+            setFormData({
+                prenom: detailedUserData.prenom || '',
+                nom: detailedUserData.nom || '',
+                login: detailedUserData.login || '', 
+                email: detailedUserData.email || '',
+                numTelephone: detailedUserData.numTelephone || '', 
+                role: detailedUserData.role || 'E',
+                actif: detailedUserData.actif || true, 
+                poste: posteDesignation, 
+                motDePasse: '', 
+                confirmPassword: '' 
+            });
+            if (detailedUserData.photo) {
+                setPreviewImage(`data:image/jpeg;base64,${detailedUserData.photo}`);
+            } else {
+                setPreviewImage(defaultUserProfileImage);
+            }
+        } catch (error) {
+            console.error("Erreur lors de la récupération des détails de l'utilisateur:", error);
+            // En cas d'erreur de l'API, revenir aux données de base du contexte
+            setFetchedUser(user); 
+            
+            // Fallback pour le poste si erreur API
+            const fallbackPoste = user.equipePosteSet && user.equipePosteSet.length > 0
+                ? user.equipePosteSet[0].poste?.designation || ''
+                : user.poste || ''; 
+
+            setFormData({
+                prenom: user.prenom || '',
+                nom: user.nom || '',
+                login: user.login || '', 
+                email: user.email || '',
+                numTelephone: user.numTelephone || '', 
+                role: user.role || 'E',
+                actif: user.actif || true, 
+                poste: fallbackPoste, 
+                motDePasse: '', 
+                confirmPassword: '' 
+            });
+            if (user.photo) { 
+                setPreviewImage(`data:image/jpeg;base64,${user.photo}`);
+            } else {
+                setPreviewImage(defaultUserProfileImage);
+            }
+        } finally {
+            setIsLoadingDetails(false);
+        }
+    };
+
+    fetchUserDetails();
+  }, [user]); 
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    setErrors(prev => ({ ...prev, [name]: null })); 
   };
 
   const handlePhotoChange = (e) => {
@@ -181,21 +214,52 @@ const ConsultProfilPage = ({ user: initialUser, onUpdateProfile, onNavigateHome 
     }
   };
   
-  const handleSaveChanges = (e) => {
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.prenom.trim()) newErrors.prenom = "Le prénom est requis.";
+    if (!formData.nom.trim()) newErrors.nom = "Le nom est requis.";
+    if (!formData.login.trim()) newErrors.login = "Le login est requis.";
+    if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "L'email n'est pas valide."; 
+
+    if (formData.motDePasse) {
+        if (formData.motDePasse.length < 4) newErrors.motDePasse = "Mot de passe de 4 caractères min. requis.";
+        if (formData.motDePasse !== formData.confirmPassword) newErrors.confirmPassword = "Les mots de passe ne correspondent pas.";
+    } else if (formData.confirmPassword) { 
+        newErrors.motDePasse = "Veuillez entrer un nouveau mot de passe.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSaveChanges = async (e) => {
     e.preventDefault();
-    // In a real app, you would also pass teamData and onboarding data
-    onUpdateProfile(initialUser.id, formData, photoFile);
+    if (validateForm()) {
+        const dataToSubmit = { ...formData };
+        if (dataToSubmit.motDePasse === '') {
+            delete dataToSubmit.motDePasse; 
+        }
+        delete dataToSubmit.confirmPassword; 
+
+        const roleMapping = { 'Administrateur': 'A', 'Chef d\'équipe': 'C', 'Utilisateur': 'E', 'A': 'A', 'C': 'C', 'E': 'E' };
+        dataToSubmit.role = roleMapping[dataToSubmit.role] || dataToSubmit.role; 
+
+        // Le champ 'poste' n'est pas directement modifiable via cette API si il est géré par equipePosteSet
+        // On le supprime de dataToSubmit avant d'envoyer au backend.
+        delete dataToSubmit.poste; 
+
+        await onUpdateProfile(user.id, dataToSubmit, photoFile); 
+    } else {
+        console.error('Please correct the errors in the form.');
+    }
   };
   
-  const handleToggleOnboardingScript = (id) => {
-    setOnboardingScripts(prev => prev.map(task =>
-      task.id === id ? { ...task, completed: !task.completed } : task
-    ));
-  };
-  
-  const onboardingProgress = Math.round(
-    (onboardingScripts.filter(t => t.completed).length / onboardingScripts.length) * 100
-  );
+  if (isLoadingDetails) {
+    return <div className="p-6 text-center text-slate-700 dark:text-slate-300">Chargement des détails du profil...</div>;
+  }
+
+  // Utiliser fetchedUser pour l'affichage, ou revenir à 'user' du AuthContext si la récupération a échoué
+  const userToDisplay = fetchedUser || user;
 
   return (
     <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-900 min-h-full">
@@ -209,18 +273,16 @@ const ConsultProfilPage = ({ user: initialUser, onUpdateProfile, onNavigateHome 
                     <div className="flex items-center gap-3">
                         <img src={previewImage} alt="Profile" className="h-10 w-10 rounded-full object-cover" />
                         <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-                            {formData.prenom} {formData.nom}
+                            {userToDisplay.prenom} {userToDisplay.nom}
                         </h1>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <span className="text-sm text-slate-500 dark:text-slate-400">
-                        Added on {new Date(initialUser.dateCreation).toLocaleDateString()}
-                    </span>
-                    <button type="button" className="btn btn-danger-outline">
-                        <Trash2 size={16} className="mr-2" />
-                        Delete
-                    </button>
+                    {userToDisplay.dateCreation && ( 
+                        <span className="text-sm text-slate-500 dark:text-slate-400">
+                            Added on {new Date(userToDisplay.dateCreation).toLocaleDateString()}
+                        </span>
+                    )}
                 </div>
             </div>
 
@@ -234,7 +296,7 @@ const ConsultProfilPage = ({ user: initialUser, onUpdateProfile, onNavigateHome 
                         <h3 className="card-header">Profile Image</h3>
                         <div className="p-6">
                             <div className="w-48 h-48 mx-auto rounded-full overflow-hidden ring-4 ring-slate-200 dark:ring-slate-700">
-                                <img src={previewImage} alt="Profile Preview" className="h-full w-full object-cover" />
+                                <img src={previewImage} alt="Profile Preview" className="h-full w-full object-cover" onError={(e) => { e.currentTarget.src = defaultUserProfileImage; }}/>
                             </div>
                             <input
                                 type="file"
@@ -254,15 +316,16 @@ const ConsultProfilPage = ({ user: initialUser, onUpdateProfile, onNavigateHome 
                         </div>
                     </div>
                     
-                    {/* Employee Details */}
+                    {/* User Details */}
                     <div className="card-white">
-                         <h3 className="card-header">Employee Details</h3>
+                         <h3 className="card-header">User Details</h3>
                          <div className="p-6 space-y-4">
-                            <DetailInput label="First Name" name="prenom" value={formData.prenom} onChange={handleInputChange} icon={<User />} />
-                            <DetailInput label="Last Name" name="nom" value={formData.nom} onChange={handleInputChange} icon={<User />} />
-                            <DetailInput label="Email Address" name="email" value={formData.email} onChange={handleInputChange} icon={<Mail />} />
-                            <DetailInput label="Phone Number" name="num_telephone" value={formData.num_telephone} onChange={handleInputChange} icon={<Phone />} />
-                            <DetailInput label="Position" name="poste" value={formData.poste} onChange={handleInputChange} icon={<Briefcase />} />
+                            <DetailInput label="First Name" name="prenom" value={formData.prenom} onChange={handleInputChange} error={errors.prenom} icon={<User />} />
+                            <DetailInput label="Last Name" name="nom" value={formData.nom} onChange={handleInputChange} error={errors.nom} icon={<User />} />
+                            <DetailInput label="Login" name="login" value={formData.login} onChange={handleInputChange} error={errors.login} icon={<User />} readOnly={true} /> {/* Login is usually read-only */}
+                            <DetailInput label="Email Address" name="email" value={formData.email} onChange={handleInputChange} error={errors.email} icon={<Mail />} />
+                            <DetailInput label="Phone Number" name="numTelephone" value={formData.numTelephone} onChange={handleInputChange} icon={<Phone />} />
+                            <DetailInput label="Position (Read-Only for Admin)" name="poste" value={formData.poste || 'N/A'} icon={<Briefcase />} readOnly={true} /> {/* Use formData.poste for display */}
                          </div>
                     </div>
                 </div>
@@ -270,54 +333,67 @@ const ConsultProfilPage = ({ user: initialUser, onUpdateProfile, onNavigateHome 
                 {/* Right Column */}
                 <div className="lg:col-span-2 space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {/* Role & Team */}
+                        {/* Role & Password */}
                         <div className="space-y-8">
                             <div className="card-white">
-                                <h3 className="card-header">Role</h3>
+                                <h3 className="card-header">Role & Status</h3>
                                 <div className="p-6">
+                                     <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Role</label>
                                      <select
                                         name="role"
                                         value={formData.role}
                                         onChange={handleInputChange}
                                         className="form-select w-full bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600 focus:border-sky-500 focus:ring-sky-500"
+                                        disabled={true} // Role is usually read-only for current user
                                     >
                                         <option value="E">Employee</option>
                                         <option value="C">Team Lead</option>
                                         <option value="A">Administrator</option>
                                     </select>
+                                    <div className="mt-4">
+                                        <ToggleSwitch label="Active Account" enabled={formData.actif} setEnabled={(val) => setFormData(prev => ({...prev, actif: val}))} />
+                                    </div>
                                 </div>
                             </div>
                             <div className="card-white">
-                                <h3 className="card-header">Team</h3>
+                                <h3 className="card-header">Change Password</h3>
                                 <div className="p-6 space-y-4">
-                                   <TeamMemberSelector label="HR" options={mockTeamMembers.filter(m => m.id.startsWith('hr'))} selected={teamData.hr} onChange={(e) => setTeamData(d => ({...d, hr: e.target.value}))} />
-                                   <TeamMemberSelector label="Manager" options={mockTeamMembers.filter(m => m.id.startsWith('mgr'))} selected={teamData.manager} onChange={(e) => setTeamData(d => ({...d, manager: e.target.value}))} />
-                                   <TeamMemberSelector label="Lead" options={mockTeamMembers.filter(m => m.id.startsWith('lead'))} selected={teamData.lead} onChange={(e) => setTeamData(d => ({...d, lead: e.target.value}))} />
+                                   <DetailInput 
+                                        label="New Password" 
+                                        name="motDePasse" 
+                                        type={showPassword ? "text" : "password"} 
+                                        value={formData.motDePasse} 
+                                        onChange={handleInputChange} 
+                                        icon={<Key />} 
+                                        hasToggle={true} 
+                                        onToggle={() => setShowPassword(!showPassword)} 
+                                        show={showPassword} 
+                                        placeholder="Leave blank to keep current"
+                                        error={errors.motDePasse}
+                                    />
+                                   <DetailInput 
+                                        label="Confirm New Password" 
+                                        name="confirmPassword" 
+                                        type={showPassword ? "text" : "password"} 
+                                        value={formData.confirmPassword} 
+                                        onChange={handleInputChange} 
+                                        icon={<Key />} 
+                                        hasToggle={true} 
+                                        onToggle={() => setShowPassword(!showPassword)} 
+                                        show={showPassword} 
+                                        error={errors.confirmPassword}
+                                    />
                                 </div>
                             </div>
                         </div>
 
-                        {/* Onboarding */}
-                        <div className="card-white">
-                            <h3 className="card-header">Onboarding</h3>
-                            <div className="p-6 space-y-5">
-                                <div className="relative">
-                                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                        <Calendar className="h-5 w-5 text-slate-400" />
-                                    </div>
-                                    <input type="text" defaultValue="21.05.2025" className="form-input pl-10 w-full bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600 focus:border-sky-500 focus:ring-sky-500" />
+                        {/* Additional Info / Future Sections */}
+                        <div className="space-y-8">
+                             <div className="card-white">
+                                <h3 className="card-header">Additional Info (Future)</h3>
+                                <div className="p-6">
+                                    <p className="text-slate-500 text-sm italic">This section can be extended with more user details or settings later.</p>
                                 </div>
-                                <ToggleSwitch label="Onboarding required" enabled={onboardingRequired} setEnabled={setOnboardingRequired} />
-                                <div className="p-4 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
-                                    <ProgressBar value={onboardingProgress} label="Current Status" />
-                                    <a href="#" className="text-sm font-semibold text-sky-600 dark:text-sky-400 mt-2 inline-block">View Answers</a>
-                                </div>
-                            </div>
-                            <div className="border-t border-slate-200 dark:border-slate-700 px-6 pt-4 pb-2">
-                                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-2">Onboarding Scripts</h4>
-                                {onboardingScripts.map(task => (
-                                    <OnboardingTask key={task.id} task={task} onToggle={() => handleToggleOnboardingScript(task.id)} />
-                                ))}
                             </div>
                         </div>
                     </div>
