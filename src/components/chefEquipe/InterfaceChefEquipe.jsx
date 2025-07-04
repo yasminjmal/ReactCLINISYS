@@ -7,6 +7,8 @@ import equipeService from '../../services/equipeService';
 import ticketService from '../../services/ticketService';
 import moduleService from '../../services/moduleService';
 import userService from '../../services/userService';
+import commentService from '../../services/commentService'; // Ajouté
+import documentService from '../../services/documentService'; // Ajouté
 
 // --- Composants de l'interface ---
 import SidebarChefEquipe from './SidebarChefEquipe';
@@ -29,7 +31,7 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
   
   const queryClient = useQueryClient();
 
-  // --- Gestion de la sidebar pour les écrans mobiles et larges ---
+  // --- Gestion de l'UI (Sidebar, Thème) ---
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
@@ -45,7 +47,6 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
   
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   
-  // --- Gestion du thème (Dark/Light Mode) ---
   const toggleTheme = () => {
       const newTheme = !isDarkMode;
       setIsDarkMode(newTheme);
@@ -67,6 +68,7 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
   const { data, isLoading: isDataLoading, refetch: refetchAllData } = useQuery(
     ['chefDashboardData', currentUserState?.id],
     async () => {
+      if (!currentUserState?.id) return { allEquipes: [], allTickets: [], allModules: [] };
       const [equipesRes, ticketsRes, modulesRes] = await Promise.all([
         equipeService.getMyEquipes(currentUserState.id),
         ticketService.getTickets(),
@@ -97,18 +99,11 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
   }, [equipesDuChefConnecte]);
 
   const idsModulesGeresParLeChef = useMemo(() => {
-    if (!equipesDuChefConnecte || !Array.isArray(allModules)) return [];
-    const idsEquipesDuChef = equipesDuChefConnecte.map(e => e.id);
-    return allModules
-      .filter(module => module.equipe && idsEquipesDuChef.includes(module.equipe.id))
-      .map(module => module.id);
+    const idsEquipes = new Set(equipesDuChefConnecte.map(e => e.id));
+    return (allModules || []).filter(m => m.equipe && idsEquipes.has(m.equipe.id)).map(m => m.id);
   }, [equipesDuChefConnecte, allModules]);
 
-  const ticketsVisiblesPourChef = useMemo(() => {
-    if (idsModulesGeresParLeChef.length === 0 || !Array.isArray(allTickets)) return [];
-    return allTickets.filter(ticket => ticket.idModule && idsModulesGeresParLeChef.includes(ticket.idModule.id));
-  }, [allTickets, idsModulesGeresParLeChef]);
-
+  const ticketsVisiblesPourChef = useMemo(() => (allTickets || []).filter(t => t.idModule && idsModulesGeresParLeChef.includes(t.idModule.id)), [allTickets, idsModulesGeresParLeChef]);
   const ticketsPourChefATraiter = useMemo(() => ticketsVisiblesPourChef.filter(t => t.statue === 'En_attente'), [ticketsVisiblesPourChef]);
   const ticketsAssignesParChefPourSuivi = useMemo(() => ticketsVisiblesPourChef.filter(t => t.idUtilisateur && t.idUtilisateur !== 0), [ticketsVisiblesPourChef]);
   const ticketsRefuseParChefPourSuivi = useMemo(() => ticketsVisiblesPourChef.filter(t => t.statue === "Refuse"), [ticketsVisiblesPourChef]);
@@ -134,18 +129,22 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
     }
   };
 
-  const handleAssignerTicketAEmploye = (ticketId, employe) => handleTicketAction(() => ticketService.updateTicket(ticketId, { idUtilisateur: employe.id, statue: 'En_cours' }), `Ticket assigné à ${employe.prenom}.`, "Erreur lors de l'assignation");
-  
-  const handleReassignTicket = (ticketId, newUser) => {
-    const payload = {
-        idUtilisateur: newUser ? newUser.id : 0,
-        statue: newUser ? 'En_cours' : 'En_attente'
-    };
-    const successMessage = newUser ? `Ticket réassigné à ${newUser.prenom}.` : 'Affectation retirée.';
-    handleTicketAction(() => ticketService.updateTicket(ticketId, payload), successMessage, 'Erreur lors de la réassignation');
+  const handleAssignerTicketAEmploye = (ticketId, employe) => handleTicketAction(() => ticketService.updateTicket(ticketId, { idUtilisateur: employe.id, statue: 'En_cours' }), `Ticket assigné à ${employe.prenom}.`, "Erreur d'assignation");
+  const handleReassignTicket = (ticketId, newUser) => handleTicketAction(() => ticketService.updateTicket(ticketId, { idUtilisateur: newUser ? newUser.id : 0, statue: newUser ? 'En_cours' : 'En_attente' }), newUser ? `Ticket réassigné.` : 'Affectation retirée.', 'Erreur de réassignation');
+  const handleRefuserTicketParChef = (ticketId, motif) => handleTicketAction(() => ticketService.updateTicket(ticketId, { statue: 'Refuse', description: motif }), `Ticket refusé.`, 'Erreur lors du refus');
+
+  // --- NOUVELLES FONCTIONS POUR COMMENTAIRES ET FICHIERS ---
+  const handleAddComment = (commentData) => handleTicketAction(() => commentService.addComment(commentData), 'Commentaire ajouté.', 'Erreur d\'ajout du commentaire');
+  const handleDeleteComment = (commentId) => window.confirm('Voulez-vous vraiment supprimer ce commentaire ?') && handleTicketAction(() => commentService.deleteComment(commentId), 'Commentaire supprimé.', 'Erreur de suppression du commentaire');
+  const handleUploadFile = (file, ticketId) => handleTicketAction(() => documentService.uploadDocument(file, ticketId), 'Fichier ajouté avec succès.', 'Erreur lors de l\'envoi du fichier');
+  const handleDeleteFile = (documentId) => window.confirm('Voulez-vous vraiment supprimer ce fichier ?') && handleTicketAction(() => documentService.deleteDocument(documentId), 'Fichier supprimé.', 'Erreur de suppression du fichier');
+  const handleDownloadFile = async (documentId, fileName) => {
+    try {
+      await documentService.downloadDocument(documentId, fileName);
+    } catch (error) {
+      showTemporaryMessage('error', 'Erreur lors du téléchargement du fichier.');
+    }
   };
-  
-  const handleRefuserTicketParChef = (ticketId, motif) => handleTicketAction(() => ticketService.updateTicket(ticketId, { statue: 'Refuse', description: motif, priorite: 'Basse' }), `Ticket refusé.`, 'Erreur lors du refus');
 
   // --- Routage interne pour afficher la page active ---
   const renderActivePage = () => {
@@ -153,44 +152,36 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
       return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Chargement des données...</div>;
     }
     if (!currentUserState) {
-        return <div className="p-8 text-center text-red-500">Erreur critique : impossible de charger le profil utilisateur.</div>
+        return <div className="p-8 text-center text-red-500">Erreur critique : le profil utilisateur est introuvable.</div>
     }
+
+    const commonTicketHandlers = {
+        currentUser: currentUserState,
+        onAddComment: handleAddComment,
+        onDeleteComment: handleDeleteComment,
+        onUploadFile: handleUploadFile,
+        onDeleteFile: handleDeleteFile,
+        onDownloadFile: handleDownloadFile,
+    };
 
     switch (activePage) {
       case 'dashboard': return <TableauDeBordChef user={currentUserState} tickets={ticketsVisiblesPourChef} equipes={equipesDuChefConnecte} />;
       case 'profile': return <ProfilChefEquipe currentUser={currentUserState} refetchData={refetchDataAndProfile} showTemporaryMessage={showTemporaryMessage} />;
       case 'teams': return <MesEquipesChefPage equipesChef={equipesDuChefConnecte} refetchData={refetchAllData} />;
-      case 'tickets-to-do': return <TicketsATraiterChefPage ticketsNonAssignes={ticketsPourChefATraiter} equipesDuChef={equipesDuChefConnecte} onAssignerTicketAEmploye={handleAssignerTicketAEmploye} onRefuserTicketParChef={handleRefuserTicketParChef} />;
-      case 'tickets-follow-up': return <SuiviAffectationsChefPage ticketsAssignesParChef={ticketsAssignesParChefPourSuivi} onReassignTicket={handleReassignTicket} tousLesMembresDesEquipes={tousLesMembresDesEquipes} />;
-      case 'tickets-refused': return <TicketsRefuse ticketRefuse={ticketsRefuseParChefPourSuivi} />;
+      case 'tickets-to-do': return <TicketsATraiterChefPage ticketsNonAssignes={ticketsPourChefATraiter} equipesDuChef={equipesDuChefConnecte} onAssignerTicketAEmploye={handleAssignerTicketAEmploye} onRefuserTicketParChef={handleRefuserTicketParChef} {...commonTicketHandlers} />;
+      case 'tickets-follow-up': return <SuiviAffectationsChefPage ticketsAssignesParChef={ticketsAssignesParChefPourSuivi} onReassignTicket={handleReassignTicket} tousLesMembresDesEquipes={tousLesMembresDesEquipes} {...commonTicketHandlers} />;
+      case 'tickets-refused': return <TicketsRefuse ticketRefuse={ticketsRefuseParChefPourSuivi} {...commonTicketHandlers} />;
       default: return <TableauDeBordChef user={currentUserState} tickets={ticketsVisiblesPourChef} equipes={equipesDuChefConnecte} />;
     }
   };
 
   return (
     <div className={`bg-slate-100 dark:bg-slate-950 min-h-screen font-sans`}>
-        {/* Overlay pour mobile lorsque la sidebar est ouverte */}
         {isSidebarOpen && <div onClick={toggleSidebar} className="fixed inset-0 bg-black/50 z-40 lg:hidden"></div>}
-
-        <SidebarChefEquipe 
-            activePage={activePage} 
-            setActivePage={setActivePage} 
-            isSidebarOpen={isSidebarOpen} 
-            onLogout={appLogoutHandler} 
-        />
-      
+        <SidebarChefEquipe activePage={activePage} setActivePage={setActivePage} isSidebarOpen={isSidebarOpen} onLogout={appLogoutHandler} />
         <div className="flex-1 flex flex-col transition-all duration-300 lg:ml-64">
-            <NavbarChefEquipe 
-                user={currentUserState}
-                onLogout={appLogoutHandler}
-                toggleSidebar={toggleSidebar}
-                toggleTheme={toggleTheme}
-                isDarkMode={isDarkMode}
-                setActivePage={setActivePage}
-            />
-            <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
-                {renderActivePage()}
-            </main>
+            <NavbarChefEquipe user={currentUserState} onLogout={appLogoutHandler} toggleSidebar={toggleSidebar} toggleTheme={toggleTheme} isDarkMode={isDarkMode} setActivePage={setActivePage} />
+            <main className="flex-1 p-6 lg:p-8 overflow-y-auto">{renderActivePage()}</main>
         </div>
     </div>
   );
