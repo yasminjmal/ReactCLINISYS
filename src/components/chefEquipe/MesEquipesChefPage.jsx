@@ -1,6 +1,6 @@
 // src/components/chefEquipe/MesEquipesChefPage.jsx
 import React, { useState, useMemo, useEffect } from 'react';
-import { Users, Search, Info, Edit, UserPlus, Trash2, X, Loader, Shield, ChevronDown, MoreVertical, SlidersHorizontal } from 'lucide-react';
+import { Users, Search, Info, Edit, UserPlus, Trash2, X, Loader, Shield, ChevronDown, Package, Settings } from 'lucide-react';
 
 // Importation des services nécessaires
 import equipeService from '../../services/equipeService';
@@ -70,7 +70,7 @@ const ModalAjouterMembre = ({ isOpen, onClose, onAdd, equipe, allUsers, allPoste
 };
 
 // --- NOUVEAU SOUS-COMPOSANT : LIGNE D'ÉQUIPE DANS LE TABLEAU ---
-const TeamRow = ({ equipe, onAddMember, onRemoveMember, onToggle, isExpanded }) => {
+const TeamRow = ({ equipe, modules, onAddMember, onRemoveMember, onToggle, isExpanded }) => {
     return (
         <>
             {/* Ligne principale de l'équipe */}
@@ -94,36 +94,51 @@ const TeamRow = ({ equipe, onAddMember, onRemoveMember, onToggle, isExpanded }) 
                     </button>
                 </td>
             </tr>
-            {/* Section dépliable pour les membres */}
+            {/* Section dépliable pour les membres et modules */}
             {isExpanded && (
                 <tr className="bg-slate-50">
                     <td colSpan="6" className="p-0">
-                        <div className="p-4 animate-fade-in">
-                            {equipe.assignments.length > 0 ? (
-                                <table className="min-w-full">
-                                    <thead className="sr-only">
-                                        <tr><th>Membre</th><th>Poste</th><th>Actions</th></tr>
-                                    </thead>
-                                    <tbody>
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
+                            {/* --- COLONNE MEMBRES --- */}
+                            <div>
+                                <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2"><Users size={18} /> Membres ({equipe.assignments.length})</h4>
+                                {equipe.assignments.length > 0 ? (
+                                    <div className="space-y-2">
                                         {equipe.assignments.map(assignment => (
-                                            <tr key={assignment.utilisateur.id} className="border-b border-slate-200 last:border-b-0">
-                                                <td className="p-3 flex items-center gap-3">
+                                            <div key={assignment.utilisateur.id} className="flex items-center justify-between bg-white p-2 rounded-md border">
+                                                <div className="flex items-center gap-3">
                                                     <img src={getProfileImageUrl(assignment.utilisateur)} alt="" className="w-8 h-8 rounded-full object-cover" />
-                                                    <span className="font-medium text-sm">{assignment.utilisateur.prenom} {assignment.utilisateur.nom}</span>
-                                                </td>
-                                                <td className="p-3 text-sm text-slate-600">{assignment.poste.designation}</td>
-                                                <td className="p-3 text-right">
-                                                    <button onClick={() => onRemoveMember(equipe.id, assignment.utilisateur.id, assignment.poste.id)} className="p-2 text-red-500 hover:bg-red-100 rounded-full">
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </td>
-                                            </tr>
+                                                    <div>
+                                                        <p className="font-medium text-sm">{assignment.utilisateur.prenom} {assignment.utilisateur.nom}</p>
+                                                        <p className="text-xs text-slate-500">{assignment.poste.designation}</p>
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => onRemoveMember(equipe.id, assignment.utilisateur.id, assignment.poste.id)} className="p-1.5 text-red-500 hover:bg-red-100 rounded-full">
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
                                         ))}
-                                    </tbody>
-                                </table>
-                            ) : (
-                                <p className="text-center text-sm text-slate-500 p-4">Cette équipe n'a aucun membre.</p>
-                            )}
+                                    </div>
+                                ) : (
+                                    <p className="text-center text-sm text-slate-500 p-4">Cette équipe n'a aucun membre.</p>
+                                )}
+                            </div>
+                             {/* --- COLONNE MODULES --- */}
+                            <div>
+                                <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2"><Package size={18} /> Modules Gérés ({modules.length})</h4>
+                                {modules.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {modules.map(module => (
+                                            <div key={module.id} className="flex items-center gap-3 bg-white p-2 rounded-md border">
+                                                <Settings size={16} className="text-slate-500 flex-shrink-0" />
+                                                <p className="text-sm font-medium">{module.designation}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-center text-sm text-slate-500 p-4">Cette équipe ne gère aucun module.</p>
+                                )}
+                            </div>
                         </div>
                     </td>
                 </tr>
@@ -134,7 +149,7 @@ const TeamRow = ({ equipe, onAddMember, onRemoveMember, onToggle, isExpanded }) 
 
 
 // --- COMPOSANT PRINCIPAL ---
-const MesEquipesChefPage = ({ equipesChef, refetchData }) => {
+const MesEquipesChefPage = ({ equipesChef, allModules, refetchData }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
     const [equipeSelectionnee, setEquipeSelectionnee] = useState(null);
@@ -208,6 +223,8 @@ const MesEquipesChefPage = ({ equipesChef, refetchData }) => {
             team.assignments.some(a => `${a.utilisateur.prenom} ${a.utilisateur.nom}`.toLowerCase().includes(lowerSearchTerm))
         );
     }, [teamsWithAssignments, searchTerm]);
+    
+    const getModulesForEquipe = (equipeId) => (allModules || []).filter(module => module.equipe?.id === equipeId);
 
     if (isLoading) {
         return <div className="flex justify-center items-center h-full"><Loader className="animate-spin" size={48} /></div>;
@@ -217,19 +234,16 @@ const MesEquipesChefPage = ({ equipesChef, refetchData }) => {
         <div>
             <header className="mb-8">
                 <h1 className="text-3xl font-bold">Gestion des Équipes</h1>
-                <p className="text-slate-500 mt-1">Consultez et gérez les membres de vos équipes.</p>
+                <p className="text-slate-500 mt-1">Consultez et gérez les membres et les modules de vos équipes.</p>
             </header>
 
-            {/* FILTERS & ACTIONS */}
             <div className="mb-6 p-4 bg-white rounded-xl shadow-sm flex flex-col sm:flex-row items-center gap-4">
                 <div className="relative flex-grow w-full">
                     <Search className="h-5 w-5 text-slate-400 absolute inset-y-0 left-3 flex items-center pointer-events-none" />
                     <input type="text" placeholder="Rechercher une équipe ou un membre..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="form-input w-full pl-10"/>
                 </div>
-                {/* D'autres filtres pourraient être ajoutés ici */}
             </div>
 
-            {/* TABLEAU DES ÉQUIPES */}
             <div className="bg-white rounded-2xl shadow-md overflow-hidden">
                 <div className="overflow-x-auto">
                     {filteredTeams.length === 0 ? (
@@ -238,22 +252,23 @@ const MesEquipesChefPage = ({ equipesChef, refetchData }) => {
                             <p className="text-slate-500">{searchTerm ? "Aucun résultat pour votre recherche." : "Vous ne supervisez aucune équipe."}</p>
                         </div>
                     ) : (
-                        <table className="min-w-full">
-                            <thead className="bg-slate-50 border-b border-slate-200">
+                        <table className="min-w-full text-sm">
+                            <thead className="bg-slate-700">
                                 <tr>
                                     <th className="p-4 w-12"></th>
-                                    <th className="p-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Équipe</th>
-                                    <th className="p-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Description</th>
-                                    <th className="p-4 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Membres</th>
-                                    <th className="p-4 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Statut</th>
-                                    <th className="p-4 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                                    <th className="p-4 text-left text-xs font-semibold text-slate-100 uppercase tracking-wider">Équipe</th>
+                                    <th className="p-4 text-left text-xs font-semibold text-slate-100 uppercase tracking-wider">Description</th>
+                                    <th className="p-4 text-center text-xs font-semibold text-slate-100 uppercase tracking-wider">Membres</th>
+                                    <th className="p-4 text-center text-xs font-semibold text-slate-100 uppercase tracking-wider">Statut</th>
+                                    <th className="p-4 text-center text-xs font-semibold text-slate-100 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="bg-white">
                                 {filteredTeams.map((equipe) => (
                                     <TeamRow 
                                         key={equipe.id}
                                         equipe={equipe}
+                                        modules={getModulesForEquipe(equipe.id)}
                                         onAddMember={handleOpenAddMemberModal}
                                         onRemoveMember={handleRemoveMember}
                                         onToggle={() => toggleRow(equipe.id)}

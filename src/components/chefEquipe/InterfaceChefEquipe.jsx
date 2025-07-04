@@ -7,8 +7,8 @@ import equipeService from '../../services/equipeService';
 import ticketService from '../../services/ticketService';
 import moduleService from '../../services/moduleService';
 import userService from '../../services/userService';
-import commentService from '../../services/commentService'; // Ajouté
-import documentService from '../../services/documentService'; // Ajouté
+import commentService from '../../services/commentService';
+import documentService from '../../services/documentService';
 
 // --- Composants de l'interface ---
 import SidebarChefEquipe from './SidebarChefEquipe';
@@ -34,14 +34,11 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
   // --- Gestion de l'UI (Sidebar, Thème) ---
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setIsSidebarOpen(true); // Toujours ouverte sur grand écran
-      } else {
-        setIsSidebarOpen(false); // Fermée par défaut sur petit écran
-      }
+      if (window.innerWidth >= 1024) setIsSidebarOpen(true);
+      else setIsSidebarOpen(false);
     };
     window.addEventListener('resize', handleResize);
-    handleResize(); // Appel initial pour définir l'état
+    handleResize();
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   
@@ -87,33 +84,22 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
 
   // --- Logique de dérivation des données (useMemo) ---
   const equipesDuChefConnecte = useMemo(() => allEquipes, [allEquipes]);
-  
   const tousLesMembresDesEquipes = useMemo(() => {
     const membresMap = new Map();
-    (equipesDuChefConnecte || []).forEach(equipe => {
-        (equipe.utilisateurs || []).forEach(membre => {
-            if (membre.actif) membresMap.set(membre.id, membre);
-        });
-    });
+    (equipesDuChefConnecte || []).forEach(e => e.utilisateurs?.forEach(u => u.actif && membresMap.set(u.id, u)));
     return Array.from(membresMap.values());
   }, [equipesDuChefConnecte]);
-
   const idsModulesGeresParLeChef = useMemo(() => {
     const idsEquipes = new Set(equipesDuChefConnecte.map(e => e.id));
     return (allModules || []).filter(m => m.equipe && idsEquipes.has(m.equipe.id)).map(m => m.id);
   }, [equipesDuChefConnecte, allModules]);
-
   const ticketsVisiblesPourChef = useMemo(() => (allTickets || []).filter(t => t.idModule && idsModulesGeresParLeChef.includes(t.idModule.id)), [allTickets, idsModulesGeresParLeChef]);
   const ticketsPourChefATraiter = useMemo(() => ticketsVisiblesPourChef.filter(t => t.statue === 'En_attente'), [ticketsVisiblesPourChef]);
   const ticketsAssignesParChefPourSuivi = useMemo(() => ticketsVisiblesPourChef.filter(t => t.idUtilisateur && t.idUtilisateur !== 0), [ticketsVisiblesPourChef]);
   const ticketsRefuseParChefPourSuivi = useMemo(() => ticketsVisiblesPourChef.filter(t => t.statue === "Refuse"), [ticketsVisiblesPourChef]);
 
   // --- Fonctions de gestion des actions ---
-  const showTemporaryMessage = (type, text) => {
-    // Ici, vous pouvez intégrer une librairie comme react-toastify
-    console.log(`Notification (${type}): ${text}`);
-  };
-
+  const showTemporaryMessage = (type, text) => console.log(`Notification (${type}): ${text}`);
   const refetchDataAndProfile = useCallback(() => {
     queryClient.invalidateQueries(['chefDashboardData', currentUserState?.id]);
     queryClient.invalidateQueries(['currentUserProfile', user?.login]);
@@ -132,28 +118,19 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
   const handleAssignerTicketAEmploye = (ticketId, employe) => handleTicketAction(() => ticketService.updateTicket(ticketId, { idUtilisateur: employe.id, statue: 'En_cours' }), `Ticket assigné à ${employe.prenom}.`, "Erreur d'assignation");
   const handleReassignTicket = (ticketId, newUser) => handleTicketAction(() => ticketService.updateTicket(ticketId, { idUtilisateur: newUser ? newUser.id : 0, statue: newUser ? 'En_cours' : 'En_attente' }), newUser ? `Ticket réassigné.` : 'Affectation retirée.', 'Erreur de réassignation');
   const handleRefuserTicketParChef = (ticketId, motif) => handleTicketAction(() => ticketService.updateTicket(ticketId, { statue: 'Refuse', description: motif }), `Ticket refusé.`, 'Erreur lors du refus');
-
-  // --- NOUVELLES FONCTIONS POUR COMMENTAIRES ET FICHIERS ---
-  const handleAddComment = (commentData) => handleTicketAction(() => commentService.addComment(commentData), 'Commentaire ajouté.', 'Erreur d\'ajout du commentaire');
-  const handleDeleteComment = (commentId) => window.confirm('Voulez-vous vraiment supprimer ce commentaire ?') && handleTicketAction(() => commentService.deleteComment(commentId), 'Commentaire supprimé.', 'Erreur de suppression du commentaire');
-  const handleUploadFile = (file, ticketId) => handleTicketAction(() => documentService.uploadDocument(file, ticketId), 'Fichier ajouté avec succès.', 'Erreur lors de l\'envoi du fichier');
-  const handleDeleteFile = (documentId) => window.confirm('Voulez-vous vraiment supprimer ce fichier ?') && handleTicketAction(() => documentService.deleteDocument(documentId), 'Fichier supprimé.', 'Erreur de suppression du fichier');
+  const handleAddComment = (commentData) => handleTicketAction(() => commentService.addComment(commentData), 'Commentaire ajouté.', 'Erreur d\'ajout');
+  const handleDeleteComment = (commentId) => window.confirm('Supprimer ce commentaire ?') && handleTicketAction(() => commentService.deleteComment(commentId), 'Commentaire supprimé.', 'Erreur de suppression');
+  const handleUploadFile = (file, ticketId) => handleTicketAction(() => documentService.uploadDocument(file, ticketId), 'Fichier ajouté.', 'Erreur d\'envoi');
+  const handleDeleteFile = (documentId) => window.confirm('Supprimer ce fichier ?') && handleTicketAction(() => documentService.deleteDocument(documentId), 'Fichier supprimé.', 'Erreur de suppression');
   const handleDownloadFile = async (documentId, fileName) => {
-    try {
-      await documentService.downloadDocument(documentId, fileName);
-    } catch (error) {
-      showTemporaryMessage('error', 'Erreur lors du téléchargement du fichier.');
-    }
+    try { await documentService.downloadDocument(documentId, fileName); }
+    catch (error) { showTemporaryMessage('error', 'Erreur de téléchargement.'); }
   };
 
   // --- Routage interne pour afficher la page active ---
   const renderActivePage = () => {
-    if (isUserLoading || isDataLoading) {
-      return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Chargement des données...</div>;
-    }
-    if (!currentUserState) {
-        return <div className="p-8 text-center text-red-500">Erreur critique : le profil utilisateur est introuvable.</div>
-    }
+    if (isUserLoading || isDataLoading) return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Chargement...</div>;
+    if (!currentUserState) return <div className="p-8 text-center text-red-500">Erreur critique : profil utilisateur introuvable.</div>;
 
     const commonTicketHandlers = {
         currentUser: currentUserState,
@@ -167,7 +144,8 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
     switch (activePage) {
       case 'dashboard': return <TableauDeBordChef user={currentUserState} tickets={ticketsVisiblesPourChef} equipes={equipesDuChefConnecte} />;
       case 'profile': return <ProfilChefEquipe currentUser={currentUserState} refetchData={refetchDataAndProfile} showTemporaryMessage={showTemporaryMessage} />;
-      case 'teams': return <MesEquipesChefPage equipesChef={equipesDuChefConnecte} refetchData={refetchAllData} />;
+      // --- MODIFICATION ICI : Ajout de la prop `allModules` ---
+      case 'teams': return <MesEquipesChefPage equipesChef={equipesDuChefConnecte} allModules={allModules} refetchData={refetchAllData} />;
       case 'tickets-to-do': return <TicketsATraiterChefPage ticketsNonAssignes={ticketsPourChefATraiter} equipesDuChef={equipesDuChefConnecte} onAssignerTicketAEmploye={handleAssignerTicketAEmploye} onRefuserTicketParChef={handleRefuserTicketParChef} {...commonTicketHandlers} />;
       case 'tickets-follow-up': return <SuiviAffectationsChefPage ticketsAssignesParChef={ticketsAssignesParChefPourSuivi} onReassignTicket={handleReassignTicket} tousLesMembresDesEquipes={tousLesMembresDesEquipes} {...commonTicketHandlers} />;
       case 'tickets-refused': return <TicketsRefuse ticketRefuse={ticketsRefuseParChefPourSuivi} {...commonTicketHandlers} />;

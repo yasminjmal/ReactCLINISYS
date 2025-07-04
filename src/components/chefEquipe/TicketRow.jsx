@@ -43,12 +43,13 @@ const TicketDetailView = ({ ticket, currentUser, onAddComment, onDeleteComment, 
                 <div>
                     <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2"><MessageSquare size={18} /> Commentaires</h4>
                     <div className="space-y-3 max-h-48 overflow-y-auto pr-2 border-b pb-3">
-                        {(ticket.commentaires || []).length > 0 ? ticket.commentaires.map(comment => (
+                        {(ticket.commentaireList || []).length > 0 ? ticket.commentaireList.map(comment => (
                             <div key={comment.id} className="text-sm">
                                 <div className="flex items-center justify-between">
                                     <p className="font-semibold text-slate-800">{comment.utilisateur?.prenom} {comment.utilisateur?.nom}</p>
                                     {currentUser?.id === comment.utilisateur?.id && (
-                                        <button onClick={() => onDeleteComment(comment.id)} className="text-slate-400 hover:text-red-500"><Trash2 size={14} /></button>
+                                        // --- CORRECTION : Ajout de ticket.id à l'appel ---
+                                        <button onClick={() => onDeleteComment(comment.id, ticket.id)} className="text-slate-400 hover:text-red-500"><Trash2 size={14} /></button>
                                     )}
                                 </div>
                                 <p className="text-slate-600 whitespace-pre-wrap">{comment.commentaire}</p>
@@ -64,11 +65,11 @@ const TicketDetailView = ({ ticket, currentUser, onAddComment, onDeleteComment, 
                 <div>
                     <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2"><Paperclip size={18} /> Pièces Jointes</h4>
                     <div className="space-y-2 max-h-48 overflow-y-auto pr-2 border-b pb-3">
-                        {(ticket.documentJointes || []).length > 0 ? ticket.documentJointes.map(doc => (
+                        {(ticket.documentJointesList || []).length > 0 ? ticket.documentJointesList.map(doc => (
                             <div key={doc.id} className="flex items-center justify-between bg-white p-2 rounded-md border">
-                                <p className="text-sm text-slate-700 truncate mr-2">{doc.nomFichier}</p>
+                                <p className="text-sm text-slate-700 truncate mr-2">{doc.nomDocument}.{doc.extension}</p>
                                 <div className="flex gap-1 flex-shrink-0">
-                                    <button onClick={() => onDownloadFile(doc.id, doc.nomFichier)} className="p-1.5 text-slate-500 hover:text-blue-600"><Download size={16} /></button>
+                                    <button onClick={() => onDownloadFile(doc.id, doc.nomDocument)} className="p-1.5 text-slate-500 hover:text-blue-600"><Download size={16} /></button>
                                     <button onClick={() => onDeleteFile(doc.id)} className="p-1.5 text-slate-500 hover:text-red-600"><Trash2 size={16} /></button>
                                 </div>
                             </div>
