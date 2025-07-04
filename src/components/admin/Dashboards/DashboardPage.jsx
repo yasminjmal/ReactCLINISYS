@@ -5,6 +5,8 @@ import React, { useState } from 'react';
 import DashboardNav from './DashboardNav';
 import TicketsPage from './nav/TicketsPage'; // Votre ancien tableau de bord
 import ClientsPage from './nav/ClientsPage'; // La nouvelle page des clients
+import UtilisateursPage from './nav/UtilisateursPage'; // La nouvelle page des utilisateurs
+import EquipesPage from './nav/EquipesPage'; // La nouvelle page des équipes
 // Importez les autres (UtilisateursDashboard, etc.) ici
 
 const DashboardPage = () => {
@@ -18,6 +20,10 @@ const DashboardPage = () => {
         return <TicketsPage />;
       case 'clients':
         return <ClientsPage />;
+      case 'utilisateurs':
+        return <UtilisateursPage />;
+      case 'equipes':
+        return <EquipesPage />;
       // case 'utilisateurs':
       //   return <UtilisateursDashboard />;
       // Ajoutez les autres cas ici...
@@ -32,8 +38,7 @@ const DashboardPage = () => {
       
       {/* L'en-tête de la page ne change pas */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Tableau de Bord</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-1">Gérez toutes les facettes de votre application depuis cet espace centralisé.</p>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Tableaux de Bords Analytiques</h1>
       </div>
       
       {/* 4. On passe l'état et la fonction pour le changer à la barre de navigation */}
