@@ -1,22 +1,20 @@
+// src/components/chefEquipe/ProfilChefEquipe.jsx
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Shield, Edit, Camera, KeyRound } from 'lucide-react';
-import utilisateurService from '../../services/utilisateurService'; // Assurez-vous d'utiliser le service consolidé
+import { User, Mail, KeyRound, Camera, Save } from 'lucide-react';
+import utilisateurService from '../../services/utilisateurService';
 
-const ProfilAdmin = ({ currentUser, refetchData, showTemporaryMessage }) => {
-
+const ProfilChefEquipe = ({ currentUser, refetchData, showTemporaryMessage }) => {
     const [formData, setFormData] = useState({
         prenom: '',
         nom: '',
         email: '',
-        // Pour la sécurité, les champs de mot de passe sont vides par défaut
-        currentPassword: '', 
         newPassword: '',
         confirmPassword: ''
     });
     const [photoFile, setPhotoFile] = useState(null);
     const [previewPhoto, setPreviewPhoto] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Initialiser le formulaire avec les données de l'utilisateur actuel
     useEffect(() => {
         if (currentUser) {
             setFormData(prev => ({
@@ -25,17 +23,9 @@ const ProfilAdmin = ({ currentUser, refetchData, showTemporaryMessage }) => {
                 nom: currentUser.nom || '',
                 email: currentUser.email || ''
             }));
-            setPreviewPhoto(getProfileImageUrl(currentUser));
+            setPreviewPhoto(currentUser.photo ? `data:image/jpeg;base64,${currentUser.photo}` : `https://i.pravatar.cc/150?u=${currentUser.id}`);
         }
     }, [currentUser]);
-
-    // Helper pour afficher la photo
-    const getProfileImageUrl = (user) => {
-        if (user?.photo) {
-            return `data:image/jpeg;base64,${user.photo}`;
-        }
-        return `https://i.pravatar.cc/150?u=${user?.id || 'default'}`;
-    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -46,66 +36,69 @@ const ProfilAdmin = ({ currentUser, refetchData, showTemporaryMessage }) => {
         const file = e.target.files[0];
         if (file) {
             setPhotoFile(file);
-            setPreviewPhoto(URL.createObjectURL(file)); // Affiche un aperçu local
+            setPreviewPhoto(URL.createObjectURL(file));
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsSubmitting(true);
 
         if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
             showTemporaryMessage('error', 'Les nouveaux mots de passe ne correspondent pas.');
+            setIsSubmitting(false);
             return;
         }
 
-        // Préparez les données de l'utilisateur à envoyer
         const userDataToUpdate = {
             prenom: formData.prenom,
             nom: formData.nom,
             email: formData.email,
         };
-        // Ajoutez le mot de passe seulement s'il est changé
+        // Le backend doit gérer la mise à jour du mot de passe
         if (formData.newPassword) {
-            // NOTE: Le backend doit gérer la vérification de l'ancien mot de passe
-            // et le hachage du nouveau. L'envoi en clair est à des fins de démonstration.
-            userDataToUpdate.mot_de_passe = formData.newPassword; 
+            userDataToUpdate.mot_de_passe = formData.newPassword;
         }
 
         try {
+            // Utilisation du service pour mettre à jour les données et la photo
             await utilisateurService.updateUtilisateur(currentUser.id, userDataToUpdate, photoFile);
             showTemporaryMessage('success', 'Profil mis à jour avec succès !');
-            refetchData(); // Rafraîchir les données pour mettre à jour la navbar, etc.
+            refetchData(); // Rafraîchir toutes les données
         } catch (error) {
-            showTemporaryMessage('error', 'Échec de la mise à jour du profil.');
+            showTemporaryMessage('error', `Échec de la mise à jour : ${error.response?.data?.message || error.message}`);
             console.error("Update profile error:", error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
-    if (!currentUser) return <div className="p-8">Chargement du profil...</div>;
-
     return (
-        <div className="p-4 md:p-8 space-y-8 max-w-4xl mx-auto">
-            <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Mon Profil</h1>
+        <div>
+            <header className="mb-8">
+                <h1 className="text-3xl font-bold">Mon Profil</h1>
+                <p className="text-slate-500 mt-1">Gérez vos informations personnelles et de sécurité.</p>
+            </header>
             
             <form onSubmit={handleSubmit} className="space-y-8">
                 {/* --- CARTE D'INFORMATIONS PERSONNELLES --- */}
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md">
-                    <h2 className="text-xl font-semibold mb-4 flex items-center"><Edit className="mr-3 text-blue-500"/> Informations Personnelles</h2>
+                <div className="bg-white p-8 rounded-2xl shadow-md">
+                    <h2 className="text-xl font-semibold mb-6 flex items-center"><User className="mr-3 text-violet-500"/> Informations Personnelles</h2>
                     <div className="flex flex-col md:flex-row items-center gap-8">
                         {/* Section Photo */}
-                        <div className="relative flex-shrink-0">
+                        <div className="relative flex-shrink-0 group">
                             <img 
                                 src={previewPhoto}
                                 alt="Aperçu du profil"
-                                className="w-32 h-32 rounded-full object-cover border-4 border-slate-200 dark:border-slate-600"
+                                className="w-32 h-32 rounded-full object-cover border-4 border-slate-200"
                             />
-                            <label htmlFor="photo-upload" className="absolute -bottom-1 -right-1 bg-blue-500 text-white p-2 rounded-full cursor-pointer hover:bg-blue-600">
-                                <Camera size={20} />
+                            <label htmlFor="photo-upload" className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                <Camera size={32} className="text-white" />
                                 <input id="photo-upload" type="file" accept="image/*" className="hidden" onChange={handleFileChange}/>
                             </label>
                         </div>
                         {/* Section Champs */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-grow">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 flex-grow">
                              <div>
                                 <label className="form-label" htmlFor="prenom">Prénom</label>
                                 <input type="text" id="prenom" name="prenom" value={formData.prenom} onChange={handleChange} className="form-input"/>
@@ -123,9 +116,9 @@ const ProfilAdmin = ({ currentUser, refetchData, showTemporaryMessage }) => {
                 </div>
 
                  {/* --- CARTE DE SÉCURITÉ --- */}
-                 <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md">
-                    <h2 className="text-xl font-semibold mb-4 flex items-center"><KeyRound className="mr-3 text-red-500"/> Sécurité</h2>
-                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                 <div className="bg-white p-8 rounded-2xl shadow-md">
+                    <h2 className="text-xl font-semibold mb-6 flex items-center"><KeyRound className="mr-3 text-violet-500"/> Sécurité</h2>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-lg">
                         <div>
                             <label className="form-label" htmlFor="newPassword">Nouveau mot de passe</label>
                             <input type="password" id="newPassword" name="newPassword" value={formData.newPassword} onChange={handleChange} className="form-input" placeholder="Laisser vide pour ne pas changer"/>
@@ -138,8 +131,8 @@ const ProfilAdmin = ({ currentUser, refetchData, showTemporaryMessage }) => {
                 </div>
 
                 <div className="flex justify-end">
-                    <button type="submit" className="btn btn-primary">
-                        Enregistrer les modifications
+                    <button type="submit" disabled={isSubmitting} className="btn btn-primary flex items-center gap-2">
+                        {isSubmitting ? 'Enregistrement...' : <> <Save size={16}/> Enregistrer les modifications </>}
                     </button>
                 </div>
             </form>
@@ -147,4 +140,4 @@ const ProfilAdmin = ({ currentUser, refetchData, showTemporaryMessage }) => {
     );
 };
 
-export default ProfilAdmin;
+export default ProfilChefEquipe;
