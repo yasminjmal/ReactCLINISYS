@@ -22,7 +22,7 @@ const StatusBadge = ({ status }) => {
         'En_cours': 'bg-yellow-100 text-yellow-700',
         'Termine': 'bg-emerald-100 text-emerald-700',
         'Refuse': 'bg-red-100 text-red-700',
-        'Nouveau': 'bg-blue-100 text-blue-700',
+        'En_attente': 'bg-blue-100 text-blue-700',
     };
     const formattedStatus = status ? status.replace('_', ' ') : 'N/A';
     return (

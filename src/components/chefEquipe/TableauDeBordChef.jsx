@@ -70,10 +70,7 @@ const TableauDeBordChef = ({ user, tickets, equipes }) => {
                     <h1 className="text-3xl font-bold">Tableau de Bord</h1>
                     <p className="text-slate-500 mt-1">Bienvenue, {user?.prenom} ! Voici un aperçu de vos activités.</p>
                 </div>
-                <div className="flex items-center gap-4">
-                    <span className="text-sm font-medium">{user?.prenom} {user?.nom}</span>
-                    <img src={getProfileImageUrl(user)} alt="Profil" className="w-12 h-12 rounded-full object-cover" />
-                </div>
+                
             </header>
 
             {/* Grille de widgets */}

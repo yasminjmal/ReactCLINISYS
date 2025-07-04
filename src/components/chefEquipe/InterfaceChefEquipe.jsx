@@ -1,5 +1,5 @@
 // src/components/chefEquipe/InterfaceChefEquipe.jsx
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
 
 // --- Services ---
@@ -7,10 +7,10 @@ import equipeService from '../../services/equipeService';
 import ticketService from '../../services/ticketService';
 import moduleService from '../../services/moduleService';
 import userService from '../../services/userService';
-import utilisateurService from '../../services/utilisateurService';
 
-// --- Composants Redessinés ---
+// --- Composants de l'interface ---
 import SidebarChefEquipe from './SidebarChefEquipe';
+import NavbarChefEquipe from './NavbarChefEquipe';
 import TableauDeBordChef from './TableauDeBordChef';
 import ProfilChefEquipe from './ProfilChefEquipe';
 import MesEquipesChefPage from './MesEquipesChefPage';
@@ -19,19 +19,49 @@ import SuiviAffectationsChefPage from './SuiviAffectationsChefPage';
 import TicketsRefuse from './TicketsRefuse';
 
 const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
+  // --- États locaux pour la gestion de l'UI ---
   const [activePage, setActivePage] = useState('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme ? savedTheme === 'dark' : false;
+  });
+  
   const queryClient = useQueryClient();
 
-  const showTemporaryMessage = (type, text) => {
-    // Implémentez votre système de notification (ex: react-toastify)
-    console.log(`Notification (${type}): ${text}`);
+  // --- Gestion de la sidebar pour les écrans mobiles et larges ---
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsSidebarOpen(true); // Toujours ouverte sur grand écran
+      } else {
+        setIsSidebarOpen(false); // Fermée par défaut sur petit écran
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Appel initial pour définir l'état
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  
+  // --- Gestion du thème (Dark/Light Mode) ---
+  const toggleTheme = () => {
+      const newTheme = !isDarkMode;
+      setIsDarkMode(newTheme);
+      document.documentElement.classList.toggle('dark', newTheme);
+      localStorage.setItem('theme', newTheme ? 'dark' : 'light');
   };
+  
+  useEffect(() => {
+      document.documentElement.classList.toggle('dark', isDarkMode);
+  }, [isDarkMode]);
 
-  // --- Requêtes de données avec react-query ---
+  // --- Récupération des données avec React Query ---
   const { data: currentUserState, isLoading: isUserLoading } = useQuery(
     ['currentUserProfile', user?.login],
     () => userService.getUserByLogin(user.login),
-    { enabled: !!user?.login, staleTime: 1000 * 60 * 5 } // Cache de 5 minutes
+    { enabled: !!user?.login, staleTime: 1000 * 60 * 5 }
   );
 
   const { data, isLoading: isDataLoading, refetch: refetchAllData } = useQuery(
@@ -79,11 +109,16 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
     return allTickets.filter(ticket => ticket.idModule && idsModulesGeresParLeChef.includes(ticket.idModule.id));
   }, [allTickets, idsModulesGeresParLeChef]);
 
-  const ticketsPourChefATraiter = useMemo(() => ticketsVisiblesPourChef.filter(t => !t.idUtilisateur && t.statue !== 'Refuse'), [ticketsVisiblesPourChef]);
-  const ticketsAssignesParChefPourSuivi = useMemo(() => ticketsVisiblesPourChef.filter(t => !!t.idUtilisateur), [ticketsVisiblesPourChef]);
+  const ticketsPourChefATraiter = useMemo(() => ticketsVisiblesPourChef.filter(t => t.statue === 'En_attente'), [ticketsVisiblesPourChef]);
+  const ticketsAssignesParChefPourSuivi = useMemo(() => ticketsVisiblesPourChef.filter(t => t.idUtilisateur && t.idUtilisateur !== 0), [ticketsVisiblesPourChef]);
   const ticketsRefuseParChefPourSuivi = useMemo(() => ticketsVisiblesPourChef.filter(t => t.statue === "Refuse"), [ticketsVisiblesPourChef]);
 
-  // --- Fonctions de gestion ---
+  // --- Fonctions de gestion des actions ---
+  const showTemporaryMessage = (type, text) => {
+    // Ici, vous pouvez intégrer une librairie comme react-toastify
+    console.log(`Notification (${type}): ${text}`);
+  };
+
   const refetchDataAndProfile = useCallback(() => {
     queryClient.invalidateQueries(['chefDashboardData', currentUserState?.id]);
     queryClient.invalidateQueries(['currentUserProfile', user?.login]);
@@ -100,13 +135,22 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
   };
 
   const handleAssignerTicketAEmploye = (ticketId, employe) => handleTicketAction(() => ticketService.updateTicket(ticketId, { idUtilisateur: employe.id, statue: 'En_cours' }), `Ticket assigné à ${employe.prenom}.`, "Erreur lors de l'assignation");
-  const handleReassignTicket = (ticketId, newUser) => handleTicketAction(() => ticketService.updateTicket(ticketId, { idUtilisateur: newUser?.id || null, statue: newUser ? 'En_cours' : 'Nouveau' }), newUser ? `Ticket réassigné à ${newUser.prenom}.` : 'Affectation retirée.', 'Erreur lors de la réassignation');
+  
+  const handleReassignTicket = (ticketId, newUser) => {
+    const payload = {
+        idUtilisateur: newUser ? newUser.id : 0,
+        statue: newUser ? 'En_cours' : 'En_attente'
+    };
+    const successMessage = newUser ? `Ticket réassigné à ${newUser.prenom}.` : 'Affectation retirée.';
+    handleTicketAction(() => ticketService.updateTicket(ticketId, payload), successMessage, 'Erreur lors de la réassignation');
+  };
+  
   const handleRefuserTicketParChef = (ticketId, motif) => handleTicketAction(() => ticketService.updateTicket(ticketId, { statue: 'Refuse', description: motif, priorite: 'Basse' }), `Ticket refusé.`, 'Erreur lors du refus');
 
-  // --- Routage interne ---
+  // --- Routage interne pour afficher la page active ---
   const renderActivePage = () => {
     if (isUserLoading || isDataLoading) {
-      return <div className="p-8 text-center text-slate-500">Chargement des données...</div>;
+      return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Chargement des données...</div>;
     }
     if (!currentUserState) {
         return <div className="p-8 text-center text-red-500">Erreur critique : impossible de charger le profil utilisateur.</div>
@@ -115,7 +159,7 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
     switch (activePage) {
       case 'dashboard': return <TableauDeBordChef user={currentUserState} tickets={ticketsVisiblesPourChef} equipes={equipesDuChefConnecte} />;
       case 'profile': return <ProfilChefEquipe currentUser={currentUserState} refetchData={refetchDataAndProfile} showTemporaryMessage={showTemporaryMessage} />;
-      case 'teams': return <MesEquipesChefPage equipesChef={equipesDuChefConnecte} allModules={allModules} refetchData={refetchAllData} />;
+      case 'teams': return <MesEquipesChefPage equipesChef={equipesDuChefConnecte} refetchData={refetchAllData} />;
       case 'tickets-to-do': return <TicketsATraiterChefPage ticketsNonAssignes={ticketsPourChefATraiter} equipesDuChef={equipesDuChefConnecte} onAssignerTicketAEmploye={handleAssignerTicketAEmploye} onRefuserTicketParChef={handleRefuserTicketParChef} />;
       case 'tickets-follow-up': return <SuiviAffectationsChefPage ticketsAssignesParChef={ticketsAssignesParChefPourSuivi} onReassignTicket={handleReassignTicket} tousLesMembresDesEquipes={tousLesMembresDesEquipes} />;
       case 'tickets-refused': return <TicketsRefuse ticketRefuse={ticketsRefuseParChefPourSuivi} />;
@@ -124,11 +168,30 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
   };
 
   return (
-    <div className="bg-[#F4F7FE] min-h-screen font-sans flex text-slate-800">
-      <SidebarChefEquipe activePage={activePage} setActivePage={setActivePage} onLogout={appLogoutHandler} />
-      <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
-        {renderActivePage()}
-      </main>
+    <div className={`bg-slate-100 dark:bg-slate-950 min-h-screen font-sans`}>
+        {/* Overlay pour mobile lorsque la sidebar est ouverte */}
+        {isSidebarOpen && <div onClick={toggleSidebar} className="fixed inset-0 bg-black/50 z-40 lg:hidden"></div>}
+
+        <SidebarChefEquipe 
+            activePage={activePage} 
+            setActivePage={setActivePage} 
+            isSidebarOpen={isSidebarOpen} 
+            onLogout={appLogoutHandler} 
+        />
+      
+        <div className="flex-1 flex flex-col transition-all duration-300 lg:ml-64">
+            <NavbarChefEquipe 
+                user={currentUserState}
+                onLogout={appLogoutHandler}
+                toggleSidebar={toggleSidebar}
+                toggleTheme={toggleTheme}
+                isDarkMode={isDarkMode}
+                setActivePage={setActivePage}
+            />
+            <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
+                {renderActivePage()}
+            </main>
+        </div>
     </div>
   );
 };
