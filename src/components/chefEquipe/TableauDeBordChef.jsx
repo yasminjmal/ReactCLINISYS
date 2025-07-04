@@ -30,7 +30,9 @@ const TableauDeBordChef = ({ user, tickets, equipes }) => {
         const ticketsATraiter = tickets.filter(t => !t.idUtilisateur && t.statue !== 'Refuse');
         const ticketsEnCours = tickets.filter(t => t.statue === 'En_cours');
         const ticketsTermines = tickets.filter(t => t.statue === 'Termine');
+        const ticketsBassePrio = tickets.filter(t => t.priorite === 'Basse' && t.statue !== 'Termine' && t.statue !== 'Refuse');
         const ticketsHautePrio = tickets.filter(t => t.priorite === 'Haute' && t.statue !== 'Termine' && t.statue !== 'Refuse');
+        const ticketsMoyennePrio = tickets.filter(t => t.priorite === 'Moyenne' && t.statue !== 'Termine' && t.statue !== 'Refuse');
 
         // Préparation des données pour le graphique
         const ticketsByDay = tickets.reduce((acc, ticket) => {
@@ -49,6 +51,8 @@ const TableauDeBordChef = ({ user, tickets, equipes }) => {
             enCours: ticketsEnCours.length,
             termines: ticketsTermines.length,
             hautePrio: ticketsHautePrio.length,
+            bassePrio: ticketsBassePrio.length,
+            moyennePrio: ticketsMoyennePrio.length,
             membresTotal: equipes.reduce((acc, eq) => acc + (eq.utilisateurs?.length || 0), 0),
             chartData
         };
@@ -104,8 +108,22 @@ const TableauDeBordChef = ({ user, tickets, equipes }) => {
                             <span className="font-medium text-red-600">Haute</span>
                             <span className="font-bold text-lg">{stats.hautePrio}</span>
                         </div>
-                         <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
                            <div className="bg-red-500 h-2.5 rounded-full" style={{ width: `${(stats.hautePrio / (tickets.length || 1)) * 100}%` }}></div>
+                         </div>
+                        <div className="flex justify-between items-center">
+                            <span className="font-medium text-yellow-500">Moyenne</span>
+                            <span className="font-bold text-lg">{stats.moyennePrio}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                           <div className="bg-yellow-500 h-2.5 rounded-full" style={{ width: `${(stats.moyennePrio / (tickets.length || 1)) * 100}%` }}></div>
+                         </div>
+                        <div className="flex justify-between items-center">
+                            <span className="font-medium text-green-600">Basse</span>
+                            <span className="font-bold text-lg">{stats.bassePrio}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                           <div className="bg-green-500 h-2.5 rounded-full" style={{ width: `${(stats.bassePrio / (tickets.length || 1)) * 100}%` }}></div>
                          </div>
                     </div>
                     {/* Vous pouvez ajouter d'autres priorités ici */}
