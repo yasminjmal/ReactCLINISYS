@@ -1,40 +1,49 @@
 // src/components/admin/Dashboards/DashboardPage.jsx
-import React from 'react';
-import TicketsByStatusDonutChart from './TicketsByStatusDonutChart';
-import SubscriptionsHourlyBarChart from './SubscriptionsHourlyBarChart';
-import LiveFeedsAreaChart from './LiveFeedsAreaChart';
-import ActiveTicketsByCategoryBarChart from './ActiveTicketsByCategoryBarChart';
-import ClientMapWidget from './ClientMapWidget';
+import React, { useState } from 'react';
+
+// 1. On importe tous nos composants de page
+import DashboardNav from './DashboardNav';
+import TicketsPage from './nav/TicketsPage'; // Votre ancien tableau de bord
+import ClientsPage from './nav/ClientsPage'; // La nouvelle page des clients
+// Importez les autres (UtilisateursDashboard, etc.) ici
 
 const DashboardPage = () => {
+  // 2. On crée l'état qui va "mémoriser" la page active. Par défaut, 'tickets'.
+  const [activePage, setActivePage] = useState('tickets');
+
+  // 3. Cette fonction choisit quel composant afficher en fonction de l'état
+  const renderContent = () => {
+    switch (activePage) {
+      case 'tickets':
+        return <TicketsPage />;
+      case 'clients':
+        return <ClientsPage />;
+      // case 'utilisateurs':
+      //   return <UtilisateursDashboard />;
+      // Ajoutez les autres cas ici...
+      default:
+        // Par sécurité, si l'état est inconnu, on affiche la page des tickets
+        return <TicketsPage />;
+    }
+  };
+
   return (
-    <div className="p-4 md:p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
-      <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Tableaux de Bord Analytiques</h1>
+    <div className="p-4 md:p-8 bg-slate-50 dark:bg-slate-900/50">
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Graphique en beignet: Tickets par Statut */}
-        <TicketsByStatusDonutChart />
-        
-        {/* Graphique en aires: Flux en direct */}
-        <LiveFeedsAreaChart />
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 mb-6">
-        {/* Graphique à barres: Abonnements horaires (ou autre métrique horaire) */}
-        <SubscriptionsHourlyBarChart />
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 mb-6">
-        {/* Tickets actifs par catégorie */}
-        <ActiveTicketsByCategoryBarChart />
+      {/* L'en-tête de la page ne change pas */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Tableau de Bord</h1>
+        <p className="text-slate-500 dark:text-slate-400 mt-1">Gérez toutes les facettes de votre application depuis cet espace centralisé.</p>
       </div>
       
-      <div className="grid grid-cols-1 gap-6 mb-6">
-        {/* Widget carte client */}
-        <ClientMapWidget />
+      {/* 4. On passe l'état et la fonction pour le changer à la barre de navigation */}
+      <DashboardNav activePage={activePage} onNavClick={setActivePage} />
+      
+      {/* 5. On appelle notre fonction pour afficher le bon contenu */}
+      <div>
+        {renderContent()}
       </div>
 
-      {/* Tu peux ajouter d'autres métriques ou graphiques ici */}
     </div>
   );
 };
