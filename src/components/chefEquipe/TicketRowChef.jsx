@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { Filter, Search, UserPlus, XCircle, Info, Package, CalendarDays, AlertTriangle, CheckCircle } from 'lucide-react';
+// src/components/chefEquipe/TicketRowChef.jsx
+import React, { useState } from 'react';
+import { UserPlus, XCircle, AlertTriangle, CheckCircle } from 'lucide-react';
 
 const TicketRowChef = ({ ticket, onAssigner, onRefuser, equipeMembres }) => {
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -28,6 +29,7 @@ const TicketRowChef = ({ ticket, onAssigner, onRefuser, equipeMembres }) => {
     const employeSelectionne = equipeMembres.find(m => m.id.toString() === selectedEmployeId);
     onAssigner(ticket.id, employeSelectionne);
     setShowAssignModal(false);
+    setSelectedEmployeId(''); // Reset state
   };
 
   const handleRefusSubmit = () => {
@@ -37,7 +39,20 @@ const TicketRowChef = ({ ticket, onAssigner, onRefuser, equipeMembres }) => {
     }
     onRefuser(ticket.id, motifRefus);
     setShowRefusModal(false);
+    setMotifRefus(''); // Reset state
   };
+  
+  const openAssignModal = () => setShowAssignModal(true);
+  const closeAssignModal = () => {
+    setShowAssignModal(false);
+    setSelectedEmployeId('');
+  };
+
+  const openRefusModal = () => setShowRefusModal(true);
+  const closeRefusModal = () => {
+    setShowRefusModal(false);
+    setMotifRefus('');
+  }
 
   const cellClass = "px-4 py-3 text-sm text-slate-700 dark:text-slate-200 align-middle border-b border-slate-200 dark:border-slate-700";
 
@@ -62,24 +77,24 @@ const TicketRowChef = ({ ticket, onAssigner, onRefuser, equipeMembres }) => {
         <td className={cellClass}>{dateCreationFormatted}</td>
         <td className={`${cellClass} text-center`}>
           <div className="flex items-center justify-center space-x-2">
-            <button onClick={() => setShowAssignModal(true)} className="btn btn-primary-outline btn-xs p-2" title="Assigner à un employé">
+            <button onClick={openAssignModal} className="btn btn-primary-outline btn-xs p-2" title="Assigner à un employé">
               <UserPlus size={16} />
             </button>
-            <button onClick={() => setShowRefusModal(true)} className="btn btn-danger-outline btn-xs p-2" title="Refuser le ticket">
+            <button onClick={openRefusModal} className="btn btn-danger-outline btn-xs p-2" title="Refuser le ticket">
               <XCircle size={16} />
             </button>
           </div>
         </td>
       </tr>
 
-      {/* Modal d'assignation */}
+      {/* --- MODAL D'ASSIGNATION CONTRÔLÉE --- */}
       {showAssignModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-full max-w-md">
             <h3 className="text-lg font-semibold mb-4">Assigner Ticket {ticket.ref}</h3>
             <select
-              value={selectedEmployeId}
-              onChange={(e) => setSelectedEmployeId(e.target.value)}
+              value={selectedEmployeId} // L'état contrôle la valeur
+              onChange={(e) => setSelectedEmployeId(e.target.value)} // L'état est mis à jour
               className="form-select w-full mb-4"
             >
               <option value="">Sélectionner un employé...</option>
@@ -88,27 +103,27 @@ const TicketRowChef = ({ ticket, onAssigner, onRefuser, equipeMembres }) => {
               ))}
             </select>
             <div className="flex justify-end space-x-3">
-              <button onClick={() => setShowAssignModal(false)} className="btn btn-secondary">Annuler</button>
+              <button onClick={closeAssignModal} className="btn btn-secondary">Annuler</button>
               <button onClick={handleAssignSubmit} className="btn btn-primary" disabled={!selectedEmployeId}>Confirmer</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal de refus */}
+      {/* --- MODAL DE REFUS CONTRÔLÉE --- */}
       {showRefusModal && (
          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-full max-w-md">
            <h3 className="text-lg font-semibold mb-4">Refuser Ticket {ticket.ref}</h3>
            <textarea
-             value={motifRefus}
-             onChange={(e) => setMotifRefus(e.target.value)}
+             value={motifRefus} // L'état contrôle la valeur
+             onChange={(e) => setMotifRefus(e.target.value)} // L'état est mis à jour
              className="form-textarea w-full mb-4"
              rows="3"
              placeholder="Motif du refus (obligatoire)..."
            />
            <div className="flex justify-end space-x-3">
-             <button onClick={() => setShowRefusModal(false)} className="btn btn-secondary">Annuler</button>
+             <button onClick={closeRefusModal} className="btn btn-secondary">Annuler</button>
              <button onClick={handleRefusSubmit} className="btn btn-danger" disabled={!motifRefus.trim()}>Refuser</button>
            </div>
          </div>
@@ -117,4 +132,5 @@ const TicketRowChef = ({ ticket, onAssigner, onRefuser, equipeMembres }) => {
     </>
   );
 };
+
 export default TicketRowChef;

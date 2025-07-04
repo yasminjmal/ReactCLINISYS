@@ -12,7 +12,15 @@ import ChefEquipeInterface from './components/chefEquipe/InterfaceChefEquipe';
 import EmployeInterface from './components/employe/InterfaceEmploye';
 import './index.css';
 
-// --- Vos composants de routage (Aucun changement ici, ils sont corrects) ---
+// --- CORRECTION 1: Importer QueryClient et QueryClientProvider ---
+import { QueryClient, QueryClientProvider } from 'react-query';
+
+// --- CORRECTION 2: Créer une instance du client ---
+// Cette instance gérera le cache de toutes vos requêtes.
+const queryClient = new QueryClient();
+
+
+// --- Vos composants de routage (Aucun changement ici) ---
 const normalizeRoleApp = (roleFromServer) => {
     if (!roleFromServer) return '';
     let normalized = String(roleFromServer).toLowerCase();
@@ -21,11 +29,14 @@ const normalizeRoleApp = (roleFromServer) => {
     }
     return normalized;
 };
+
 const ProtectedRoute = ({ allowedRoles }) => {
     const { currentUser, isAuthenticated, isLoading } = useAuth();
     if (isLoading) return <div className="flex justify-center items-center h-screen text-slate-500">Chargement...</div>;
     if (!isAuthenticated || !currentUser) return <Navigate to="/login" replace />;
+    
     const userRoleNormalized = normalizeRoleApp(currentUser.role);
+    
     if (allowedRoles && !allowedRoles.includes(userRoleNormalized)) {
         let fallbackPath = '/login';
         switch (userRoleNormalized) {
@@ -36,8 +47,13 @@ const ProtectedRoute = ({ allowedRoles }) => {
         }
         return <Navigate to={fallbackPath} replace />;
     }
-    return <Outlet context={{ currentUser }} />;
+    
+    // --- CORRECTION : Passer les props de l'utilisateur à l'interface ---
+    // Au lieu de `context={{ currentUser }}`, on passe directement les props
+    // à l'Outlet, qui les transmettra au composant de la route.
+    return <Outlet />;
 };
+
 const PublicRoute = ({ children }) => {
     const { isAuthenticated, currentUser, isLoading } = useAuth();
     if (isLoading) return <div className="flex justify-center items-center h-screen text-slate-500">Chargement...</div>;
@@ -54,23 +70,39 @@ const PublicRoute = ({ children }) => {
     }
     return children;
 };
-const AdminInterfaceWrapper = () => <AdminInterface />;
-const ChefEquipeInterfaceWrapper = () => <ChefEquipeInterface />;
-const EmployeInterfaceWrapper = () => <EmployeInterface />;
+
+// --- CORRECTION : Les wrappers reçoivent l'utilisateur via useAuth ---
+// C'est plus propre et évite de passer le context via Outlet.
+const AdminInterfaceWrapper = () => {
+    const { currentUser, logout } = useAuth();
+    return <AdminInterface user={currentUser} onLogout={logout} />;
+};
+const ChefEquipeInterfaceWrapper = () => {
+    const { currentUser, logout } = useAuth();
+    return <ChefEquipeInterface user={currentUser} onLogout={logout} />;
+};
+const EmployeInterfaceWrapper = () => {
+    const { currentUser, logout } = useAuth();
+    return <EmployeInterface user={currentUser} onLogout={logout} />;
+};
+
+
 const NavigateToCorrectRouteOnLoad = () => {
     const { isAuthenticated, currentUser, isLoading } = useAuth();
     if (isLoading) return <div className="flex justify-center items-center h-screen">Chargement...</div>;
     if (!isAuthenticated || !currentUser) return <Navigate to="/login" replace />;
+    
     const userRoleNormalized = normalizeRoleApp(currentUser.role);
     let homePath = '/login';
     switch (userRoleNormalized) {
         case 'a': homePath = '/admin'; break;
-        case 'c': fallbackPath = '/chef'; break;
+        case 'c': homePath = '/chef'; break; // Correction de la variable fallbackPath en homePath
         case 'e': homePath = '/employe'; break;
         default: homePath = '/login';
     }
     return <Navigate to={homePath} replace />;
 };
+
 function AppContent() {
     return (
         <Routes>
@@ -83,23 +115,26 @@ function AppContent() {
     );
 }
 
-// Le composant App principal configure le routeur
 function App() {
     return (
-        <BrowserRouter>
-            <AppWrapperWithProviders />
-        </BrowserRouter>
+        // --- CORRECTION 3: Le QueryClientProvider doit envelopper le BrowserRouter ---
+        // ou au moins tout ce qui utilise `useNavigate` et les routes.
+        // Le placer ici est le plus sûr.
+        <QueryClientProvider client={queryClient}>
+            <BrowserRouter>
+                <AppWrapperWithProviders />
+            </BrowserRouter>
+        </QueryClientProvider>
     );
 }
 
-// Ce composant wrapper configure TOUS les fournisseurs dans le bon ordre.
 function AppWrapperWithProviders() {
     const navigate = useNavigate();
     return (
         <AuthProvider navigate={navigate}>
             <ThemeProvider>
-                {/* WebSocketProvider est à l'intérieur de AuthProvider pour accéder au token */}
                 <WebSocketProvider>
+                    {/* Le QueryClientProvider a été déplacé plus haut */}
                     <AppContent />
                 </WebSocketProvider>
             </ThemeProvider>

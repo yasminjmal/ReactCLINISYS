@@ -28,6 +28,7 @@ const login = async (credentials) => {
         
         // Créer un objet utilisateur simplifié basé sur le token
         const user = {
+          id: decodedPayload.id, // 'id' peut être utilisé si disponible
           login: decodedPayload.sub, // 'sub' contient le login
           role: authority, // Ex: "ROLE_Admin"
           // Vous pouvez ajouter d'autres informations du token si nécessaire, ex: decodedPayload.nomComplet
