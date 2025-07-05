@@ -8,6 +8,7 @@ import ClientsPage from './nav/ClientsPage'; // La nouvelle page des clients
 import UtilisateursPage from './nav/UtilisateursPage'; // La nouvelle page des utilisateurs
 import EquipesPage from './nav/EquipesPage'; // La nouvelle page des équipes
 import PerformancesPage from './nav/PerformancesPage';
+import ModulesPage from './nav/ModulesPage';
 // Importez les autres (UtilisateursDashboard, etc.) ici
 
 const DashboardPage = () => {
@@ -27,6 +28,8 @@ const DashboardPage = () => {
         return <UtilisateursPage />;
       case 'equipes':
         return <EquipesPage />;
+      case 'modules':
+        return <ModulesPage />;
       // case 'utilisateurs':
       //   return <UtilisateursDashboard />;
       // Ajoutez les autres cas ici...

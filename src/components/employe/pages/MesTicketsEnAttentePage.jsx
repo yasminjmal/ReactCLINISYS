@@ -37,7 +37,7 @@ const TicketCard = ({ ticket, onStartTreatmentClick }) => {
             {ticket.priorite}
           </span>
         </div>
-        
+
         <p className="text-sm text-slate-600 dark:text-slate-300 mb-4 h-12 overflow-hidden text-ellipsis" title={ticket.description}>
           {ticket.description || "Aucune description fournie."}
         </p>
@@ -47,7 +47,7 @@ const TicketCard = ({ ticket, onStartTreatmentClick }) => {
             <Tag size={14} className="mr-1.5 text-slate-400 dark:text-slate-500" /> Réf: {ticket.id}
           </div>
           <div className="flex items-center" title="Date de Création">
-            <CalendarDays size={14} className="mr-1.5 text-slate-400 dark:text-slate-500" /> 
+            <CalendarDays size={14} className="mr-1.5 text-slate-400 dark:text-slate-500" />
             Créé le: {new Date(ticket.dateCreation).toLocaleDateString()}
           </div>
           {ticket.idClient && (
@@ -70,15 +70,14 @@ const TicketCard = ({ ticket, onStartTreatmentClick }) => {
         </div>
       </div>
       {/* Bouton "Commencer le traitement" */}
-      {/* Affiché si le ticket est en_cours MAIS n'a PAS encore de dateTraitement (donc pas encore "commencé") */}
       {ticket.statue === 'En_cours' && !ticket.dateTraitement && (
         <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-700/50">
           <button
-            onClick={() => onStartTreatmentClick(ticket)} // Passer l'objet ticket entier
-            className="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-3 rounded-md transition-colors duration-200 text-sm flex items-center justify-center space-x-2"
+            onClick={() => onStartTreatmentClick(ticket)}
+            className="inline-flex items-center justify-center px-4 py-2 border text-sm font-semibold rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-150 text-white bg-sky-600 hover:bg-sky-700 border-transparent focus:ring-blue-500 w-full" // Design intégré
             title="Commencer le traitement de ce ticket"
           >
-            <PlayCircle size={16} />
+            <PlayCircle size={16} className="mr-2" />
             <span>Commencer le traitement</span>
           </button>
         </div>
@@ -90,14 +89,13 @@ const TicketCard = ({ ticket, onStartTreatmentClick }) => {
 
 const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
   const { currentUser } = useAuth();
-  const [tickets, setTickets] = useState([]); // Tous les tickets assignés à l'utilisateur
+  const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'dateCreation', direction: 'descending' });
-  
-  // États pour le modal de confirmation de traitement
+
   const [isStartTreatmentModalOpen, setIsStartTreatmentModalOpen] = useState(false);
   const [ticketToStartTreatment, setTicketToStartTreatment] = useState(null);
   const [isLoadingModal, setIsLoadingModal] = useState(false);
@@ -112,7 +110,6 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
     try {
       setLoading(true);
       const allUserTickets = await ticketService.getTicketsByUserId(currentUser.id);
-      // Les tickets "en attente" sont ceux qui sont 'En_cours' mais n'ont pas encore de 'dateTraitement'
       const enAttenteTicketsFiltered = allUserTickets.filter(
         ticket => ticket.statue === 'En_cours' && !ticket.dateTraitement
       );
@@ -127,7 +124,6 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
     }
   }, [currentUser]);
 
-  // S'auto-charge au montage et si l'utilisateur change
   useEffect(() => {
     fetchTicketsAssignedToUser();
   }, [fetchTicketsAssignedToUser]);
@@ -147,17 +143,15 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
 
     setIsLoadingModal(true);
     try {
-      // Le payload n'inclut que dateTraitement selon la nouvelle spécification
       const payload = {
-        debutTraitement: new Date().toISOString(), 
+        debutTraitement: new Date().toISOString(),
       };
 
       await ticketService.updateTicket(ticketToStartTreatment.id, payload);
-      fetchTicketsAssignedToUser(); // Recharger les tickets pour mettre à jour la liste sur cette page
+      fetchTicketsAssignedToUser();
       closeStartTreatmentModal();
-      // Appeler le callback pour notifier InterfaceEmploye de naviguer
       if(onStartTreatmentCallback) onStartTreatmentCallback(ticketToStartTreatment.id);
-      
+
     } catch (err) {
       console.error("Erreur lors du démarrage du traitement:", err);
       setError("Échec du démarrage du traitement. Veuillez réessayer.");
@@ -209,7 +203,7 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
     }
     setSortConfig({ key, direction });
   };
-  
+
   const getSortIndicator = (key) => {
     if (sortConfig.key === key) {
       return sortConfig.direction === 'ascending' ? '▲' : '▼';
@@ -262,7 +256,7 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
                 placeholder="Rechercher par titre, réf, client..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="form-input-icon w-full py-2.5 text-sm"
+                className="block w-full pl-10 pr-3 py-2 bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm" // Design intégré
               />
             </div>
           </div>
@@ -279,9 +273,9 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
         {sortedAndFilteredTickets.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {sortedAndFilteredTickets.map(ticket => (
-              <TicketCard 
-                key={ticket.id} 
-                ticket={ticket} 
+              <TicketCard
+                key={ticket.id}
+                ticket={ticket}
                 onStartTreatmentClick={handleStartTreatmentClick}
               />
             ))}
@@ -302,12 +296,12 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
         title="Confirmer le démarrage du traitement"
         footerActions={
           <>
-            <button onClick={closeStartTreatmentModal} className="btn btn-secondary py-2 text-sm" disabled={isLoadingModal}>
+            <button onClick={closeStartTreatmentModal} className="inline-flex items-center justify-center px-4 py-2 border text-sm font-semibold rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-150 text-slate-700 bg-white hover:bg-slate-50 border-slate-300 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-600" disabled={isLoadingModal}> {/* Design intégré */}
               Annuler
             </button>
-            <button 
-              onClick={handleConfirmStartTreatment} 
-              className="btn btn-primary bg-sky-600 hover:bg-sky-700 py-2 text-sm" 
+            <button
+              onClick={handleConfirmStartTreatment}
+              className="inline-flex items-center justify-center px-4 py-2 border text-sm font-semibold rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-150 text-white bg-sky-600 hover:bg-sky-700 border-transparent focus:ring-blue-500" // Design intégré
               disabled={isLoadingModal}
             >
               {isLoadingModal ? 'Démarrage...' : 'Confirmer le Démarrage'}

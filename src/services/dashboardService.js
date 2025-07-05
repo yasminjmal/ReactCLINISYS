@@ -255,6 +255,33 @@ const dashboardService = {
     },
 
 
+    getClientActivity: async (period = 'thismonth') => {
+        try {
+            const response = await api.get('/dashboard/client-activity', {
+                params: { period }
+            });
+            // Attendu: [{ clientName: "...", totalTickets: 15, openTickets: 4 }]
+            return response.data;
+        } catch (error) {
+            console.error("Erreur lors de la récupération de l'activité client:", error);
+            throw error;
+        }
+    },
+
+    getModuleActivity: async (period = 'thismonth') => {
+        try {
+            const response = await api.get('/dashboard/module-activity', {
+                params: { period }
+            });
+            // Attendu: [{ moduleName: "...", totalTickets: 25, openTickets: 8 }]
+            return response.data;
+        } catch (error) {
+            console.error("Erreur lors de la récupération de l'activité par module:", error);
+            throw error;
+        }
+    },
+
+
 
 };
 

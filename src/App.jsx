@@ -12,6 +12,10 @@ import LoginPage from './components/LoginPage';
 import AdminInterface from './components/admin/InterfaceAdmin';
 import ChefEquipeInterface from './components/chefEquipe/InterfaceChefEquipe';
 import EmployeInterface from './components/employe/InterfaceEmploye';
+import { NotificationProvider } from './context/NotificationContext';
+import { StompSessionProvider } from 'react-stomp-hooks';
+
+
 
 import './index.css';
 
@@ -39,9 +43,9 @@ const ProtectedRoute = ({ allowedRoles }) => {
     if (!isAuthenticated || !currentUser) {
         return <Navigate to="/login" replace />;
     }
-    
+
     const userRoleNormalized = normalizeRoleApp(currentUser.role);
-    
+
     if (allowedRoles && !allowedRoles.includes(userRoleNormalized)) {
         let fallbackPath = '/login';
         switch (userRoleNormalized) {
@@ -52,7 +56,7 @@ const ProtectedRoute = ({ allowedRoles }) => {
         }
         return <Navigate to={fallbackPath} replace />;
     }
-    
+
     // L'Outlet rendra le composant enfant (le wrapper) sans passer de contexte
     return <Outlet />;
 };
@@ -105,7 +109,7 @@ const NavigateToCorrectRouteOnLoad = () => {
     if (!isAuthenticated || !currentUser) {
         return <Navigate to="/login" replace />;
     }
-    
+
     const userRoleNormalized = normalizeRoleApp(currentUser.role);
     let homePath = '/login';
     switch (userRoleNormalized) {
@@ -123,7 +127,7 @@ function AppContent() {
     return (
         <Routes>
             <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-            
+
             {/* Routes protégées utilisant les wrappers */}
             <Route element={<ProtectedRoute allowedRoles={['a']} />}>
                 <Route path="/admin/*" element={<AdminInterfaceWrapper />} />
@@ -134,32 +138,44 @@ function AppContent() {
             <Route element={<ProtectedRoute allowedRoles={['e']} />}>
                 <Route path="/employe/*" element={<EmployeInterfaceWrapper />} />
             </Route>
-            
+
             <Route path="*" element={<NavigateToCorrectRouteOnLoad />} />
         </Routes>
     );
 }
 
-function AppWrapperWithProviders() {
-    const navigate = useNavigate();
-    return (
-        <AuthProvider navigate={navigate}>
-            <ThemeProvider>
-                <WebSocketProvider>
-                    <AppContent />
-                </WebSocketProvider>
-            </ThemeProvider>
-        </AuthProvider>
-    );
-}
+// function AppWrapperWithProviders() {
+//     const navigate = useNavigate();
+//     return (
+//         <StompSessionProvider url="http://localhost:8080/ws">
+//             <AuthProvider>
+//                 <WebSocketProvider>
+//                     <NotificationProvider>
+//                         <App />
+//                     </NotificationProvider>
+//                 </WebSocketProvider>
+//             </AuthProvider>
+//         </StompSessionProvider>
+//     );
+// }
 
 function App() {
     return (
-        <QueryClientProvider client={queryClient}>
-            <BrowserRouter>
-                <AppWrapperWithProviders />
-            </BrowserRouter>
-        </QueryClientProvider>
+        <StompSessionProvider url="http://localhost:9010/template-core/ws">
+            <QueryClientProvider client={queryClient}>
+                <AuthProvider>
+                    <WebSocketProvider>
+                        <NotificationProvider>
+                            <ThemeProvider>
+                                <BrowserRouter>
+                                    <AppContent />
+                                </BrowserRouter>
+                            </ThemeProvider>
+                        </NotificationProvider>
+                    </WebSocketProvider>
+                </AuthProvider>
+            </QueryClientProvider>
+        </StompSessionProvider>
     );
 }
 

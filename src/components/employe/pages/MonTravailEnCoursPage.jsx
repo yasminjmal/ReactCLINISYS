@@ -64,7 +64,7 @@ const TicketCard = ({ ticket, onCloturerClick, onViewDetails, onUpdateEcheanceCl
             {ticket.priorite}
           </span>
         </div>
-        
+
         <p className="text-sm text-slate-600 dark:text-slate-300 mb-4 h-12 overflow-hidden text-ellipsis" title={ticket.description}>
           {ticket.description || "Aucune description fournie."}
         </p>
@@ -74,7 +74,7 @@ const TicketCard = ({ ticket, onCloturerClick, onViewDetails, onUpdateEcheanceCl
             <Tag size={14} className="mr-1.5 text-slate-400 dark:text-slate-500" /> Réf: {ticket.id}
           </div>
           <div className="flex items-center" title="Date de Création">
-            <CalendarDays size={14} className="mr-1.5 text-slate-400 dark:text-slate-500" /> 
+            <CalendarDays size={14} className="mr-1.5 text-slate-400 dark:text-slate-500" />
             Créé le: {new Date(ticket.dateCreation).toLocaleDateString()}
           </div>
           {ticket.idClient && (
@@ -89,24 +89,23 @@ const TicketCard = ({ ticket, onCloturerClick, onViewDetails, onUpdateEcheanceCl
               <span className="truncate">Module: {ticket.idModule.designation}</span>
             </div>
           )}
+          {/* Correction ici, j'ai enlevé la répétition de Statut et mis à jour le statut réel */}
           <div className="flex items-center col-span-2 truncate" title={`Statut: ${ticket.statue}`}>
             <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(ticket.statue)}`}>
               Statut: {ticket.statue?.replace(/_/g, ' ')}
             </span>
           </div>
-          {/* Affichage de la date de traitement */}
           {ticket.dateTraitement && (
              <div className="flex items-center col-span-2 truncate" title={`Date de Traitement: ${new Date(ticket.dateTraitement).toLocaleDateString()}`}>
-              <CalendarDays size={14} className="mr-1.5 text-slate-400 dark:text-slate-500" /> 
+              <CalendarDays size={14} className="mr-1.5 text-slate-400 dark:text-slate-500" />
               Traitement commencé le: {new Date(ticket.dateTraitement).toLocaleDateString()}
             </div>
           )}
-          {/* Affichage date d'échéance avec bouton modifier */}
           <div className="flex items-center col-span-2 truncate">
-            <CalendarDays size={14} className="mr-1.5 text-slate-400 dark:text-slate-500" /> 
+            <CalendarDays size={14} className="mr-1.5 text-slate-400 dark:text-slate-500" />
             <span className={`${echeanceStyle}`}>Échéance: {echeanceStatusText}</span>
             <button
-                onClick={(e) => { e.stopPropagation(); onUpdateEcheanceClick(ticket); }} // Empêche l'ouverture du détail modal
+                onClick={(e) => { e.stopPropagation(); onUpdateEcheanceClick(ticket); }}
                 className="ml-2 p-1 rounded-full text-slate-500 hover:text-sky-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                 title={ticket.date_echeance ? "Modifier la date d'échéance" : "Ajouter une date d'échéance"}
             >
@@ -116,7 +115,6 @@ const TicketCard = ({ ticket, onCloturerClick, onViewDetails, onUpdateEcheanceCl
         </div>
       </div>
 
-      {/* Bouton "Clôturer" */}
       <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-700/50">
         <button
           onClick={() => onCloturerClick(ticket.id)}
@@ -132,7 +130,7 @@ const TicketCard = ({ ticket, onCloturerClick, onViewDetails, onUpdateEcheanceCl
 };
 
 
-const MonTravailEnCoursPage = () => { // Plus de prop onFetchTickets ici
+const MonTravailEnCoursPage = () => {
   const { currentUser } = useAuth();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -141,16 +139,13 @@ const MonTravailEnCoursPage = () => { // Plus de prop onFetchTickets ici
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'dateCreation', direction: 'descending' });
 
-  // États pour le modal de clôture
   const [isClotureModalOpen, setIsClotureModal] = useState(false);
   const [ticketACloturerId, setTicketACloturerId] = useState(null);
   const [isLoadingClotureModal, setIsLoadingClotureModal] = useState(false);
 
-  // États pour le modal de détails du ticket
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedTicketForDetail, setSelectedTicketForDetail] = useState(null);
 
-  // États pour le modal de modification d'échéance
   const [isEcheanceModalOpen, setIsEcheanceModalOpen] = useState(false);
   const [ticketToUpdateEcheance, setTicketToUpdateEcheance] = useState(null);
   const [newEcheanceDate, setNewEcheanceDate] = useState('');
@@ -163,23 +158,23 @@ const MonTravailEnCoursPage = () => { // Plus de prop onFetchTickets ici
       setError("Utilisateur non connecté ou ID utilisateur manquant.");
       return;
     }
-    console.log("DEBUG MonTravailEnCoursPage: Début du fetch pour l'utilisateur:", currentUser.id); // DEBUG
+    console.log("DEBUG MonTravailEnCoursPage: Début du fetch pour l'utilisateur:", currentUser.id);
     try {
       setLoading(true);
       const allUserTickets = await ticketService.getTicketsByUserId(currentUser.id);
-      console.log("DEBUG MonTravailEnCoursPage: Tous les tickets de l'utilisateur:", allUserTickets); // DEBUG
-      
+      console.log("DEBUG MonTravailEnCoursPage: Tous les tickets de l'utilisateur:", allUserTickets);
+
       // Filtrer pour n'afficher que les tickets "En_cours" AVEC une dateTraitement
-      const enCoursTicketsFiltered = allUserTickets.filter(ticket => 
-        ticket.statue === 'En_cours' && 
+      const enCoursTicketsFiltered = allUserTickets.filter(ticket =>
+        ticket.statue === 'En_cours' &&
         (ticket.debutTraitement !== null && ticket.debutTraitement !== undefined && ticket.debutTraitement !== '')
       );
-      console.log("DEBUG MonTravailEnCoursPage: Tickets 'En_cours' filtrés:", enCoursTicketsFiltered); // DEBUG
-      
+      console.log("DEBUG MonTravailEnCoursPage: Tickets 'En_cours' filtrés:", enCoursTicketsFiltered);
+
       setTickets(enCoursTicketsFiltered || []);
       setError(null);
     } catch (err) {
-      console.error("DEBUG MonTravailEnCoursPage: Échec du chargement des tickets en cours:", err); // DEBUG
+      console.error("DEBUG MonTravailEnCoursPage: Échec du chargement des tickets en cours:", err);
       setError("Échec du chargement de vos tickets en cours. Veuillez réessayer plus tard.");
       setTickets([]);
     } finally {
@@ -187,7 +182,6 @@ const MonTravailEnCoursPage = () => { // Plus de prop onFetchTickets ici
     }
   }, [currentUser]);
 
-  // S'auto-charge au montage et si l'utilisateur change
   useEffect(() => {
     fetchTicketsEnCours();
   }, [fetchTicketsEnCours]);
@@ -214,11 +208,10 @@ const MonTravailEnCoursPage = () => { // Plus de prop onFetchTickets ici
       };
 
       await ticketService.updateTicket(ticketACloturerId, payload);
-      fetchTicketsEnCours(); // Recharger les tickets pour mettre à jour la liste sur cette page
+      fetchTicketsEnCours();
       closeClotureModal();
-      // Plus besoin de `onFetchTickets` pour le parent, car cette page est autonome
     } catch (err) {
-      console.error("DEBUG MonTravailEnCoursPage: Erreur lors de la clôture du ticket:", err); // DEBUG
+      console.error("DEBUG MonTravailEnCoursPage: Erreur lors de la clôture du ticket:", err);
       setError("Échec de la clôture du ticket. Veuillez réessayer.");
     } finally {
       setIsLoadingClotureModal(false);
@@ -233,7 +226,7 @@ const MonTravailEnCoursPage = () => { // Plus de prop onFetchTickets ici
   const closeDetailModal = () => {
     setIsDetailModalOpen(false);
     setSelectedTicketForDetail(null);
-    fetchTicketsEnCours(); // Recharger les tickets après modification dans le modal (ex: commentaires/documents)
+    fetchTicketsEnCours();
   };
 
   const handleUpdateEcheanceClick = (ticket) => {
@@ -258,10 +251,10 @@ const MonTravailEnCoursPage = () => { // Plus de prop onFetchTickets ici
       };
 
       await ticketService.updateTicket(ticketToUpdateEcheance.id, payload);
-      fetchTicketsEnCours(); // Recharger les tickets pour mettre à jour la liste sur cette page
+      fetchTicketsEnCours();
       closeEcheanceModal();
     } catch (err) {
-      console.error("DEBUG MonTravailEnCoursPage: Erreur lors de la mise à jour de l'échéance:", err); // DEBUG
+      console.error("DEBUG MonTravailEnCoursPage: Erreur lors de la mise à jour de l'échéance:", err);
       setError("Échec de la mise à jour de l'échéance. Veuillez réessayer.");
     } finally {
       setIsLoadingEcheanceModal(false);
@@ -311,7 +304,7 @@ const MonTravailEnCoursPage = () => { // Plus de prop onFetchTickets ici
     }
     setSortConfig({ key, direction });
   };
-  
+
   const getSortIndicator = (key) => {
     if (sortConfig.key === key) {
       return sortConfig.direction === 'ascending' ? '▲' : '▼';
@@ -364,7 +357,7 @@ const MonTravailEnCoursPage = () => { // Plus de prop onFetchTickets ici
                 placeholder="Rechercher par titre, réf, client..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="form-input-icon w-full py-2.5 text-sm"
+                className="form-input-icon w-full py-2.5 text-sm" // Applique form-input-icon
               />
             </div>
           </div>
@@ -381,9 +374,9 @@ const MonTravailEnCoursPage = () => { // Plus de prop onFetchTickets ici
         {sortedAndFilteredTickets.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {sortedAndFilteredTickets.map(ticket => (
-              <TicketCard 
-                key={ticket.id} 
-                ticket={ticket} 
+              <TicketCard
+                key={ticket.id}
+                ticket={ticket}
                 onCloturerClick={handleCloturerClick}
                 onViewDetails={handleViewDetails}
                 onUpdateEcheanceClick={handleUpdateEcheanceClick}
@@ -409,9 +402,9 @@ const MonTravailEnCoursPage = () => { // Plus de prop onFetchTickets ici
             <button onClick={closeClotureModal} className="btn btn-secondary py-2 text-sm" disabled={isLoadingClotureModal}>
               Annuler
             </button>
-            <button 
-              onClick={handleConfirmCloture} 
-              className="btn btn-primary bg-green-600 hover:bg-green-700 py-2 text-sm" 
+            <button
+              onClick={handleConfirmCloture}
+              className="btn btn-primary bg-green-600 hover:bg-green-700 py-2 text-sm"
               disabled={isLoadingClotureModal}
             >
               {isLoadingClotureModal ? 'Clôture...' : 'Clôturer le Ticket'}
@@ -435,9 +428,9 @@ const MonTravailEnCoursPage = () => { // Plus de prop onFetchTickets ici
             <button onClick={closeEcheanceModal} className="btn btn-secondary py-2 text-sm" disabled={isLoadingEcheanceModal}>
               Annuler
             </button>
-            <button 
-              onClick={handleConfirmUpdateEcheance} 
-              className="btn btn-primary bg-sky-600 hover:bg-sky-700 py-2 text-sm" 
+            <button
+              onClick={handleConfirmUpdateEcheance}
+              className="btn btn-primary bg-sky-600 hover:bg-sky-700 py-2 text-sm"
               disabled={isLoadingEcheanceModal}
             >
               {isLoadingEcheanceModal ? 'Sauvegarde...' : 'Sauvegarder'}
@@ -454,7 +447,7 @@ const MonTravailEnCoursPage = () => { // Plus de prop onFetchTickets ici
           id="echeance-date"
           value={newEcheanceDate}
           onChange={(e) => setNewEcheanceDate(e.target.value)}
-          className="form-input w-full text-sm p-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
+          className="form-input w-full text-sm p-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100" // Applique form-input
         />
       </Modal>
 
@@ -473,7 +466,6 @@ const MonTravailEnCoursPage = () => { // Plus de prop onFetchTickets ici
       >
         {selectedTicketForDetail && (
           <div className="space-y-6">
-            {/* Informations principales du ticket */}
             <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border border-slate-100 dark:border-slate-600">
               <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-2">Description</h3>
               <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">{selectedTicketForDetail.description}</p>
@@ -489,10 +481,8 @@ const MonTravailEnCoursPage = () => { // Plus de prop onFetchTickets ici
               </div>
             </div>
 
-            {/* Gestionnaire de commentaires */}
             <CommentManager ticketId={selectedTicketForDetail.id} />
 
-            {/* Gestionnaire de documents */}
             <DocumentManager ticketId={selectedTicketForDetail.id} />
           </div>
         )}

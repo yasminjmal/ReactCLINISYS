@@ -1,14 +1,13 @@
 // src/components/admin/Dashboards/nav/TicketsPage.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend as RechartsLegend, 
     ResponsiveContainer, PieChart, Pie, Cell, RadialBarChart, RadialBar 
 } from 'recharts';
 import { Filter, Download, Printer, ChevronDown } from 'lucide-react';
 import dashboardService from '../../../../services/dashboardService';
-// import { WidgetContainer } from '../shared/WidgetContainer';
-// import { LoadingIndicator } from '../shared/LoadingIndicator';
+import webSocketService from '../../../../services/webSocketService';
 
 // --- CONFIGURATIONS ---
 const ticketStatusConfig = {
@@ -71,8 +70,19 @@ const VolumeByStatusChart = ({ data, isLoading, timeFilter, onTimeFilterChange, 
     );
 };
 
+// Dans src/components/admin/Dashboards/nav/TicketsPage.jsx
+
 const InProgressTicketsChart = ({ data, isLoading, timeFilter, onTimeFilterChange }) => {
     const filterButtons = [ { key: 'today', label: 'Aujourd\'hui' }, { key: 'last7days', label: '7 Jours' }, { key: 'thismonthweeks', label: 'Mois' }, { key: 'thisyearmonths', label: 'Année' }, { key: 'byyear', label: 'Historique' }];
+
+    // NOUVEAU : Fonction pour formater les libellés de l'axe Y
+    const formatYAxisTick = (value) => {
+        const maxLength = 20; // Nombre de caractères max avant de couper
+        if (value.length > maxLength) {
+            return `${value.substring(0, maxLength)}...`;
+        }
+        return value;
+    };
 
     return (
         <WidgetContainer title="Suivi des Tickets 'En Cours'">
@@ -86,10 +96,20 @@ const InProgressTicketsChart = ({ data, isLoading, timeFilter, onTimeFilterChang
             {isLoading ? <LoadingIndicator /> : (
                 (data && data.length > 0) ? (
                     <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={data} layout="vertical" barSize={15} margin={{ right: 20 }}>
+                        <BarChart data={data} layout="vertical" barSize={15} margin={{ right: 20, left: 25 /* On ajoute de la marge à gauche */ }}>
                             <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
                             <XAxis type="number" stroke="rgb(100 116 139)" label={{ value: 'Jours', position: 'insideBottom', offset: -5 }} fontSize={12} />
-                            <YAxis type="category" dataKey="name" stroke="rgb(100 116 139)" width={100} fontSize={12} tick={{ width: 120 }}/>
+                            
+                            {/* --- CORRECTION ICI --- */}
+                            <YAxis 
+                                type="category" 
+                                dataKey="name" 
+                                stroke="rgb(100 116 139)" 
+                                width={120} // On donne une largeur fixe
+                                fontSize={12} 
+                                tickFormatter={formatYAxisTick} // On applique notre fonction de formatage
+                            />
+                            
                             <Tooltip formatter={(value) => `${value} jours`} />
                             <RechartsLegend payload={[{ value: 'Temps Écoulé', type: 'rect', color: '#eab308' }, { value: 'Temps Restant', type: 'rect', color: '#e2e8f0' }]} />
                             <Bar dataKey="data[0]" stackId="a" name="Temps Écoulé" fill="#eab308" />
@@ -151,12 +171,14 @@ const TicketsPage = () => {
     const [gaugesStats, setGaugesStats] = useState({});
     const [isGaugesLoading, setIsGaugesLoading] = useState(true);
 
-    // NOUVEAU : États pour le graphique des tickets en cours
     const [ganttTimeFilter, setGanttTimeFilter] = useState('thismonthweeks');
     const [ganttData, setGanttData] = useState([]);
     const [isGanttLoading, setIsGanttLoading] = useState(true);
     
     const [error, setError] = useState(null);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+    
 
     const mapApiStatusToKey = (apiStatus) => {
         const lowerCaseStatus = String(apiStatus).toLowerCase().replace('_', '-');
@@ -176,45 +198,72 @@ const TicketsPage = () => {
         });
         return processedStats;
     };
-
-    useEffect(() => {
-        setIsGlobalStatsLoading(true);
-        dashboardService.getGlobalTicketsByStatus().then(response => setGlobalStats(processStatsResponse(response))).catch(e => console.error("Échec stats globales", e)).finally(() => setIsGlobalStatsLoading(false));
+    
+    const refreshAllData = useCallback(() => {
+        console.log('Notification WebSocket reçue ! Rafraîchissement des données...');
+        setRefreshTrigger(count => count + 1);
     }, []);
 
     useEffect(() => {
-        const fetchChartData = async () => {
-            setIsChartLoading(true);
-            try {
-                const response = groupBy === 'priority' ? await dashboardService.getTicketsByPriorityOverTime(timeFilter) : await dashboardService.getTicketsByStatusOverTime(timeFilter);
-                setChartData(response);
-            } catch (e) {
-                console.error("Échec du chargement des données du graphique:", e);
-                setError("Impossible de charger les données du graphique principal.");
-            } finally {
-                setIsChartLoading(false);
+        webSocketService.connect((message) => {
+            if (message === 'TICKETS_UPDATED') {
+                console.log('Notification WebSocket reçue ! Déclenchement du rafraîchissement.');
+                // On incrémente le compteur pour forcer la mise à jour
+                setRefreshTrigger(prevCount => prevCount + 1);
             }
-        };
-        fetchChartData();
-    }, [timeFilter, groupBy]);
+        });
 
+        // Déconnexion propre lorsque le composant est retiré de l'écran
+        return () => {
+            webSocketService.disconnect();
+        };
+    }, []);
+
+    useEffect(() => {
+        setIsGlobalStatsLoading(true);
+        dashboardService.getGlobalTicketsByStatus()
+            .then(response => setGlobalStats(processStatsResponse(response)))
+            .catch(e => console.error("Échec stats globales", e))
+            .finally(() => setIsGlobalStatsLoading(false));
+    }, [refreshTrigger]); // <-- Dépendance ajoutée
+
+    // Hook pour le GRAPHIQUE PRINCIPAL
+    useEffect(() => {
+        setIsChartLoading(true);
+        const serviceCall = groupBy === 'priority' 
+            ? dashboardService.getTicketsByPriorityOverTime(timeFilter) 
+            : dashboardService.getTicketsByStatusOverTime(timeFilter);
+        
+        serviceCall
+            .then(response => setChartData(response))
+            .catch(e => setError("Impossible de charger les données du graphique principal."))
+            .finally(() => setIsChartLoading(false));
+    }, [timeFilter, groupBy, refreshTrigger]); // <-- Dépendance ajoutée
+
+    // Hook pour le GRAPHIQUE DONUT
     useEffect(() => {
         setIsDonutLoading(true);
-        dashboardService.getTicketsByStatus(donutTimeFilter).then(response => setDonutStats(processStatsResponse(response))).catch(e => console.error("Échec graphique donut", e)).finally(() => setIsDonutLoading(false));
-    }, [donutTimeFilter]);
+        dashboardService.getTicketsByStatus(donutTimeFilter)
+            .then(response => setDonutStats(processStatsResponse(response)))
+            .catch(e => console.error("Échec graphique donut", e))
+            .finally(() => setIsDonutLoading(false));
+    }, [donutTimeFilter, refreshTrigger]); // <-- Dépendance ajoutée
 
+    // Hook pour les JAUGES
     useEffect(() => {
         setIsGaugesLoading(true);
-        dashboardService.getTicketsByStatus(gaugesTimeFilter).then(response => setGaugesStats(processStatsResponse(response))).catch(e => console.error("Échec jauges", e)).finally(() => setIsGaugesLoading(false));
-    }, [gaugesTimeFilter]);
+        dashboardService.getTicketsByStatus(gaugesTimeFilter)
+            .then(response => setGaugesStats(processStatsResponse(response)))
+            .catch(e => console.error("Échec jauges", e))
+            .finally(() => setIsGaugesLoading(false));
+    }, [gaugesTimeFilter, refreshTrigger]); // <-- Dépendance ajoutée
     
-    // NOUVEAU : useEffect pour le graphique Gantt
+    // Hook pour le graphique GANTT
     useEffect(() => {
         const daysBetween = (date1, date2) => Math.round(Math.abs(new Date(date1) - new Date(date2)) / (1000 * 60 * 60 * 24));
-        const fetchGanttData = async () => {
-            setIsGanttLoading(true);
-            try {
-                const response = await dashboardService.getInProgressTicketsGantt(ganttTimeFilter);
+        setIsGanttLoading(true);
+        dashboardService.getInProgressTicketsGantt(ganttTimeFilter)
+            .then(response => {
                 const processedData = response.map(ticket => {
                     const now = new Date();
                     const debut = ticket.debutTraitement ? new Date(ticket.debutTraitement) : now;
@@ -222,20 +271,13 @@ const TicketsPage = () => {
                     const tempsEcoule = daysBetween(debut, now);
                     const tempsTotal = daysBetween(debut, echeance);
                     const tempsRestant = Math.max(0, tempsTotal - tempsEcoule);
-                    return {
-                        name: ticket.name,
-                        data: [tempsEcoule, tempsRestant]
-                    };
+                    return { name: ticket.name, data: [tempsEcoule, tempsRestant] };
                 });
                 setGanttData(processedData);
-            } catch (e) {
-                console.error("Échec du chargement des données Gantt:", e);
-            } finally {
-                setIsGanttLoading(false);
-            }
-        };
-        fetchGanttData();
-    }, [ganttTimeFilter]);
+            })
+            .catch(e => console.error("Échec du chargement des données Gantt:", e))
+            .finally(() => setIsGanttLoading(false));
+    }, [ganttTimeFilter, refreshTrigger]); // <-- Dépendance ajoutée    
 
     if (error) {
         return <div className="text-red-500 text-center p-8">{error}</div>;
@@ -245,12 +287,7 @@ const TicketsPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 animate-in fade-in-0">
             <div className="lg:col-span-2 space-y-3">
                 <VolumeByStatusChart data={chartData} isLoading={isChartLoading} timeFilter={timeFilter} onTimeFilterChange={setTimeFilter} groupBy={groupBy} onGroupByChange={setGroupBy} config={groupBy === 'status' ? ticketStatusConfig : ticketPriorityConfig} />
-                <InProgressTicketsChart 
-                    data={ganttData} 
-                    isLoading={isGanttLoading}
-                    timeFilter={ganttTimeFilter}
-                    onTimeFilterChange={setGanttTimeFilter}
-                />
+                <InProgressTicketsChart data={ganttData} isLoading={isGanttLoading} timeFilter={ganttTimeFilter} onTimeFilterChange={setGanttTimeFilter} />
             </div>
             <div className="lg:col-span-1 space-y-3">
                 <StatsSummary stats={globalStats} isLoading={isGlobalStatsLoading} />

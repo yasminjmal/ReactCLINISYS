@@ -233,8 +233,9 @@ const ChatInterface = ({ setToast }) => {
         setMessages(prevMessages => [...prevMessages, chatMessage]);
         setNewMessage(''); // Clear input field
 
-        console.log(`[ChatInterface] Sending message to /app/chat.sendPrivate, content: "${trimmedMessage}"`);
         client.send("/app/chat.sendPrivate", {}, JSON.stringify(chatMessage)); // Send message via STOMP
+        console.log(`[ChatInterface] Sending message to /app/chat.sendPrivate, content: "${trimmedMessage}"`);
+
         
         // Trigger a refresh of the sidebar chat list to update the last message and its order
         fetchChatList(); //
