@@ -2,13 +2,13 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   FileText, Search, Tag, CalendarDays, User, Layers,
-  PlayCircle, XCircle, MoreVertical, // Ajout de MoreVertical pour le bouton de détails
+  PlayCircle, XCircle, MoreVertical,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import ticketService from '../../../services/ticketService';
 import Modal from '../../shared/Modal';
-import CommentManager from '../../admin/Tickets/CommentManager'; // Pour le modal de détails
-import DocumentManager from '../../admin/Tickets/DocumentManager'; // Pour le modal de détails
+import CommentManager from '../../admin/Tickets/CommentManager';
+import DocumentManager from '../../admin/Tickets/DocumentManager';
 
 // Composant TicketItem compact pour la liste
 const TicketItem = ({ ticket, onStartTreatmentClick, onViewDetails }) => {
@@ -33,7 +33,7 @@ const TicketItem = ({ ticket, onStartTreatmentClick, onViewDetails }) => {
         colorClass = 'bg-slate-400';
         dotCount = 0;
     }
-    const emptyDotClass = 'bg-slate-300 dark:bg-slate-600'; // Couleur pour les points vides
+    const emptyDotClass = 'bg-slate-300 dark:bg-slate-600';
 
     return (
       <div className="flex space-x-1">
@@ -47,7 +47,7 @@ const TicketItem = ({ ticket, onStartTreatmentClick, onViewDetails }) => {
   const getTitleColorByPriority = (priority) => {
     switch (priority?.toLowerCase()) {
       case 'haute': return 'text-red-600 dark:text-red-400';
-      case 'moyenne': return 'text-blue-600 dark:text-blue-400'; // Titre bleu pour moyenne
+      case 'moyenne': return 'text-blue-600 dark:text-blue-400';
       case 'basse': return 'text-green-600 dark:text-green-400';
       default: return 'text-slate-800 dark:text-slate-100';
     }
@@ -80,12 +80,14 @@ const TicketItem = ({ ticket, onStartTreatmentClick, onViewDetails }) => {
 
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border border-slate-200 dark:border-slate-700 p-4 flex items-center justify-between space-x-4">
+    // Réduction du padding général de 'p-4' à 'p-3'
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border border-slate-200 dark:border-slate-700 p-3 flex items-center justify-between space-x-4">
       <div className="flex-1 min-w-0">
         <h4 className={`text-base font-semibold truncate ${getTitleColorByPriority(ticket.priorite)}`} title={ticket.titre}>
           {ticket.titre}
         </h4>
-        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+        {/* Réduction de mt-1 à mt-0.5 et space-y-1 à space-y-0.5 */}
+        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
           {ticket.idClient && (
             <span className="flex items-center">
               <User size={12} className="mr-1 opacity-70" /> {ticket.idClient.nomComplet}
@@ -99,23 +101,24 @@ const TicketItem = ({ ticket, onStartTreatmentClick, onViewDetails }) => {
         </div>
       </div>
 
-      <div className="flex items-center space-x-3 flex-shrink-0">
+      {/* Réduction de space-x-3 à space-x-2 */}
+      <div className="flex items-center space-x-2 flex-shrink-0">
         <div className="flex items-center space-x-1" title={`Priorité: ${ticket.priorite}`}>
           {getPriorityDots(ticket.priorite)}
         </div>
         <button
           onClick={() => onViewDetails(ticket)}
-          className="p-2 rounded-full text-slate-500 hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-slate-700 dark:hover:text-blue-400 transition-colors"
+          className="p-1.5 rounded-full text-slate-500 hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-slate-700 dark:hover:text-blue-400 transition-colors" // Réduit le padding
           title="Voir les détails du ticket"
         >
-          <FileText size={18} /> {/* Icône pour les détails */}
+          <FileText size={16} /> {/* Réduit la taille de l'icône */}
         </button>
         <button
           onClick={() => onStartTreatmentClick(ticket)}
-          className="p-2 rounded-full text-white bg-sky-500 hover:bg-sky-600 transition-colors"
+          className="p-1.5 rounded-full text-white bg-sky-500 hover:bg-sky-600 transition-colors" // Réduit le padding
           title="Commencer le traitement"
         >
-          <PlayCircle size={18} />
+          <PlayCircle size={16} /> {/* Réduit la taille de l'icône */}
         </button>
       </div>
     </div>
@@ -125,15 +128,14 @@ const TicketItem = ({ ticket, onStartTreatmentClick, onViewDetails }) => {
 
 const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
   const { currentUser } = useAuth();
-  const [allTickets, setAllTickets] = useState([]); // Garde tous les tickets assignés pour un filtrage local
+  const [allTickets, setAllTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfigNoEcheance, setSortConfigNoEcheance] = useState({ key: 'dateCreation', direction: 'descending' });
-  const [sortConfigWithEcheance, setSortConfigWithEcheance] = useState({ key: 'date_echeance', direction: 'ascending' }); // Tri par échéance par défaut
+  const [sortConfigWithEcheance, setSortConfigWithEcheance] = useState({ key: 'date_echeance', direction: 'ascending' });
 
-  // Modals
   const [isStartTreatmentModalOpen, setIsStartTreatmentModalOpen] = useState(false);
   const [ticketToStartTreatment, setTicketToStartTreatment] = useState(null);
   const [isLoadingModal, setIsLoadingModal] = useState(false);
@@ -150,17 +152,13 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
     }
     try {
       setLoading(true);
-      // Récupérer tous les tickets de l'utilisateur
       const allUserTickets = await ticketService.getTicketsByUserId(currentUser.id);
 
-      // FILTRE CLÉ MODIFIÉ ICI
-      // Un ticket est "en attente" s'il est assigné à l'employé et n'a pas encore de date de traitement (debutTraitement)
-      // Son statut peut être 'En_attente' ou 'En_cours' (si l'assignation vient de se faire mais le traitement n'est pas débuté)
       const enAttenteTickets = allUserTickets.filter(
-        ticket => 
-          ticket.idUtilisateur?.id === currentUser.id && // S'assurer qu'il est assigné à l'employé courant
-           ticket.statue === 'En_cours' && // Peut être en attente ou en cours (mais non débuté)
-          !ticket.debutTraitement // S'assurer que le traitement n'a pas encore commencé
+        ticket =>
+          ticket.idUtilisateur?.id === currentUser.id &&
+          (ticket.statue === 'En_attente' || ticket.statue === 'En_cours') &&
+          !ticket.debutTraitement
       );
       setAllTickets(enAttenteTickets || []);
       setError(null);
@@ -178,7 +176,6 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
   }, [fetchTicketsAssignedToUser]);
 
 
-  // Séparation des tickets en deux listes basées sur la date d'échéance
   const ticketsNoEcheance = useMemo(() => {
     return allTickets.filter(ticket => !ticket.date_echeance);
   }, [allTickets]);
@@ -187,8 +184,6 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
     return allTickets.filter(ticket => !!ticket.date_echeance);
   }, [allTickets]);
 
-
-  // --- Handlers pour les actions des tickets ---
 
   const handleStartTreatmentClick = (ticket) => {
     setTicketToStartTreatment(ticket);
@@ -207,11 +202,11 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
     try {
       const payload = {
         debutTraitement: new Date().toISOString(),
-        statue: 'En_cours' // S'assurer que le statut est 'En_cours' si ce n'était pas déjà le cas
+        statue: 'En_cours'
       };
 
       await ticketService.updateTicket(ticketToStartTreatment.id, payload);
-      fetchTicketsAssignedToUser(); // Recharger les tickets après modification
+      fetchTicketsAssignedToUser();
       closeStartTreatmentModal();
       if (onStartTreatmentCallback) onStartTreatmentCallback(ticketToStartTreatment.id);
 
@@ -223,23 +218,28 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
     }
   };
 
-  const handleViewDetails = (ticket) => {
-    setSelectedTicketForDetail(ticket);
+  const handleViewDetails = async (ticket) => {
+    setSelectedTicketForDetail(null);
     setIsDetailModalOpen(true);
+    try {
+      // Re-fetch le ticket avec tous ses détails, y compris commentaires et documents
+      const fullTicketDetails = await ticketService.getTicketById(ticket.id);
+      setSelectedTicketForDetail(fullTicketDetails);
+    } catch (err) {
+      console.error("Erreur lors du chargement des détails du ticket:", err);
+      setError("Impossible de charger les détails du ticket.");
+      setSelectedTicketForDetail(ticket);
+    }
   };
 
   const closeDetailModal = () => {
     setIsDetailModalOpen(false);
     setSelectedTicketForDetail(null);
-    // Optionnel: recharger les tickets si des modifications (commentaires/documents) ont été faites
-    // fetchTicketsAssignedToUser(); 
   };
 
 
-  // --- Fonctions de tri et de recherche ---
   const requestSort = (key, currentSortConfig, setSortConfig) => {
     let direction = 'ascending';
-    // Si la clé est la même, inverse la direction, sinon, réinitialise à 'ascending'
     if (currentSortConfig.key === key && currentSortConfig.direction === 'ascending') {
       direction = 'descending';
     }
@@ -267,7 +267,7 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
           const priorityOrder = { 'haute': 3, 'moyenne': 2, 'basse': 1 };
           valA = priorityOrder[valA?.toLowerCase()] || 0;
           valB = priorityOrder[valB?.toLowerCase()] || 0;
-        } else if (sortConfig.key === 'idClient') { // Tri par nom complet du client
+        } else if (sortConfig.key === 'idClient') {
           valA = a.idClient?.nomComplet?.toLowerCase() || '';
           valB = b.idClient?.nomComplet?.toLowerCase() || '';
         }
@@ -319,7 +319,6 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
     );
   }
 
-  // Si aucune liste n'a de tickets et qu'il n'y a pas de recherche active
   if (allTickets.length === 0 && !searchTerm) {
     return (
       <div className="p-6 md:p-10 text-center bg-slate-50 dark:bg-slate-800/50 rounded-lg shadow-inner">
@@ -344,7 +343,7 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
               placeholder="Rechercher par titre, client..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="form-input-icon w-full py-2.5 text-sm bg-slate-50 dark:bg-slate-900/50" // Stylisation claire
+              className="form-input-icon w-full py-2.5 text-sm bg-slate-50 dark:bg-slate-900/50"
             />
           </div>
         </div>
@@ -366,7 +365,7 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
                 Client {getSortIndicator('idClient', sortConfigNoEcheance)}
               </button>
             </div>
-            <div className="flex-grow space-y-3 overflow-y-auto pr-2" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+            <div className="flex-grow space-y-2 overflow-y-auto pr-2" style={{ maxHeight: 'calc(100vh - 300px)' }}>
               {sortedAndFilteredNoEcheanceTickets.length > 0 ? (
                 sortedAndFilteredNoEcheanceTickets.map(ticket => (
                   <TicketItem
@@ -404,7 +403,7 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
                 Client {getSortIndicator('idClient', sortConfigWithEcheance)}
               </button>
             </div>
-            <div className="flex-grow space-y-3 overflow-y-auto pr-2" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+            <div className="flex-grow space-y-2 overflow-y-auto pr-2" style={{ maxHeight: 'calc(100vh - 300px)' }}>
               {sortedAndFilteredWithEcheanceTickets.length > 0 ? (
                 sortedAndFilteredWithEcheanceTickets.map(ticket => (
                   <TicketItem
@@ -455,20 +454,19 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
         isOpen={isDetailModalOpen}
         onClose={closeDetailModal}
         title={`Détails du Ticket : ${selectedTicketForDetail?.titre || ''}`}
-        size="lg" // Utilisez une taille plus grande pour les détails
+        size="lg"
         footerActions={
           <button onClick={closeDetailModal} className="btn btn-secondary py-2 text-sm">
             Fermer
           </button>
         }
       >
-        {selectedTicketForDetail && (
+        {selectedTicketForDetail ? (
           <div className="space-y-6">
             <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border border-slate-100 dark:border-slate-600">
               <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-2">Informations Générales</h3>
               <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">{selectedTicketForDetail.description || "Aucune description fournie."}</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-500 dark:text-slate-400">
-                {/* On peut afficher l'ID ici si c'est utile dans le contexte du détail */}
                 <p><strong>Référence:</strong> {selectedTicketForDetail.id}</p>
                 <p><strong>Priorité:</strong> {selectedTicketForDetail.priorite}</p>
                 <p><strong>Statut:</strong> {selectedTicketForDetail.statue?.replace(/_/g, ' ')}</p>
@@ -482,9 +480,12 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
               </div>
             </div>
 
-            {/* Inclure CommentManager et DocumentManager */}
             <CommentManager ticketId={selectedTicketForDetail.id} />
             <DocumentManager ticketId={selectedTicketForDetail.id} />
+          </div>
+        ) : (
+          <div className="text-center text-slate-500 dark:text-slate-400 py-4">
+            Chargement des détails du ticket...
           </div>
         )}
       </Modal>
