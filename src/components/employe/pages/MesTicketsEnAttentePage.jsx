@@ -149,7 +149,7 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
     try {
       // Le payload n'inclut que dateTraitement selon la nouvelle spécification
       const payload = {
-        dateTraitement: new Date().toISOString(), 
+        debutTraitement: new Date().toISOString(), 
       };
 
       await ticketService.updateTicket(ticketToStartTreatment.id, payload);

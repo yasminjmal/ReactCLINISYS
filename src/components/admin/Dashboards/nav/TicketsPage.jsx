@@ -1,191 +1,262 @@
 // src/components/admin/Dashboards/nav/TicketsPage.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend as RechartsLegend, 
     ResponsiveContainer, PieChart, Pie, Cell, RadialBarChart, RadialBar 
 } from 'recharts';
-import { MoreVertical, Filter, Download, Printer } from 'lucide-react';
+import { Filter, Download, Printer, ChevronDown } from 'lucide-react';
+import dashboardService from '../../../../services/dashboardService';
+// import { WidgetContainer } from '../shared/WidgetContainer';
+// import { LoadingIndicator } from '../shared/LoadingIndicator';
 
-// --- Données Statiques (inchangées) ---
+// --- CONFIGURATIONS ---
 const ticketStatusConfig = {
-  nouveau: { name: 'Nouveau', color: '#3b82f6' },
+  accepte: { name: 'Accepté', color: '#84cc16' },
   en_attente: { name: 'En Attente', color: '#f97316' },
   en_cours: { name: 'En Cours', color: '#eab308' },
-  resolu: { name: 'Résolu', color: '#22c55e' },
+  termine: { name: 'Terminé', color: '#22c55e' },
+  refuse: { name: 'Refusé', color: '#ef4444' },
 };
-const ticketCounts = {
-  nouveau: 12, en_attente: 8, en_cours: 31, resolu: 157,
-  get total() { return this.nouveau + this.en_attente + this.en_cours + this.resolu; }
+
+const ticketPriorityConfig = {
+  haute: { name: 'Haute', color: '#be123c' },
+  moyenne: { name: 'Moyenne', color: '#f59e0b' },
+  basse: { name: 'Basse', color: '#3b82f6' },
 };
-const barChartDataByTime = {
-    day: [ { name: 'Aujourd\'hui', nouveau: 2, en_cours: 5, resolu: 8, en_attente: 1 } ],
-    week: [
-        { name: 'Lun', nouveau: 2, en_cours: 5, resolu: 8, en_attente: 1 }, { name: 'Mar', nouveau: 1, en_cours: 7, resolu: 6, en_attente: 3 },
-        { name: 'Mer', nouveau: 3, en_cours: 4, resolu: 10, en_attente: 2 }, { name: 'Jeu', nouveau: 2, en_cours: 6, resolu: 9, en_attente: 1 },
-        { name: 'Ven', nouveau: 4, en_cours: 5, resolu: 12, en_attente: 1 },
-    ],
-    month: [
-        { name: 'Sem 1', nouveau: 10, en_cours: 25, resolu: 40, en_attente: 5 }, { name: 'Sem 2', nouveau: 12, en_cours: 30, resolu: 35, en_attente: 8 },
-        { name: 'Sem 3', nouveau: 8, en_cours: 28, resolu: 45, en_attente: 6 }, { name: 'Sem 4', nouveau: 15, en_cours: 35, resolu: 50, en_attente: 10 },
-    ],
-    year: [ { name: 'Jan', nouveau: 50, en_cours: 120, resolu: 200, en_attente: 30 }, /* ... */ ]
-};
-const inProgressTicketsData = [
-  { id: '#T-123', affectation: new Date('2025-07-01'), echeance: new Date('2025-07-10') }, { id: '#T-124', affectation: new Date('2025-06-25'), echeance: new Date('2025-07-05') },
-  { id: '#T-125', affectation: new Date('2025-07-02'), echeance: new Date('2025-07-15') }, { id: '#T-126', affectation: new Date('2025-07-03'), echeance: new Date('2025-07-08') },
-];
-const daysBetween = (date1, date2) => Math.round(Math.abs(date1 - date2) / (1000 * 60 * 60 * 24));
+
 
 // --- SOUS-COMPOSANTS ---
 
-// <-- CORRECTION PRINCIPALE ICI : La classe "h-full" a été retirée
-const WidgetContainer = ({ title, children, actionButtons = true }) => (
+export const WidgetContainer = ({ title, children }) => (
     <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md w-full flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-base text-slate-800 dark:text-slate-100">{title}</h3>
-            {actionButtons && (
-                <div className="flex items-center gap-2">
-                    <button className="p-1 text-slate-400 hover:text-slate-600"><Filter size={16}/></button>
-                    <button className="p-1 text-slate-400 hover:text-slate-600"><Download size={16}/></button>
-                    <button className="p-1 text-slate-400 hover:text-slate-600"><Printer size={16}/></button>
-                </div>
-            )}
-        </div>
-        <div className="flex-grow">{children}</div>
+        {title && (
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold text-base text-slate-800 dark:text-slate-100">{title}</h3>
+            </div>
+        )}
+        <div className="flex-grow min-h-[100px]">{children}</div>
     </div>
 );
 
+export const LoadingIndicator = () => <div className="flex justify-center items-center h-full"><p className="text-slate-500">Chargement...</p></div>;
 
-// --- Widgets de la Colonne de Gauche ---
+const VolumeByStatusChart = ({ data, isLoading, timeFilter, onTimeFilterChange, groupBy, onGroupByChange, config }) => {
+    const filterButtons = [{ key: 'today', label: 'Aujourd\'hui' }, { key: 'last7days', label: '7 Jours' }, { key: 'thismonthweeks', label: 'Mois' }, { key: 'thisyearmonths', label: 'Année' }, { key: 'byyear', label: 'Historique' }];
+    const [menuOpen, setMenuOpen] = useState(false);
 
-const VolumeByStatusChart = () => {
-    const [timeFilter, setTimeFilter] = useState('week');
     return (
-        <WidgetContainer title="Volume des Tickets par Statut">
-            <div className="flex justify-start gap-2 mb-4">
-                 {['day', 'week', 'month', 'year'].map(period => (
-                    <button key={period} onClick={() => setTimeFilter(period)} className={`px-3 py-1 text-xs font-semibold rounded ${timeFilter === period ? 'bg-sky-500 text-white shadow' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
-                        {period === 'day' ? 'Jour' : period === 'week' ? 'Semaine' : period === 'month' ? 'Mois' : 'Année'}
+        <WidgetContainer title={`Volume des Tickets par ${groupBy === 'status' ? 'Statut' : 'Priorité'}`}>
+            <div className="flex justify-between items-start mb-4">
+                <div className="flex justify-start gap-2 flex-wrap">
+                    {filterButtons.map(button => (<button key={button.key} onClick={() => onTimeFilterChange(button.key)} className={`px-3 py-1 text-xs font-semibold rounded ${timeFilter === button.key ? 'bg-sky-500 text-white shadow' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>{button.label}</button>))}
+                </div>
+                <div className="relative">
+                    <button onClick={() => setMenuOpen(!menuOpen)} className="p-1 text-slate-400 hover:text-slate-600 flex items-center gap-1 border rounded-md px-2 py-0.5">
+                        <Filter size={14} />
+                        <span className="text-xs font-semibold">Grouper par</span>
+                        <ChevronDown size={14} className={`transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {menuOpen && (
+                        <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-slate-700 rounded-md shadow-lg z-10">
+                            <a href="#" onClick={(e) => { e.preventDefault(); onGroupByChange('status'); setMenuOpen(false); }} className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600">Statut</a>
+                            <a href="#" onClick={(e) => { e.preventDefault(); onGroupByChange('priority'); setMenuOpen(false); }} className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600">Priorité</a>
+                        </div>
+                    )}
+                </div>
+            </div>
+            {isLoading ? <LoadingIndicator /> : ((data && data.length > 0) ? (<ResponsiveContainer width="100%" height={250}><BarChart data={data} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} /><XAxis dataKey="time_unit" stroke="rgb(100 116 139)" fontSize={12} /><YAxis stroke="rgb(100 116 139)" fontSize={12} /><Tooltip contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', border: 'none', borderRadius: '0.5rem' }} /><RechartsLegend iconType="circle" iconSize={8} />
+                {Object.entries(config).map(([key, conf]) => (<Bar key={key} dataKey={key} stackId="a" name={conf.name} fill={conf.color} />))}</BarChart></ResponsiveContainer>) : (<div className="flex items-center justify-center h-[250px] text-slate-500"><p>Aucune donnée pour cette période.</p></div>))}
+        </WidgetContainer>
+    );
+};
+
+const InProgressTicketsChart = ({ data, isLoading, timeFilter, onTimeFilterChange }) => {
+    const filterButtons = [ { key: 'today', label: 'Aujourd\'hui' }, { key: 'last7days', label: '7 Jours' }, { key: 'thismonthweeks', label: 'Mois' }, { key: 'thisyearmonths', label: 'Année' }, { key: 'byyear', label: 'Historique' }];
+
+    return (
+        <WidgetContainer title="Suivi des Tickets 'En Cours'">
+            <div className="flex justify-start gap-2 mb-4 flex-wrap">
+                {filterButtons.map(button => (
+                    <button key={button.key} onClick={() => onTimeFilterChange(button.key)} className={`px-3 py-1 text-xs font-semibold rounded ${timeFilter === button.key ? 'bg-sky-500 text-white shadow' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+                        {button.label}
                     </button>
                 ))}
             </div>
-            <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={barChartDataByTime[timeFilter]} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                    <XAxis dataKey="name" stroke="rgb(100 116 139)" fontSize={12} />
-                    <YAxis stroke="rgb(100 116 139)" fontSize={12} />
-                    <Tooltip contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', border: 'none', borderRadius: '0.5rem' }}/>
-                    <RechartsLegend iconType="circle" iconSize={8} />
-                    {Object.keys(ticketStatusConfig).map(statusKey => (
-                         <Bar key={statusKey} dataKey={statusKey} stackId="a" name={ticketStatusConfig[statusKey].name} fill={ticketStatusConfig[statusKey].color} />
-                    ))}
-                </BarChart>
-            </ResponsiveContainer>
-        </WidgetContainer>
-    );
-};
-
-const InProgressTicketsChart = () => {
-    const ganttData = inProgressTicketsData.map(ticket => {
-        const joursEcoules = daysBetween(ticket.affectation, new Date());
-        const joursTotaux = daysBetween(ticket.affectation, ticket.echeance);
-        const joursRestants = Math.max(0, joursTotaux - joursEcoules);
-        return { name: ticket.id, data: [joursEcoules, joursRestants] };
-    });
-    return (
-        <WidgetContainer title="Suivi des Tickets 'En Cours'">
-            <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={ganttData} layout="vertical" barSize={15}>
-                    <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                    <XAxis type="number" stroke="rgb(100 116 139)" label={{ value: 'Jours', position: 'insideBottom', offset: -5 }} fontSize={12} />
-                    <YAxis type="category" dataKey="name" stroke="rgb(100 116 139)" width={70} fontSize={12} />
-                    <Tooltip formatter={(value) => `${value} jours`} />
-                    <RechartsLegend payload={[{ value: 'Temps Écoulé', type: 'rect', color: '#eab308' }, { value: 'Temps Restant', type: 'rect', color: '#e2e8f0' }]}/>
-                    <Bar dataKey="data[0]" stackId="a" name="Temps Écoulé" fill="#eab308" />
-                    <Bar dataKey="data[1]" stackId="a" name="Temps Restant" fill="#e2e8f0" />
-                </BarChart>
-            </ResponsiveContainer>
-        </WidgetContainer>
-    );
-};
-
-
-// --- Widgets de la Colonne de Droite ---
-
-const StatsSummary = () => (
-    <WidgetContainer title="Tickets par Statut" actionButtons={false}>
-        <div className="space-y-2">
-            {Object.keys(ticketStatusConfig).map(key => (
-                <div key={key} className="flex justify-between items-center py-1">
-                    <div className="flex items-center gap-3">
-                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ticketStatusConfig[key].color }}></span>
-                        <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{ticketStatusConfig[key].name}</span>
-                    </div>
-                    <span className="font-semibold text-slate-800 dark:text-slate-100">{ticketCounts[key]}</span>
-                </div>
-            ))}
-            <div className="border-t dark:border-slate-700 !mt-2 pt-2">
-                <div className="flex justify-between items-center">
-                    <span className="text-sm font-bold text-slate-800 dark:text-slate-100">Total</span>
-                    <span className="font-bold text-lg text-sky-500">{ticketCounts.total}</span>
-                </div>
-            </div>
-        </div>
-    </WidgetContainer>
-);
-
-const DonutChartSummary = () => (
-    <WidgetContainer title="Répartition Globale">
-        <ResponsiveContainer width="100%" height={120}> 
-            <PieChart>
-                <Pie data={Object.keys(ticketStatusConfig).map(key => ({ name: ticketStatusConfig[key].name, value: ticketCounts[key] }))} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={35} outerRadius={50} paddingAngle={3}>
-                    {Object.keys(ticketStatusConfig).map(key => <Cell key={`cell-${key}`} fill={ticketStatusConfig[key].color} />)}
-                </Pie>
-                <Tooltip />
-                <RechartsLegend iconType="circle" iconSize={8} layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{fontSize: '12px'}} />
-            </PieChart>
-        </ResponsiveContainer>
-    </WidgetContainer>
-);
-
-const GaugesSummary = () => (
-     <WidgetContainer title="Taux par Statut">
-         <div className="grid grid-cols-2 gap-y-2 gap-x-0">
-            {Object.keys(ticketStatusConfig).map(key => (
-                 <div key={key} className="flex flex-col items-center">
-                    <ResponsiveContainer width="100%" height={60}> 
-                        <RadialBarChart cx="50%" cy="80%" innerRadius="90%" outerRadius="110%" barSize={6} data={[{ value: (ticketCounts[key] / ticketCounts.total) * 100 }]}>
-                            <RadialBar background dataKey="value" fill={ticketStatusConfig[key].color} cornerRadius={3} />
-                        </RadialBarChart>
+            {isLoading ? <LoadingIndicator /> : (
+                (data && data.length > 0) ? (
+                    <ResponsiveContainer width="100%" height={250}>
+                        <BarChart data={data} layout="vertical" barSize={15} margin={{ right: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
+                            <XAxis type="number" stroke="rgb(100 116 139)" label={{ value: 'Jours', position: 'insideBottom', offset: -5 }} fontSize={12} />
+                            <YAxis type="category" dataKey="name" stroke="rgb(100 116 139)" width={100} fontSize={12} tick={{ width: 120 }}/>
+                            <Tooltip formatter={(value) => `${value} jours`} />
+                            <RechartsLegend payload={[{ value: 'Temps Écoulé', type: 'rect', color: '#eab308' }, { value: 'Temps Restant', type: 'rect', color: '#e2e8f0' }]} />
+                            <Bar dataKey="data[0]" stackId="a" name="Temps Écoulé" fill="#eab308" />
+                            <Bar dataKey="data[1]" stackId="a" name="Temps Restant" fill="#e2e8f0" />
+                        </BarChart>
                     </ResponsiveContainer>
-                    <p className="text-sm font-semibold -mt-8">{((ticketCounts[key] / ticketCounts.total) * 100).toFixed(0)}%</p>
-                    <p className="text-xs text-slate-500">{ticketStatusConfig[key].name}</p>
-                </div>
-            ))}
-        </div>
+                ) : (
+                     <div className="flex items-center justify-center h-[250px] text-slate-500"><p>Aucun ticket "En Cours" pour cette période.</p></div>
+                )
+            )}
+        </WidgetContainer>
+    );
+};
+
+const StatsSummary = ({ stats, isLoading }) => (
+    <WidgetContainer title="Tickets par Statut (Global)">
+        {isLoading ? <LoadingIndicator /> : (<div className="space-y-2">{Object.entries(ticketStatusConfig).map(([key, config]) => (<div key={key} className="flex justify-between items-center py-1"><div className="flex items-center gap-3"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: config.color }}></span><span className="text-sm font-medium text-slate-600 dark:text-slate-300">{config.name}</span></div><span className="font-semibold text-slate-800 dark:text-slate-100">{stats[key] || 0}</span></div>))}<div className="border-t dark:border-slate-700 !mt-2 pt-2"><div className="flex justify-between items-center"><span className="text-sm font-bold text-slate-800 dark:text-slate-100">Total</span><span className="font-bold text-lg text-sky-500">{stats.total || 0}</span></div></div></div>)}
     </WidgetContainer>
 );
+
+const DonutChartSummary = ({ stats, isLoading, timeFilter, onTimeFilterChange }) => {
+    const chartData = Object.entries(ticketStatusConfig).map(([key, config]) => ({ name: config.name, value: stats[key] || 0, fill: config.color })).filter(item => item.value > 0);
+    const filterButtons = [{ key: 'week', label: 'Semaine' }, { key: 'month', label: 'Mois' }, { key: 'year', label: 'Année' }];
+    return (
+        <WidgetContainer title="Répartition par Période">
+            <div className="flex justify-start gap-2 mb-4">{filterButtons.map(button => (<button key={button.key} onClick={() => onTimeFilterChange(button.key)} className={`px-3 py-1 text-xs font-semibold rounded ${timeFilter === button.key ? 'bg-sky-500 text-white shadow' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>{button.label}</button>))}</div>
+            {isLoading ? <LoadingIndicator /> : (<ResponsiveContainer width="100%" height={120}><PieChart><Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={35} outerRadius={50} paddingAngle={3}>{chartData.map(entry => <Cell key={`cell-${entry.name}`} fill={entry.fill} />)}</Pie><Tooltip /><RechartsLegend iconType="circle" iconSize={8} layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{ fontSize: '12px' }} /></PieChart></ResponsiveContainer>)}
+        </WidgetContainer>
+    );
+};
+
+const GaugesSummary = ({ stats, isLoading, timeFilter, onTimeFilterChange }) => {
+    const total = stats.total || 1;
+    const filterButtons = [{ key: 'week', label: 'Semaine' }, { key: 'month', label: 'Mois' }, { key: 'year', label: 'Année' }];
+    return (
+        <WidgetContainer title="Taux par Période">
+            <div className="flex justify-start gap-2 mb-4">{filterButtons.map(button => (<button key={button.key} onClick={() => onTimeFilterChange(button.key)} className={`px-3 py-1 text-xs font-semibold rounded ${timeFilter === button.key ? 'bg-sky-500 text-white shadow' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>{button.label}</button>))}</div>
+            {isLoading ? <LoadingIndicator /> : (<div className="grid grid-cols-2 gap-y-2 gap-x-0">{Object.entries(ticketStatusConfig).map(([key, config]) => (<div key={key} className="flex flex-col items-center"><ResponsiveContainer width="100%" height={60}><RadialBarChart cx="50%" cy="80%" innerRadius="90%" outerRadius="110%" barSize={6} data={[{ value: ((stats[key] || 0) / total) * 100 }]}><RadialBar background dataKey="value" fill={config.color} cornerRadius={3} /></RadialBarChart></ResponsiveContainer><p className="text-sm font-semibold -mt-8">{(((stats[key] || 0) / total) * 100).toFixed(0)}%</p><p className="text-xs text-slate-500">{config.name}</p></div>))}</div>)}
+        </WidgetContainer>
+    );
+};
 
 
 // --- COMPOSANT PRINCIPAL DE LA PAGE ---
 const TicketsPage = () => {
+    const [groupBy, setGroupBy] = useState('status');
+    const [timeFilter, setTimeFilter] = useState('last7days');
+    const [chartData, setChartData] = useState([]);
+    const [isChartLoading, setIsChartLoading] = useState(true);
+    
+    const [globalStats, setGlobalStats] = useState({});
+    const [isGlobalStatsLoading, setIsGlobalStatsLoading] = useState(true);
+    
+    const [donutTimeFilter, setDonutTimeFilter] = useState('week');
+    const [donutStats, setDonutStats] = useState({});
+    const [isDonutLoading, setIsDonutLoading] = useState(true);
+    
+    const [gaugesTimeFilter, setGaugesTimeFilter] = useState('week');
+    const [gaugesStats, setGaugesStats] = useState({});
+    const [isGaugesLoading, setIsGaugesLoading] = useState(true);
+
+    // NOUVEAU : États pour le graphique des tickets en cours
+    const [ganttTimeFilter, setGanttTimeFilter] = useState('thismonthweeks');
+    const [ganttData, setGanttData] = useState([]);
+    const [isGanttLoading, setIsGanttLoading] = useState(true);
+    
+    const [error, setError] = useState(null);
+
+    const mapApiStatusToKey = (apiStatus) => {
+        const lowerCaseStatus = String(apiStatus).toLowerCase().replace('_', '-');
+        for (const key in ticketStatusConfig) { if (lowerCaseStatus === key.replace('_', '-')) return key; }
+        return null;
+    };
+
+    const processStatsResponse = (response) => {
+        const processedStats = { total: 0 };
+        Object.keys(ticketStatusConfig).forEach(key => processedStats[key] = 0);
+        response.forEach(item => {
+            const key = mapApiStatusToKey(item.status);
+            if (key) {
+                processedStats[key] = (processedStats[key] || 0) + item.count;
+                processedStats.total += item.count;
+            }
+        });
+        return processedStats;
+    };
+
+    useEffect(() => {
+        setIsGlobalStatsLoading(true);
+        dashboardService.getGlobalTicketsByStatus().then(response => setGlobalStats(processStatsResponse(response))).catch(e => console.error("Échec stats globales", e)).finally(() => setIsGlobalStatsLoading(false));
+    }, []);
+
+    useEffect(() => {
+        const fetchChartData = async () => {
+            setIsChartLoading(true);
+            try {
+                const response = groupBy === 'priority' ? await dashboardService.getTicketsByPriorityOverTime(timeFilter) : await dashboardService.getTicketsByStatusOverTime(timeFilter);
+                setChartData(response);
+            } catch (e) {
+                console.error("Échec du chargement des données du graphique:", e);
+                setError("Impossible de charger les données du graphique principal.");
+            } finally {
+                setIsChartLoading(false);
+            }
+        };
+        fetchChartData();
+    }, [timeFilter, groupBy]);
+
+    useEffect(() => {
+        setIsDonutLoading(true);
+        dashboardService.getTicketsByStatus(donutTimeFilter).then(response => setDonutStats(processStatsResponse(response))).catch(e => console.error("Échec graphique donut", e)).finally(() => setIsDonutLoading(false));
+    }, [donutTimeFilter]);
+
+    useEffect(() => {
+        setIsGaugesLoading(true);
+        dashboardService.getTicketsByStatus(gaugesTimeFilter).then(response => setGaugesStats(processStatsResponse(response))).catch(e => console.error("Échec jauges", e)).finally(() => setIsGaugesLoading(false));
+    }, [gaugesTimeFilter]);
+    
+    // NOUVEAU : useEffect pour le graphique Gantt
+    useEffect(() => {
+        const daysBetween = (date1, date2) => Math.round(Math.abs(new Date(date1) - new Date(date2)) / (1000 * 60 * 60 * 24));
+        const fetchGanttData = async () => {
+            setIsGanttLoading(true);
+            try {
+                const response = await dashboardService.getInProgressTicketsGantt(ganttTimeFilter);
+                const processedData = response.map(ticket => {
+                    const now = new Date();
+                    const debut = ticket.debutTraitement ? new Date(ticket.debutTraitement) : now;
+                    const echeance = ticket.dateEcheance ? new Date(ticket.dateEcheance) : now;
+                    const tempsEcoule = daysBetween(debut, now);
+                    const tempsTotal = daysBetween(debut, echeance);
+                    const tempsRestant = Math.max(0, tempsTotal - tempsEcoule);
+                    return {
+                        name: ticket.name,
+                        data: [tempsEcoule, tempsRestant]
+                    };
+                });
+                setGanttData(processedData);
+            } catch (e) {
+                console.error("Échec du chargement des données Gantt:", e);
+            } finally {
+                setIsGanttLoading(false);
+            }
+        };
+        fetchGanttData();
+    }, [ganttTimeFilter]);
+
+    if (error) {
+        return <div className="text-red-500 text-center p-8">{error}</div>;
+    }
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 animate-in fade-in-0">
-            
-            {/* Colonne de Gauche */}
             <div className="lg:col-span-2 space-y-3">
-                <VolumeByStatusChart />
-                <InProgressTicketsChart />
+                <VolumeByStatusChart data={chartData} isLoading={isChartLoading} timeFilter={timeFilter} onTimeFilterChange={setTimeFilter} groupBy={groupBy} onGroupByChange={setGroupBy} config={groupBy === 'status' ? ticketStatusConfig : ticketPriorityConfig} />
+                <InProgressTicketsChart 
+                    data={ganttData} 
+                    isLoading={isGanttLoading}
+                    timeFilter={ganttTimeFilter}
+                    onTimeFilterChange={setGanttTimeFilter}
+                />
             </div>
-            
-            {/* Colonne de Droite */}
             <div className="lg:col-span-1 space-y-3">
-                <StatsSummary />
-                <DonutChartSummary />
-                <GaugesSummary />
+                <StatsSummary stats={globalStats} isLoading={isGlobalStatsLoading} />
+                <DonutChartSummary stats={donutStats} isLoading={isDonutLoading} timeFilter={donutTimeFilter} onTimeFilterChange={setDonutTimeFilter} />
+                <GaugesSummary stats={gaugesStats} isLoading={isGaugesLoading} timeFilter={gaugesTimeFilter} onTimeFilterChange={setGaugesTimeFilter} />
             </div>
-
         </div>
     );
 };

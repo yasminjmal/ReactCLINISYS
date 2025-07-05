@@ -95,10 +95,10 @@ const TicketCard = ({ ticket, type, onStartTreatmentClick, onCloturerClick, onVi
               Statut: {ticket.statue?.replace(/_/g, ' ')}
             </span>
           </div>
-          {type === 'en_cours' && ticket.dateTraitement && (
-            <div className="flex items-center col-span-2 truncate" title={`Date de Traitement: ${new Date(ticket.dateTraitement).toLocaleDateString()}`}>
+          {type === 'en_cours' && ticket.debutTraitement && (
+            <div className="flex items-center col-span-2 truncate" title={`Date de Traitement: ${new Date(ticket.debutTraitement).toLocaleDateString()}`}>
               <CalendarDays size={14} className="mr-1.5 text-slate-400 dark:text-slate-500" />
-              Traitement commencé le: {new Date(ticket.dateTraitement).toLocaleDateString()}
+              Traitement commencé le: {new Date(ticket.debutTraitement).toLocaleDateString()}
             </div>
           )}
           {type === 'en_cours' && (
@@ -118,7 +118,7 @@ const TicketCard = ({ ticket, type, onStartTreatmentClick, onCloturerClick, onVi
       </div>
 
       <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-700/50">
-        {type === 'en_attente' && ticket.statue === 'En_cours' && !ticket.dateTraitement && (
+        {type === 'en_attente' && ticket.statue === 'En_cours' && !ticket.debutTraitement && (
           <button
             onClick={() => onStartTreatmentClick(ticket)}
             className="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-3 rounded-md transition-colors duration-200 text-sm flex items-center justify-center space-x-2"
@@ -152,7 +152,7 @@ const MesTravauxEmployePage = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfigEnAttente, setSortConfigEnAttente] = useState({ key: 'dateCreation', direction: 'descending' });
-  const [sortConfigEnCours, setSortConfigEnCours] = useState({ key: 'dateTraitement', direction: 'descending' });
+  const [sortConfigEnCours, setSortConfigEnCours] = useState({ key: 'debutTraitement', direction: 'descending' });
 
   // États pour les modales
   const [isStartTreatmentModalOpen, setIsStartTreatmentModalOpen] = useState(false);
@@ -200,13 +200,13 @@ const MesTravauxEmployePage = () => {
   // Logique de filtrage des tickets
   const ticketsEnAttente = useMemo(() => {
     return allTickets.filter(ticket =>
-      ticket.statue === 'En_cours' && !ticket.dateTraitement && ticket.idUtilisateur?.id === currentUser?.id
+      ticket.statue === 'En_cours' && !ticket.debutTraitement && ticket.idUtilisateur?.id === currentUser?.id
     );
   }, [allTickets, currentUser]);
 
   const ticketsEnCours = useMemo(() => {
     return allTickets.filter(ticket =>
-      ticket.statue === 'En_cours' && !!ticket.dateTraitement && ticket.idUtilisateur?.id === currentUser?.id
+      ticket.statue === 'En_cours' && !!ticket.debutTraitement && ticket.idUtilisateur?.id === currentUser?.id
     );
   }, [allTickets, currentUser]);
 
@@ -222,7 +222,7 @@ const MesTravauxEmployePage = () => {
     if (!ticketToStartTreatment) return;
     setIsLoadingStartTreatmentModal(true);
     try {
-      const payload = { dateTraitement: new Date().toISOString() };
+      const payload = { debutTraitement: new Date().toISOString() };
       await ticketService.updateTicket(ticketToStartTreatment.id, payload);
       await fetchAllUserTickets(); // Recharger toutes les données pour mettre à jour les deux listes
       setIsStartTreatmentModalOpen(false);
@@ -327,7 +327,7 @@ const MesTravauxEmployePage = () => {
       sortableList.sort((a, b) => {
         let valA = a[sortConfig.key];
         let valB = b[sortConfig.key];
-        if (['dateCreation', 'dateTraitement', 'date_echeance', 'dateCloture'].includes(sortConfig.key)) {
+        if (['dateCreation', 'debutTraitement', 'date_echeance', 'dateCloture'].includes(sortConfig.key)) {
             valA = valA ? new Date(valA).getTime() : 0;
             valB = valB ? new Date(valB).getTime() : 0;
         }
@@ -450,7 +450,7 @@ const MesTravauxEmployePage = () => {
             </h2>
             <div className="mt-3 text-xs text-slate-500 dark:text-slate-400 flex flex-wrap gap-x-2 mb-4">
                 <span>Trier par:</span>
-                <button onClick={() => requestSort('dateTraitement', sortConfigEnCours, setSortConfigEnCours)} className="font-medium hover:text-sky-500">Date de Traitement {getSortIndicator('dateTraitement', sortConfigEnCours)}</button>
+                <button onClick={() => requestSort('debutTraitement', sortConfigEnCours, setSortConfigEnCours)} className="font-medium hover:text-sky-500">Date de Traitement {getSortIndicator('debutTraitement', sortConfigEnCours)}</button>
                 <span>|</span>
                 <button onClick={() => requestSort('priorite', sortConfigEnCours, setSortConfigEnCours)} className="font-medium hover:text-sky-500">Priorité {getSortIndicator('priorite', sortConfigEnCours)}</button>
                 <span>|</span>
@@ -564,7 +564,7 @@ const MesTravauxEmployePage = () => {
                 <p><strong>Priorité:</strong> {selectedTicketForDetail.priorite}</p>
                 <p><strong>Statut:</strong> {selectedTicketForDetail.statue?.replace(/_/g, ' ')}</p>
                 <p><strong>Créé le:</strong> {new Date(selectedTicketForDetail.dateCreation).toLocaleDateString()}</p>
-                {selectedTicketForDetail.dateTraitement && <p><strong>Traitement commencé le:</strong> {new Date(selectedTicketForDetail.dateTraitement).toLocaleDateString()}</p>}
+                {selectedTicketForDetail.debutTraitement && <p><strong>Traitement commencé le:</strong> {new Date(selectedTicketForDetail.debutTraitement).toLocaleDateString()}</p>}
                 {selectedTicketForDetail.date_echeance && <p><strong>Échéance:</strong> {new Date(selectedTicketForDetail.date_echeance).toLocaleDateString()}</p>}
                 {selectedTicketForDetail.idClient && <p><strong>Client:</strong> {selectedTicketForDetail.idClient.nomComplet}</p>}
                 {selectedTicketForDetail.idModule && <p><strong>Module:</strong> {selectedTicketForDetail.idModule.designation}</p>}

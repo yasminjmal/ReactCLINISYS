@@ -172,7 +172,7 @@ const MonTravailEnCoursPage = () => { // Plus de prop onFetchTickets ici
       // Filtrer pour n'afficher que les tickets "En_cours" AVEC une dateTraitement
       const enCoursTicketsFiltered = allUserTickets.filter(ticket => 
         ticket.statue === 'En_cours' && 
-        (ticket.dateTraitement !== null && ticket.dateTraitement !== undefined && ticket.dateTraitement !== '')
+        (ticket.debutTraitement !== null && ticket.debutTraitement !== undefined && ticket.debutTraitement !== '')
       );
       console.log("DEBUG MonTravailEnCoursPage: Tickets 'En_cours' filtrés:", enCoursTicketsFiltered); // DEBUG
       

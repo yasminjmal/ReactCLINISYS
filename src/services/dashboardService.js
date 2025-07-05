@@ -164,6 +164,95 @@ const dashboardService = {
             throw error;
         }
     },
+    getTicketsByStatusOverTime: async (periodType = 'week') => {
+        try {
+            const response = await api.get('/dashboard/tickets-by-status-over-time', {
+                params: { period: periodType }
+            });
+            // La réponse attendue est: 
+            // [{ time_unit: "Lun", en_cours: 5, termine: 8 }, { time_unit: "Mar", ... }]
+            return response.data;
+        } catch (error) {
+            console.error("Erreur lors de la récupération des données temporelles des tickets:", error);
+            throw error;
+        }
+    },
+
+
+    getGlobalTicketsByStatus: async () => {
+        try {
+            // Appelle le nouvel endpoint
+            const response = await api.get('/dashboard/global-tickets-by-status');
+            return response.data;
+        } catch (error) {
+            console.error("Erreur lors de la récupération des stats globales des tickets:", error);
+            throw error;
+        }
+    },
+
+
+    getTicketsByPriorityOverTime: async (periodType = 'last7days') => {
+        try {
+            const response = await api.get('/dashboard/tickets-by-priority-over-time', {
+                params: { period: periodType }
+            });
+            return response.data;
+        } catch (error) {
+            console.error("Erreur lors de la récupération des données par priorité:", error);
+            throw error;
+        }
+    },
+
+
+    getInProgressTicketsGantt: async (periodType = 'thismonthweeks') => {
+        try {
+            const response = await api.get('/dashboard/in-progress-tickets-gantt', {
+                params: { period: periodType }
+            });
+            return response.data; // Attendu: [{ titre: "...", debutTraitement: "...", dateEcheance: "..."}]
+        } catch (error) {
+            console.error("Erreur lors de la récupération des tickets en cours:", error);
+            throw error;
+        }
+    },
+
+
+    getPerformanceStats: async (groupBy = 'utilisateur', period = 'thismonth') => {
+        try {
+            const response = await api.get('/dashboard/performance-stats', {
+                params: { groupBy, period }
+            });
+            // Attendu : [{ timeUnit: "...", groupName: "...", totalTickets: X, onTimeTickets: Y }]
+            return response.data; 
+        } catch (error) {
+            console.error("Erreur lors de la récupération des stats de performance:", error);
+            throw error;
+        }
+    },
+
+    getTeamPerformanceStats: async (period = 'thismonth') => {
+        try {
+            const response = await api.get('/dashboard/team-performance', {
+                params: { period }
+            });
+            return response.data; // Attendu: [{ teamName: "...", onTimeRate: 95.5 }]
+        } catch (error) {
+            console.error("Erreur lors de la récupération des perfs par équipe:", error);
+            throw error;
+        }
+    },
+
+    getUserPerformanceStats: async (period = 'thismonth') => {
+        try {
+            const response = await api.get('/dashboard/user-performance', {
+                params: { period }
+            });
+            return response.data; // Attendu: [{ userName: "...", onTimeRate: 88.2, ticketsCompleted: 10 }]
+        } catch (error) {
+            console.error("Erreur lors de la récupération des perfs par utilisateur:", error);
+            throw error;
+        }
+    },
 
 
 
