@@ -8,7 +8,6 @@ import CommentManager from '../../admin/Tickets/CommentManager';
 import DocumentManager from '../../admin/Tickets/DocumentManager';
 
 // Composant TicketCard réutilisable pour les deux listes
-// Les boutons d'action seront rendus conditionnellement en fonction du type de liste
 const TicketCard = ({ ticket, type, onStartTreatmentClick, onCloturerClick, onViewDetails, onUpdateEcheanceClick }) => {
   const getPriorityColor = (priority) => {
     switch (priority?.toLowerCase()) {
@@ -56,6 +55,7 @@ const TicketCard = ({ ticket, type, onStartTreatmentClick, onCloturerClick, onVi
 
   return (
     <div className="bg-white dark:bg-slate-800 shadow-lg rounded-lg p-5 border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-shadow duration-300 flex flex-col justify-between">
+      {/* Rendre la carte cliquable pour voir les détails */}
       <div onClick={() => onViewDetails(ticket)} className="cursor-pointer">
         <div className="flex justify-between items-start mb-3">
           <h3 className="text-lg font-semibold text-sky-600 dark:text-sky-400 hover:underline truncate" title={ticket.titre}>
@@ -71,9 +71,8 @@ const TicketCard = ({ ticket, type, onStartTreatmentClick, onCloturerClick, onVi
         </p>
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-slate-500 dark:text-slate-400 mb-4">
-          <div className="flex items-center" title="Référence du ticket">
-            <Tag size={14} className="mr-1.5 text-slate-400 dark:text-slate-500" /> Réf: {ticket.id}
-          </div>
+          {/* Supprimé : Référence du ticket (ID) - non visible pour l'employé */}
+          
           <div className="flex items-center" title="Date de Création">
             <CalendarDays size={14} className="mr-1.5 text-slate-400 dark:text-slate-500" />
             Créé le: {new Date(ticket.dateCreation).toLocaleDateString()}
@@ -348,7 +347,7 @@ const MesTravauxEmployePage = () => {
   const sortedAndFilteredEnAttenteTickets = useMemo(() => {
     const filtered = ticketsEnAttente.filter(ticket =>
       ticket.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.id.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+      // ticket.id.toString().toLowerCase().includes(searchTerm.toLowerCase()) || // Supprimé pour l'employé
       (ticket.description && ticket.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (ticket.idClient && ticket.idClient.nomComplet.toLowerCase().includes(searchTerm.toLowerCase()))
     );
@@ -358,7 +357,7 @@ const MesTravauxEmployePage = () => {
   const sortedAndFilteredEnCoursTickets = useMemo(() => {
     const filtered = ticketsEnCours.filter(ticket =>
       ticket.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.id.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+      // ticket.id.toString().toLowerCase().includes(searchTerm.toLowerCase()) || // Supprimé pour l'employé
       (ticket.description && ticket.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (ticket.idClient && ticket.idClient.nomComplet.toLowerCase().includes(searchTerm.toLowerCase()))
     );
@@ -399,7 +398,7 @@ const MesTravauxEmployePage = () => {
               </div>
               <input
                 type="text"
-                placeholder="Rechercher par titre, réf, client..."
+                placeholder="Rechercher par titre, description, client..." // Mis à jour le placeholder
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="form-input-icon w-full py-2.5 text-sm"
@@ -420,8 +419,9 @@ const MesTravauxEmployePage = () => {
                 <button onClick={() => requestSort('dateCreation', sortConfigEnAttente, setSortConfigEnAttente)} className="font-medium hover:text-sky-500">Date de Création {getSortIndicator('dateCreation', sortConfigEnAttente)}</button>
                 <span>|</span>
                 <button onClick={() => requestSort('priorite', sortConfigEnAttente, setSortConfigEnAttente)} className="font-medium hover:text-sky-500">Priorité {getSortIndicator('priorite', sortConfigEnAttente)}</button>
-                <span>|</span>
-                <button onClick={() => requestSort('id', sortConfigEnAttente, setSortConfigEnAttente)} className="font-medium hover:text-sky-500">Référence {getSortIndicator('id', sortConfigEnAttente)}</button>
+                {/* Supprimé : Référence - non visible pour l'employé */}
+                {/* <span>|</span>
+                <button onClick={() => requestSort('id', sortConfigEnAttente, setSortConfigEnAttente)} className="font-medium hover:text-sky-500">Référence {getSortIndicator('id', sortConfigEnAttente)}</button> */}
             </div>
             <div className="flex-grow space-y-4 overflow-y-auto pr-2" style={{ maxHeight: 'calc(100vh - 300px)' }}> {/* Ajustez la hauteur max */}
               {sortedAndFilteredEnAttenteTickets.length > 0 ? (
@@ -455,8 +455,9 @@ const MesTravauxEmployePage = () => {
                 <button onClick={() => requestSort('priorite', sortConfigEnCours, setSortConfigEnCours)} className="font-medium hover:text-sky-500">Priorité {getSortIndicator('priorite', sortConfigEnCours)}</button>
                 <span>|</span>
                 <button onClick={() => requestSort('date_echeance', sortConfigEnCours, setSortConfigEnCours)} className="font-medium hover:text-sky-500">Échéance {getSortIndicator('date_echeance', sortConfigEnCours)}</button>
-                <span>|</span>
-                <button onClick={() => requestSort('id', sortConfigEnCours, setSortConfigEnCours)} className="font-medium hover:text-sky-500">Référence {getSortIndicator('id', sortConfigEnCours)}</button>
+                {/* Supprimé : Référence - non visible pour l'employé */}
+                {/* <span>|</span>
+                <button onClick={() => requestSort('id', sortConfigEnCours, setSortConfigEnCours)} className="font-medium hover:text-sky-500">Référence {getSortIndicator('id', sortConfigEnCours)}</button> */}
             </div>
             <div className="flex-grow space-y-4 overflow-y-auto pr-2" style={{ maxHeight: 'calc(100vh - 300px)' }}> {/* Ajustez la hauteur max */}
               {sortedAndFilteredEnCoursTickets.length > 0 ? (
@@ -480,7 +481,7 @@ const MesTravauxEmployePage = () => {
         </div>
       </div>
 
-      {/* Modals partagés */}
+      {/* Modals partagés (inchangés, car ils gèrent des actions spécifiques et des détails) */}
       <Modal
         isOpen={isStartTreatmentModalOpen}
         onClose={closeAllModals}
@@ -560,7 +561,8 @@ const MesTravauxEmployePage = () => {
               <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-2">Description</h3>
               <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">{selectedTicketForDetail.description}</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-500 dark:text-slate-400">
-                <p><strong>Référence:</strong> {selectedTicketForDetail.id}</p>
+                {/* Supprimé : Référence - non visible pour l'employé */}
+                {/* <p><strong>Référence:</strong> {selectedTicketForDetail.id}</p> */}
                 <p><strong>Priorité:</strong> {selectedTicketForDetail.priorite}</p>
                 <p><strong>Statut:</strong> {selectedTicketForDetail.statue?.replace(/_/g, ' ')}</p>
                 <p><strong>Créé le:</strong> {new Date(selectedTicketForDetail.dateCreation).toLocaleDateString()}</p>
