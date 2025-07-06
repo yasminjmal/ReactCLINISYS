@@ -25,49 +25,64 @@ export const useChat = (currentUser, partnerUser) => {
         loadHistory();
     }, [loadHistory]);
 
-    // Gérer la réception des messages en temps réel (c'est ici que la magie opère)
+    // Gérer la réception des messages en temps réel
     useEffect(() => {
+        // On ne s'abonne que si la connexion WebSocket est pleinement établie.
         if (connectionStatus === 'CONNECTED' && stompClient && currentUser && partnerUser) {
-            const subscriptionPath = `/user/${currentUser.login}/queue/private`;
-            console.log(`🎧 useChat: Abonnement à ${subscriptionPath}`);
             
-            const subscription = stompClient.subscribe(subscriptionPath, (payload) => {
+            // --- DÉBUT DU BLOC DE TEST ---
+
+            // A. On recrée le même ID de conversation que dans le backend.
+            const user1 = currentUser.id;
+            const user2 = partnerUser.id;
+            const conversationId = user1 < user2 ? `${user1}-${user2}` : `${user2}-${user1}`;
+            const publicTopic = `/topic/chat/${conversationId}`;
+
+            // B. On s'abonne au topic public partagé.
+            console.log(`✅ [TEST] 🎧 Abonnement au TOPIC PUBLIC : ${publicTopic}`);
+            const publicSubscription = stompClient.subscribe(publicTopic, (payload) => {
                 const receivedMessage = JSON.parse(payload.body);
-                console.log("📩 useChat: Message temps-réel reçu !", receivedMessage);
-
-                // --- DÉBUT DE LA LOGIQUE CORRIGÉE ---
-
-                // Cas 1 : C'est un nouveau message de la personne avec qui je discute.
-                const isNewMessageFromPartner = receivedMessage.sender === partnerUser.id && receivedMessage.receiver === currentUser.id;
-
-                // Cas 2 : C'est la confirmation d'un message que j'ai envoyé.
-                const isConfirmationOfMyMessage = receivedMessage.sender === currentUser.id && receivedMessage.receiver === partnerUser.id;
-
-                if (isNewMessageFromPartner) {
-                    // C'est la situation du RECEVEUR.
-                    // On ajoute simplement le nouveau message à la fin de la liste.
-                    console.log(`✅ Nouveau message reçu de ${partnerUser.login}. Ajout à l'interface.`);
+                console.log(`✅ [TEST] 📩 Message reçu sur le TOPIC PUBLIC !`, receivedMessage);
+                
+                // On s'assure de n'ajouter que les messages venant de l'autre personne
+                // pour ne pas afficher en double notre propre message (déjà géré par l'update optimiste).
+                if (receivedMessage.sender === partnerUser.id) {
+                    console.log("[TEST] C'est un message du partenaire, on l'ajoute à l'interface.");
                     setMessages(prevMessages => [...prevMessages, receivedMessage]);
+                }
+            });
 
-                } else if (isConfirmationOfMyMessage) {
-                    // C'est la situation de l'EXPÉDITEUR.
-                    // On remplace le message "optimiste" (avec un ID temporaire) par le vrai message du serveur.
-                    console.log(`✅ Confirmation reçue pour mon message envoyé.`);
+            // --- FIN DU BLOC DE TEST ---
+
+
+            // On garde l'abonnement à la file privée pour notre test comparatif.
+            const privateSubscriptionPath = `/user/${currentUser.login}/queue/private`;
+            console.log(`🎧 useChat: Abonnement à la file PRIVÉE : ${privateSubscriptionPath}`);
+            const privateSubscription = stompClient.subscribe(privateSubscriptionPath, (payload) => {
+                const receivedMessage = JSON.parse(payload.body);
+                console.log("📩 useChat: Message reçu sur la file PRIVÉE !", receivedMessage);
+
+                // Cette logique de remplacement du message optimiste ne concerne que l'expéditeur.
+                const isConfirmationOfMyMessage = receivedMessage.sender === currentUser.id && receivedMessage.receiver === partnerUser.id;
+                if (isConfirmationOfMyMessage) {
+                    console.log(`✅ Confirmation reçue pour mon message envoyé via la file PRIVÉE.`);
                     setMessages(prevMessages => 
                         prevMessages.map(msg => 
-                            (msg.id > 1000000 && msg.content === receivedMessage.content) // Condition pour trouver le message optimiste
-                                ? receivedMessage // Remplacer par le message final
+                            (msg.id > 1000000 && msg.content === receivedMessage.content)
+                                ? receivedMessage
                                 : msg
                         )
                     );
                 }
-                // --- FIN DE LA LOGIQUE CORRIGÉE ---
             });
 
-            // Fonction de nettoyage (inchangée)
+            // Fonction de nettoyage pour se désabonner proprement
             return () => {
-                console.log(`🔌 useChat: Désabonnement de ${subscriptionPath}`);
-                subscription.unsubscribe();
+                console.log(`🔌 useChat: Désabonnement de ${privateSubscriptionPath}`);
+                privateSubscription.unsubscribe();
+
+                console.log(`✅ [TEST] 🔌 Désabonnement de ${publicTopic}`);
+                publicSubscription.unsubscribe();
             };
         }
     }, [connectionStatus, stompClient, currentUser, partnerUser]);
@@ -88,11 +103,7 @@ export const useChat = (currentUser, partnerUser) => {
                 type: 'CHAT',
             };
 
-            const optimisticMessage = {
-                ...chatMessage,
-                id: Date.now(), // ID temporaire unique
-                timestamp: new Date().toISOString(),
-            };
+            const optimisticMessage = { ...chatMessage, id: Date.now() };
             setMessages(prev => [...prev, optimisticMessage]);
 
             console.log("✈️ useChat: Envoi du message au backend...", chatMessage);
