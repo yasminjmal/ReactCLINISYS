@@ -1,7 +1,8 @@
 // src/components/employe/pages/MesTicketsResolusPage.jsx
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  FileText, Search, Tag, CalendarDays, User, CheckCircle, XCircle, MessageSquare, Paperclip, ChevronLeft, ChevronRight, PlayCircle
+  FileText, Search, Tag, CalendarDays, User, CheckCircle, XCircle, MessageSquare, Paperclip, ChevronLeft, ChevronRight, PlayCircle,
+  Printer, Download, Filter // Maintenu l'icône Filter pour le bouton des 3 barres
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import ticketService from '../../../services/ticketService';
@@ -56,12 +57,15 @@ const TicketItem = ({ ticket, onViewDetails }) => {
   const nbCommentaires = ticket.commentaires ? ticket.commentaires.length : 0;
   const nbDocuments = ticket.documents ? ticket.documents.length : 0;
 
+  // Texte d'échéance simplifié pour la densité
+  const echeanceText = ticket.date_echeance ? new Date(ticket.date_echeance).toLocaleDateString() : 'N/A';
+
   return (
     // Structure de ligne très compacte, sans ombres ni bordures de carte évidentes
     <div className="flex items-center justify-between py-2 px-3 border-b border-slate-200 dark:border-slate-700 last:border-b-0 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
       
       {/* Colonne 1: Client */}
-      <div className="flex-shrink-0 w-32 mr-4"> {/* Largeur fixe pour le client */}
+      <div className="flex-shrink-0 w-32 mr-4">
         {ticket.idClient && (
           <span className="flex items-center text-xs text-slate-500 dark:text-slate-400 truncate" title={ticket.idClient.nomComplet}>
             <User size={10} className="mr-1 opacity-70" /> {ticket.idClient.nomComplet}
@@ -70,19 +74,19 @@ const TicketItem = ({ ticket, onViewDetails }) => {
       </div>
 
       {/* Colonne 2: Titre du Ticket */}
-      <div className="flex-1 min-w-[150px] max-w-[250px] flex-shrink-0 mr-4"> {/* Largeur flexible pour le titre */}
+      <div className="flex-1 min-w-[150px] max-w-[250px] flex-shrink-0 mr-4">
         <h4 className={`text-sm font-medium truncate ${getTitleColorByPriority(ticket.priorite)}`} title={ticket.titre}>
           {ticket.titre}
         </h4>
       </div>
 
-      {/* Colonne 3: Priorité */}
-      <div className="flex-shrink-0 w-12 text-center mr-4"> {/* Largeur fixe pour alignement */}
+      {/* Colonnes 3: Priorité */}
+      <div className="flex-shrink-0 w-12 text-center mr-4">
         <PriorityDots priority={ticket.priorite} />
       </div>
 
-      {/* Colonne 4: Dates (Création, Début Traitement, Échéance, Clôture) */}
-      <div className="flex-shrink-0 flex items-center text-xs text-slate-500 dark:text-slate-400 gap-x-2 w-[340px]"> {/* Largeur fixe pour le bloc de dates */}
+      {/* Colonnes 4: Dates (Création, Début Traitement, Échéance, Clôture) */}
+      <div className="flex-shrink-0 flex items-center text-xs text-slate-500 dark:text-slate-400 gap-x-2 w-[340px]">
         {/* Date de Création */}
         <span title="Date de Création" className="flex items-center whitespace-nowrap">
           <CalendarDays size={10} className="mr-0.5 opacity-70" /> C: {ticket.dateCreation ? new Date(ticket.dateCreation).toLocaleDateString() : 'N/A'}
@@ -93,7 +97,7 @@ const TicketItem = ({ ticket, onViewDetails }) => {
         </span>
         {/* Date d'Échéance */}
         <span title="Date d'Échéance" className="flex items-center whitespace-nowrap">
-          <CalendarDays size={10} className="mr-0.5 opacity-70" /> Éch: {ticket.date_echeance ? new Date(ticket.date_echeance).toLocaleDateString() : 'N/A'}
+          <CalendarDays size={10} className="mr-0.5 opacity-70" /> Éch: {echeanceText}
         </span>
         {/* Date de Clôture */}
         <span title="Date de Clôture" className="flex items-center whitespace-nowrap">
@@ -111,7 +115,7 @@ const TicketItem = ({ ticket, onViewDetails }) => {
         </div>
       </div>
 
-      {/* Colonne 7: Action */}
+      {/* Colonnes 7: Action */}
       <div className="flex-shrink-0">
         <button
           onClick={() => onViewDetails(ticket)}
@@ -132,8 +136,11 @@ const MesTicketsResolusPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Terme de recherche unique pour tout
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'dateCloture', direction: 'descending' });
+  const [filterPriority, setFilterPriority] = useState('all'); // 'all', 'haute', 'moyenne', 'basse'
+  // filterClient est supprimé
 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedTicketForDetail, setSelectedTicketForDetail] = useState(null);
@@ -190,18 +197,26 @@ const MesTicketsResolusPage = () => {
 
   const sortedAndFilteredTickets = useMemo(() => {
     if (!Array.isArray(tickets)) return [];
-    let sortableTickets = [...tickets];
+    let processedTickets = [...tickets];
 
+    // La recherche principale inclut titre, description, client
     if (searchTerm) {
-      sortableTickets = sortableTickets.filter(ticket =>
+      processedTickets = processedTickets.filter(ticket =>
         ticket.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (ticket.description && ticket.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (ticket.idClient && ticket.idClient.nomComplet.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
+    if (filterPriority !== 'all') {
+      processedTickets = processedTickets.filter(ticket =>
+        ticket.priorite?.toLowerCase() === filterPriority
+      );
+    }
+
+    // Appliquer le tri
     if (sortConfig.key) {
-      sortableTickets.sort((a, b) => {
+      processedTickets.sort((a, b) => {
         let valA = a[sortConfig.key];
         let valB = b[sortConfig.key];
         if (['dateCloture', 'dateCreation', 'debutTraitement', 'date_echeance'].includes(sortConfig.key)) {
@@ -217,14 +232,18 @@ const MesTicketsResolusPage = () => {
           valA = a.idClient?.nomComplet?.toLowerCase() || '';
           valB = b.idClient?.nomComplet?.toLowerCase() || '';
         }
+        if (sortConfig.key === 'titre') {
+          valA = valA?.toLowerCase() || '';
+          valB = valB?.toLowerCase() || '';
+        }
 
         if (valA < valB) return sortConfig.direction === 'ascending' ? -1 : 1;
         if (valA > valB) return sortConfig.direction === 'ascending' ? 1 : -1;
         return 0;
       });
     }
-    return sortableTickets;
-  }, [tickets, searchTerm, sortConfig]);
+    return processedTickets;
+  }, [tickets, searchTerm, filterPriority, sortConfig]);
 
   const requestSort = (key) => {
     let direction = 'ascending';
@@ -249,6 +268,11 @@ const MesTicketsResolusPage = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  // Handlers pour les filtres
+  const handlePriorityFilterChange = (priority) => {
+    setFilterPriority(priority);
+    setCurrentPage(1); // Réinitialiser la page à 1 lors du changement de filtre
+  };
 
   if (loading) {
     return (
@@ -271,7 +295,7 @@ const MesTicketsResolusPage = () => {
     );
   }
 
-  if (tickets.length === 0 && !searchTerm) {
+  if (tickets.length === 0 && !searchTerm && filterPriority === 'all') {
     return (
       <div className="p-6 md:p-10 text-center bg-slate-50 dark:bg-slate-800/50 rounded-lg shadow-inner">
         <CheckCircle size={48} className="mx-auto mb-4 text-green-500" />
@@ -284,66 +308,116 @@ const MesTicketsResolusPage = () => {
   return (
     <>
       <div className="space-y-6">
-        {/* Barre de recherche et tri */}
+        {/* Nouvelle Barre de contrôles simplifiée et alignée */}
         <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
-          <div className="relative mb-3">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-slate-400 dark:text-slate-500" />
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Zone de recherche globale */}
+            <div className="relative flex-grow min-w-[250px] max-w-lg">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-slate-400 dark:text-slate-500" /> {/* Icône réglée */}
+              </div>
+              <input
+                type="text"
+                placeholder="Rechercher tout..."
+                value={searchTerm}
+                onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}}
+                className="block w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
             </div>
-            <input
-              type="text"
-              placeholder="Rechercher par titre, client..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="form-input-icon w-full py-2.5 text-sm bg-slate-50 dark:bg-slate-900/50"
-            />
-          </div>
-          {/* En-têtes de colonnes (pour aligner visuellement les données des TicketItem) */}
-          <div className="hidden md:flex items-center py-2 px-3 text-xs font-semibold text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
-            {/* Ordre des en-têtes ajusté pour correspondre à l'ordre des colonnes du TicketItem */}
-            <div className="flex-shrink-0 w-32 mr-4">
-              <button onClick={() => requestSort('idClient')} className="font-medium hover:text-blue-500">
-                Client {getSortIndicator('idClient')}
-              </button>
-            </div>
-            <div className="flex-1 min-w-[150px] max-w-[250px] flex-shrink-0 mr-4">
-              <button onClick={() => requestSort('titre')} className="font-medium hover:text-blue-500">
-                Titre {getSortIndicator('titre')}
-              </button>
-            </div>
-            <div className="flex-shrink-0 w-12 text-center mr-4">
-              <button onClick={() => requestSort('priorite')} className="font-medium hover:text-blue-500">
-                Priorité {getSortIndicator('priorite')}
-              </button>
-            </div>
-            <div className="flex-shrink-0 w-[340px] text-left"> {/* Aligné avec le bloc de dates */}
-              <button onClick={() => requestSort('dateCloture')} className="font-medium hover:text-blue-500 mr-2">
-                Dates {getSortIndicator('dateCloture')}
-              </button>
-            </div>
-            <div className="flex-shrink-0 flex items-center space-x-3 text-xs text-slate-600 dark:text-slate-300 ml-4 mr-4">
-                Compteurs
-            </div>
-            <div className="flex-shrink-0 text-center">
-                Actions
-            </div>
-          </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 flex flex-wrap gap-x-3 md:hidden"> {/* Options de tri pour mobile */}
-            <span>Trier par:</span>
-            <button onClick={() => requestSort('dateCloture')} className="font-medium hover:text-blue-500">
-              Clôture {getSortIndicator('dateCloture')}
+            
+            {/* Bouton de filtre général (les 3 barres) - CONSERVÉ */}
+            <button
+                onClick={() => { /* Logique pour ouvrir un menu de filtres avancés si nécessaire */ alert("Filtre avancé à implémenter"); }}
+                className="p-2.5 rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                title="Autres filtres"
+            >
+                <Filter size={20} />
             </button>
-            <span>|</span>
-            <button onClick={() => requestSort('priorite')} className="font-medium hover:text-blue-500">
-              Priorité {getSortIndicator('priorite')}
+
+            {/* Filtre par Priorité (Menu déroulant stylisé) - CONSERVÉ */}
+            <div className="relative">
+                <select
+                    value={filterPriority}
+                    onChange={(e) => handlePriorityFilterChange(e.target.value)}
+                    className="appearance-none block w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 pr-8 cursor-pointer"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1.5em' }}
+                >
+                    <option value="all">Priorité: Tout</option>
+                    <option value="haute">Haute</option>
+                    <option value="moyenne">Moyenne</option>
+                    <option value="basse">Basse</option>
+                </select>
+            </div>
+            
+            {/* Supprimé : Filtre par Client */}
+            {/*
+            <div className="relative flex-grow min-w-[150px] max-w-xs">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <User className="h-5 w-5 text-slate-400 dark:text-slate-500" />
+              </div>
+              <input
+                type="text"
+                placeholder="Filtrer par client..."
+                value={filterClient}
+                onChange={handleClientFilterChange}
+                className="form-input-icon w-full py-2.5 text-sm bg-slate-50 dark:bg-slate-900/50"
+              />
+            </div>
+            */}
+            
+            {/* Tri par Date de Clôture - CONSERVÉ */}
+            <button onClick={() => requestSort('dateCloture')} className="px-4 py-2.5 rounded-md text-sm font-medium bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors flex items-center">
+              Clôturé le {getSortIndicator('dateCloture')}
             </button>
-            <span>|</span>
-            <button onClick={() => requestSort('idClient')} className="font-medium hover:text-blue-500">
-              Client {getSortIndicator('idClient')}
+
+            {/* Boutons d'action (Imprimer, Exporter) - CONSERVÉS */}
+            <button
+                onClick={() => alert("Fonctionnalité d'impression à implémenter")}
+                className="p-2.5 rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                title="Imprimer la liste"
+            >
+                <Printer size={20} />
+            </button>
+            <button
+                onClick={() => alert("Fonctionnalité d'export à implémenter (Excel/PDF)")}
+                className="p-2.5 rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                title="Exporter la liste (Excel/PDF)"
+            >
+                <Download size={20} />
             </button>
           </div>
         </div>
 
+        {/* Suppression des en-têtes de colonnes visuels - C'EST FAIT ICI */}
+        {/* Ancien bloc d'en-têtes commenté/supprimé :
+        <div className="hidden md:flex items-center py-2 px-3 text-xs font-semibold text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+          <div className="flex-shrink-0 w-32 mr-4">
+            <button onClick={() => requestSort('idClient')} className="font-medium hover:text-blue-500">
+              Client {getSortIndicator('idClient')}
+            </button>
+          </div>
+          <div className="flex-1 min-w-[150px] max-w-[250px] flex-shrink-0 mr-4">
+            <button onClick={() => requestSort('titre')} className="font-medium hover:text-blue-500">
+              Titre {getSortIndicator('titre')}
+            </button>
+          </div>
+          <div className="flex-shrink-0 w-12 text-center mr-4">
+            <button onClick={() => requestSort('priorite')} className="font-medium hover:text-blue-500">
+              Priorité {getSortIndicator('priorite')}
+            </button>
+          </div>
+          <div className="flex-shrink-0 w-[340px] text-left">
+            Dates
+          </div>
+          <div className="flex-shrink-0 flex items-center space-x-3 text-xs text-slate-600 dark:text-slate-300 ml-4 mr-4">
+              Compteurs
+          </div>
+          <div className="flex-shrink-0 text-center">
+              Actions
+          </div>
+        </div>
+        */}
+        
         {/* Conteneur de la liste des tickets résolus (format "ligne" paginé) */}
         {currentTickets.length > 0 ? (
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
@@ -357,9 +431,19 @@ const MesTicketsResolusPage = () => {
           </div>
         ) : (
           <div className="p-6 md:p-10 text-center bg-slate-50 dark:bg-slate-800/50 rounded-lg shadow-inner">
-            <Search size={48} className="mx-auto mb-4 text-yellow-500" />
-            <h2 className="text-2xl font-semibold text-slate-700 dark:text-slate-200 mb-3">Aucun ticket trouvé</h2>
-            <p className="text-slate-500 dark:text-slate-400">Aucun ticket ne correspond à vos critères de recherche.</p>
+            {searchTerm || filterPriority !== 'all' ? (
+                <>
+                    <Search size={48} className="mx-auto mb-4 text-yellow-500" />
+                    <h2 className="text-2xl font-semibold text-slate-700 dark:text-slate-200 mb-3">Aucun ticket trouvé</h2>
+                    <p className="text-slate-500 dark:text-slate-400">Aucun ticket ne correspond à vos critères de recherche ou filtres.</p>
+                </>
+            ) : (
+                <>
+                    <CheckCircle size={48} className="mx-auto mb-4 text-green-500" />
+                    <h2 className="text-2xl font-semibold text-slate-700 dark:text-slate-200 mb-3">Aucun ticket résolu</h2>
+                    <p className="text-slate-500 dark:text-slate-400">Vous n'avez actuellement aucun ticket résolu.</p>
+                </>
+            )}
           </div>
         )}
 
@@ -370,13 +454,6 @@ const MesTicketsResolusPage = () => {
               totalPages={totalPages}
               paginate={paginate}
           />
-        )}
-        {sortedAndFilteredTickets.length === 0 && searchTerm && (
-          <div className="p-6 md:p-10 text-center bg-slate-50 dark:bg-slate-800/50 rounded-lg shadow-inner">
-              <Search size={48} className="mx-auto mb-4 text-yellow-500" />
-              <h2 className="text-2xl font-semibold text-slate-700 dark:text-slate-200 mb-3">Aucun ticket trouvé</h2>
-              <p className="text-slate-500 dark:text-slate-400">Aucun ticket ne correspond à vos critères de recherche.</p>
-          </div>
         )}
       </div>
 
@@ -402,7 +479,7 @@ const MesTicketsResolusPage = () => {
                 <p><strong>Priorité:</strong> {selectedTicketForDetail.priorite}</p>
                 <p><strong>Statut:</strong> {selectedTicketForDetail.statue?.replace(/_/g, ' ')}</p>
                 <p><strong>Créé le:</strong> {new Date(selectedTicketForDetail.dateCreation).toLocaleDateString()}</p>
-                {selectedTicketForDetail.debutTraitement && <p><strong>Traitement commencé le:</strong> {new Date(selectedTicketForDetail.debutTraitement).toLocaleDateString()}</p>}
+                {selectedTicketForDetail.debutTraitement && <p><strong>Traitement commencé le:</strong> {new Date(selectedTicketForHandler).toLocaleDateString()}</p>}
                 {selectedTicketForDetail.date_echeance && <p><strong>Échéance:</strong> {new Date(selectedTicketForDetail.date_echeance).toLocaleDateString()}</p>}
                 {selectedTicketForDetail.dateCloture && <p><strong>Clôturé le:</strong> {new Date(selectedTicketForDetail.dateCloture).toLocaleDateString()}</p>}
                 {selectedTicketForDetail.idClient && <p><strong>Client:</strong> {selectedTicketForDetail.idClient.nomComplet}</p>}
@@ -424,7 +501,7 @@ const MesTicketsResolusPage = () => {
   );
 };
 
-// Composant de contrôle de pagination réutilisable (déplacé hors de la fonction parente pour la réutilisation)
+// Composant de contrôle de pagination réutilisable
 const PaginationControls = ({ currentPage, totalPages, paginate }) => {
     return (
         <nav className="bg-white dark:bg-slate-800 px-4 py-3 flex items-center justify-between border-t border-slate-200 dark:border-slate-700 sm:px-6 rounded-lg shadow mt-4">
