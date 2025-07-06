@@ -9,7 +9,7 @@ import ConsultProfilPage from './profil/ConsultProfilPage';
 import NotificationBell from '../shared/NotificationBell';
 import notificationService from '../../services/notificationService';
 import authService from '../../services/authService';
-
+import MessageAi from '../shared/messageAI';
 
 const NavbarAdmin = ({ toggleSidebar, user, onLogout, onSearch, isSidebarOpen, onNavigate }) => {
     const { currentUser, logout } = useAuth();
@@ -59,6 +59,7 @@ const NavbarAdmin = ({ toggleSidebar, user, onLogout, onSearch, isSidebarOpen, o
                     <AlignJustify size={24} />
                 </button>
             </div>
+            <MessageAi/>
 
             <div className="flex items-center gap-4 md:gap-6">
                 {/* Theme Toggle */}

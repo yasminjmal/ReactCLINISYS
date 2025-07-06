@@ -1,24 +1,28 @@
 // src/components/chefEquipe/MesEquipesChefPage.jsx
-import React, { useState, useMemo, useEffect } from 'react';
-import { Users, Search, Info, Edit, UserPlus, Trash2, X, Loader, Shield, ChevronDown, Package, Settings } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { Search, Info, Edit, UserPlus, Trash2, X, Loader, Shield, ChevronDown, Package, Settings, Users as UsersIcon, ArrowLeft } from 'lucide-react';
 
 // Importation des services nécessaires
 import equipeService from '../../services/equipeService';
 import posteService from '../../services/posteService';
 import equipePosteUtilisateurService from '../../services/equipePosteUtilisateurService';
 import utilisateurService from '../../services/utilisateurService';
+import ticketService from '../../services/ticketService'; // Added ticketService for detailed data
 
-// --- Sous-composants et Modales ---
+// Importation du nouveau composant de tableau de bord détaillé et des nouveaux composants de navigation/vue globale
+import TeamDetailDashboard from './dashboardsEQUIPES/TeamDetailDashboard'; 
+import TeamTabNavigator from './dashboardsEQUIPES/TeamTabNavigator'; // NEW import
+import TeamGlobalOverview from './dashboardsEQUIPES/TeamGlobalOverview'; // NEW import
 
-const getProfileImageUrl = (user) => user?.photo ? `data:image/jpeg;base64,${user.photo}` : `https://i.pravatar.cc/150?u=${user?.id || 'default'}`;
 
+// --- Modals (remain here or in a shared place) ---
 const ModalWrapper = ({ isOpen, onClose, title, children }) => {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 transition-opacity duration-300">
-            <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md relative animate-fade-in-up">
-                <button onClick={onClose} className="absolute top-4 right-4 p-1 rounded-full text-slate-500 hover:bg-slate-100 transition-colors"><X size={20} /></button>
-                <h3 className="text-xl font-semibold mb-6">{title}</h3>
+            <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl w-full max-w-md relative animate-fade-in-up">
+                <button onClick={onClose} className="absolute top-4 right-4 p-1 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"><X size={20} /></button>
+                <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-6">{title}</h3>
                 {children}
             </div>
         </div>
@@ -69,95 +73,19 @@ const ModalAjouterMembre = ({ isOpen, onClose, onAdd, equipe, allUsers, allPoste
     );
 };
 
-// --- NOUVEAU SOUS-COMPOSANT : LIGNE D'ÉQUIPE DANS LE TABLEAU ---
-const TeamRow = ({ equipe, modules, onAddMember, onRemoveMember, onToggle, isExpanded }) => {
-    return (
-        <>
-            {/* Ligne principale de l'équipe */}
-            <tr className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
-                <td className="p-4 w-12 text-center">
-                    <button onClick={onToggle} className="p-1 rounded-full hover:bg-slate-200">
-                        <ChevronDown size={20} className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
-                    </button>
-                </td>
-                <td className="p-4 font-semibold text-slate-800">{equipe.designation}</td>
-                <td className="p-4 text-slate-600">{equipe.description || 'N/A'}</td>
-                <td className="p-4 text-center text-slate-600">{equipe.assignments?.length || 0}</td>
-                <td className="p-4 text-center">
-                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${equipe.actif ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                        {equipe.actif ? 'Actif' : 'Inactif'}
-                    </span>
-                </td>
-                <td className="p-4 text-center">
-                    <button onClick={() => onAddMember(equipe)} className="btn btn-primary-outline btn-sm">
-                        <UserPlus size={16} />
-                    </button>
-                </td>
-            </tr>
-            {/* Section dépliable pour les membres et modules */}
-            {isExpanded && (
-                <tr className="bg-slate-50">
-                    <td colSpan="6" className="p-0">
-                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
-                            {/* --- COLONNE MEMBRES --- */}
-                            <div>
-                                <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2"><Users size={18} /> Membres ({equipe.assignments.length})</h4>
-                                {equipe.assignments.length > 0 ? (
-                                    <div className="space-y-2">
-                                        {equipe.assignments.map(assignment => (
-                                            <div key={assignment.utilisateur.id} className="flex items-center justify-between bg-white p-2 rounded-md border">
-                                                <div className="flex items-center gap-3">
-                                                    <img src={getProfileImageUrl(assignment.utilisateur)} alt="" className="w-8 h-8 rounded-full object-cover" />
-                                                    <div>
-                                                        <p className="font-medium text-sm">{assignment.utilisateur.prenom} {assignment.utilisateur.nom}</p>
-                                                        <p className="text-xs text-slate-500">{assignment.poste.designation}</p>
-                                                    </div>
-                                                </div>
-                                                <button onClick={() => onRemoveMember(equipe.id, assignment.utilisateur.id, assignment.poste.id)} className="p-1.5 text-red-500 hover:bg-red-100 rounded-full">
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-center text-sm text-slate-500 p-4">Cette équipe n'a aucun membre.</p>
-                                )}
-                            </div>
-                             {/* --- COLONNE MODULES --- */}
-                            <div>
-                                <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2"><Package size={18} /> Modules Gérés ({modules.length})</h4>
-                                {modules.length > 0 ? (
-                                    <div className="space-y-2">
-                                        {modules.map(module => (
-                                            <div key={module.id} className="flex items-center gap-3 bg-white p-2 rounded-md border">
-                                                <Settings size={16} className="text-slate-500 flex-shrink-0" />
-                                                <p className="text-sm font-medium">{module.designation}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-center text-sm text-slate-500 p-4">Cette équipe ne gère aucun module.</p>
-                                )}
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            )}
-        </>
-    );
-};
 
-
-// --- COMPOSANT PRINCIPAL ---
+// --- COMPOSANT PRINCIPAL : MesEquipesChefPage.jsx ---
 const MesEquipesChefPage = ({ equipesChef, allModules, refetchData }) => {
-    const [searchTerm, setSearchTerm] = useState('');
+    // Supprimé searchTerm et isSidebarOpen (pas géré ici)
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
-    const [equipeSelectionnee, setEquipeSelectionnee] = useState(null);
+    const [equipeSelectionnee, setEquipeSelectionnee] = useState(null); // Used for add member modal
     const [allUsers, setAllUsers] = useState([]);
     const [allPostes, setAllPostes] = useState([]);
-    const [teamsWithAssignments, setTeamsWithAssignments] = useState([]);
+    const [teamsWithAssignments, setTeamsWithAssignments] = useState([]); // This holds team data with members
     const [isLoading, setIsLoading] = useState(true);
-    const [expandedRows, setExpandedRows] = useState({});
+    
+    // NEW: State to manage the active tab (either 'global' or a team ID)
+    const [activeTeamTab, setActiveTeamTab] = useState('global'); 
 
     useEffect(() => {
         const loadInitialData = async () => {
@@ -175,7 +103,9 @@ const MesEquipesChefPage = ({ equipesChef, allModules, refetchData }) => {
                 const assignmentsData = await Promise.all(assignmentPromises);
                 const newTeamsWithAssignments = (equipesChef || []).map((equipe, index) => ({
                     ...equipe,
-                    assignments: assignmentsData[index].data || []
+                    assignments: assignmentsData[index].data || [],
+                    // Assuming you might want to attach total tickets assigned to each team later
+                    // totalAssignedTickets: await ticketService.getAssignedTicketsCountForTeam(equipe.id) // Example API call
                 }));
                 setTeamsWithAssignments(newTeamsWithAssignments);
 
@@ -197,7 +127,7 @@ const MesEquipesChefPage = ({ equipesChef, allModules, refetchData }) => {
         try {
             await equipePosteUtilisateurService.createAssignment(assignmentData);
             handleCloseModals();
-            refetchData();
+            refetchData(); // Refetch all teams data, including assignments
         } catch (error) { console.error("Erreur lors de l'ajout:", error); }
     };
 
@@ -205,26 +135,20 @@ const MesEquipesChefPage = ({ equipesChef, allModules, refetchData }) => {
         if (window.confirm("Êtes-vous sûr de vouloir retirer ce membre de l'équipe ?")) {
             try {
                 await equipePosteUtilisateurService.deleteAssignment(idEquipe, idUtilisateur, idPoste);
-                refetchData();
+                refetchData(); // Refetch all teams data, including assignments
             } catch (error) { console.error("Erreur lors de la suppression:", error); }
         }
     };
-
-    const toggleRow = (equipeId) => {
-        setExpandedRows(prev => ({ ...prev, [equipeId]: !prev[equipeId] }));
+    
+    // Function to handle tab clicks
+    const handleTabClick = (tabId) => {
+        setActiveTeamTab(tabId);
     };
 
-    const filteredTeams = useMemo(() => {
-        if (!searchTerm) return teamsWithAssignments;
-        const lowerSearchTerm = searchTerm.toLowerCase();
-        
-        return teamsWithAssignments.filter(team => 
-            team.designation.toLowerCase().includes(lowerSearchTerm) ||
-            team.assignments.some(a => `${a.utilisateur.prenom} ${a.utilisateur.nom}`.toLowerCase().includes(lowerSearchTerm))
-        );
-    }, [teamsWithAssignments, searchTerm]);
-    
-    const getModulesForEquipe = (equipeId) => (allModules || []).filter(module => module.equipe?.id === equipeId);
+    // Determine which team is currently selected for detailed view
+    const selectedTeam = activeTeamTab === 'global' 
+        ? null 
+        : teamsWithAssignments.find(team => team.id === activeTeamTab);
 
     if (isLoading) {
         return <div className="flex justify-center items-center h-full"><Loader className="animate-spin" size={48} /></div>;
@@ -232,55 +156,45 @@ const MesEquipesChefPage = ({ equipesChef, allModules, refetchData }) => {
 
     return (
         <div>
-            <header className="mb-8">
-                <h1 className="text-3xl font-bold">Gestion des Équipes</h1>
+            <header className="mb-6">
+                <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Gestion des Équipes</h1>
                 <p className="text-slate-500 mt-1">Consultez et gérez les membres et les modules de vos équipes.</p>
             </header>
 
-            <div className="mb-6 p-4 bg-white rounded-xl shadow-sm flex flex-col sm:flex-row items-center gap-4">
-                <div className="relative flex-grow w-full">
-                    <Search className="h-5 w-5 text-slate-400 absolute inset-y-0 left-3 flex items-center pointer-events-none" />
-                    <input type="text" placeholder="Rechercher une équipe ou un membre..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="form-input w-full pl-10"/>
-                </div>
-            </div>
+            {/* NEW: Team Tab Navigator */}
+            <TeamTabNavigator 
+                teams={teamsWithAssignments}
+                activeTab={activeTeamTab}
+                onTabClick={handleTabClick}
+            />
 
-            <div className="bg-white rounded-2xl shadow-md overflow-hidden">
-                <div className="overflow-x-auto">
-                    {filteredTeams.length === 0 ? (
-                        <div className="text-center py-16">
-                           <Info size={48} className="mx-auto text-slate-400 mb-4" />
-                            <p className="text-slate-500">{searchTerm ? "Aucun résultat pour votre recherche." : "Vous ne supervisez aucune équipe."}</p>
-                        </div>
+            {/* Content area based on active tab */}
+            <div className="mt-6">
+                {activeTeamTab === 'global' ? (
+                    <TeamGlobalOverview 
+                        teams={teamsWithAssignments} 
+                        allModules={allModules} 
+                        // You might need to pass ticket data if global overview requires specific ticket counts
+                        // For chart data in global overview, you might need to fetch a consolidated view
+                    />
+                ) : (
+                    selectedTeam ? (
+                        <TeamDetailDashboard 
+                            team={selectedTeam} 
+                            allUsers={allUsers} 
+                            allPostes={allPostes} 
+                            allModules={allModules} 
+                            refetchData={refetchData} // Pass refetch for child components
+                        />
                     ) : (
-                        <table className="min-w-full text-sm">
-                            <thead className="bg-slate-700">
-                                <tr>
-                                    <th className="p-4 w-12"></th>
-                                    <th className="p-4 text-left text-xs font-semibold text-slate-100 uppercase tracking-wider">Équipe</th>
-                                    <th className="p-4 text-left text-xs font-semibold text-slate-100 uppercase tracking-wider">Description</th>
-                                    <th className="p-4 text-center text-xs font-semibold text-slate-100 uppercase tracking-wider">Membres</th>
-                                    <th className="p-4 text-center text-xs font-semibold text-slate-100 uppercase tracking-wider">Statut</th>
-                                    <th className="p-4 text-center text-xs font-semibold text-slate-100 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white">
-                                {filteredTeams.map((equipe) => (
-                                    <TeamRow 
-                                        key={equipe.id}
-                                        equipe={equipe}
-                                        modules={getModulesForEquipe(equipe.id)}
-                                        onAddMember={handleOpenAddMemberModal}
-                                        onRemoveMember={handleRemoveMember}
-                                        onToggle={() => toggleRow(equipe.id)}
-                                        isExpanded={!!expandedRows[equipe.id]}
-                                    />
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
-                </div>
+                        <div className="text-center py-16 text-slate-500 dark:text-slate-400">
+                            Sélectionnez une équipe pour voir ses détails.
+                        </div>
+                    )
+                )}
             </div>
             
+            {/* Modal for adding members (can be global as it affects any team) */}
             <ModalAjouterMembre isOpen={isAddMemberModalOpen} onClose={handleCloseModals} onAdd={handleAddMember} equipe={equipeSelectionnee} allUsers={allUsers} allPostes={allPostes}/>
         </div>
     );
