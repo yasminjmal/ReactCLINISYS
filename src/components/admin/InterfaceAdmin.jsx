@@ -3,10 +3,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import utilisateurService from '../../services/utilisateurService';
 import aiSearchService from '../../services/aiSearchService';
 import ChatInterface from './../chat/ChatInterface';
-
+import SimplifiedChat from '../chat/SimplifiedChat';
 // Component Imports
 import NavbarAdmin from './NavbarAdmin';
 import SidebarAdmin from './SidebarAdmin';
+import { WebSocketProvider } from '../../context/WebSocketContext'; // Importez le provider
 import MessageAi from '../shared/messageAI';
 import ConsulterUsersPage from './Utilisateurs/ConsulterUsersPage';
 import ConsulterEquipesPage from './Equipes/ConsulterEquipesPage';
@@ -174,6 +175,7 @@ const AdminInterface = ({ user, onLogout }) => {
     }
 
     return ( 
+        <WebSocketProvider>
       <div className={`flex h-screen bg-slate-50 dark:bg-slate-950 ${isDarkMode ? 'dark' : ''}`}>
         <SidebarAdmin 
           activePage={activePage} 
@@ -230,7 +232,7 @@ const AdminInterface = ({ user, onLogout }) => {
                     case 'postes_consulter_postes': return <ConsulterPostesPage initialPostes={searchEntityType === 'poste' ? searchResults : null} />;
                     case 'tickets_management': return <TicketsManagementPage showTemporaryMessage={showNotification} initialFilterStatus={filter} initialTickets={searchEntityType === 'ticket' ? searchResults : null} />;
                     case 'consulter_profil_admin': return user ? <ConsultProfilPage user={user} onUpdateProfile={handleUpdateUserProfile} onNavigateHome={handleNavigateToHome} /> : <div className="p-6 text-center">Utilisateur non trouvé.</div>;
-                    case 'discussions': return <ChatInterface setToast={setToast} />;
+                    case 'discussions': return <ChatInterface currentUser={user}/>;
                     default: return <div className="p-6 text-xl font-bold">Page "{pageId}" non trouvée</div>;
                   }
                 })()}
@@ -239,6 +241,7 @@ const AdminInterface = ({ user, onLogout }) => {
           </main>
         </div>
       </div>
+        </WebSocketProvider>
     );
 };
 

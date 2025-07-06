@@ -2,115 +2,145 @@ import React, { useState, useEffect, useRef } from 'react';
 import SockJS from 'sockjs-client';
 import Stomp from 'stompjs';
 
-// This is a minimal, robust chat component for debugging.
-const SimplifiedChat = () => {
-    // --- Manually set for testing ---
-    const CURRENT_USER_ID = 1014; // Your ID
-    const PARTNER_USER_ID = 1016; // The ID of the person you are chatting with
-    const CURRENT_USER_LOGIN = "samsamina"; // Your login username
-    const TOKEN = localStorage.getItem('authToken');
-
-    // --- State and Refs ---
+/**
+ * Ce composant gère une session de chat complète et robuste.
+ * Il se connecte, s'abonne, envoie des messages et met à jour l'interface en temps réel.
+ */
+const SimplifiedChat = ({ currentUser, partnerUser }) => {
+    // State pour stocker les messages et le nouveau message à envoyer
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [connectionStatus, setConnectionStatus] = useState('Initializing...');
-    const stompClientRef = useRef(null);
 
+    // useRef pour conserver une référence stable au client STOMP sans causer de re-renders.
+    const stompClientRef = useRef(null);
+    const messageAreaRef = useRef(null); // Pour le défilement automatique
+
+    // Le token d'authentification récupéré depuis le stockage local.
+    const TOKEN = localStorage.getItem('authToken');
+
+    // Effet principal pour gérer la connexion et la déconnexion WebSocket.
     useEffect(() => {
-        // This effect runs only once to connect and subscribe.
         if (!TOKEN) {
-            setConnectionStatus("Authentication token not found!");
+            setConnectionStatus("Erreur: Token d'authentification manquant.");
             return;
         }
 
-        console.log("Attempting to connect to WebSocket...");
-        setConnectionStatus("Connecting...");
+        console.log("CHAT: Tentative de connexion WebSocket...");
+        setConnectionStatus("Connexion...");
 
+        // 1. Établir la connexion WebSocket via SockJS
         const socket = new SockJS('http://localhost:9010/template-core/ws');
         const client = Stomp.over(socket);
-        client.debug = () => {}; // Disable noisy logs
+        
+        // Optionnel : désactiver les logs de STOMP en production
+        client.debug = (str) => { console.log("STOMP:", str) };
 
         const onConnected = () => {
-            console.log("CONNECTION SUCCESSFUL!");
-            setConnectionStatus("Connected");
+            console.log("CHAT: Connexion WebSocket réussie !");
+            setConnectionStatus("Connecté");
             stompClientRef.current = client;
 
-            // Fetch initial message history
-            fetch(`http://localhost:9010/template-core/api/chat/history?user1=${CURRENT_USER_ID}&user2=${PARTNER_USER_ID}`)
-                .then(res => res.json())
-                .then(setMessages)
-                .catch(err => console.error("History fetch failed:", err));
+            // 2. Récupérer l'historique de la conversation
+            fetch(`http://localhost:9010/template-core/api/chat/history?user1=${currentUser.id}&user2=${partnerUser.id}`, {
+                headers: { 'Authorization': `Bearer ${TOKEN}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                console.log("CHAT: Historique des messages chargé.", data);
+                setMessages(data);
+            })
+            .catch(err => console.error("CHAT: Erreur lors du chargement de l'historique:", err));
 
-            // Subscribe to the private queue for real-time messages
-            client.subscribe(`/user/${CURRENT_USER_LOGIN}/private`, (payload) => {
-                console.log("--- MESSAGE RECEIVED ---");
+            // 3. S'abonner à la file d'attente privée de l'utilisateur actuel
+            // C'est la partie cruciale pour la réception des messages en temps réel.
+            const subscriptionPath = `/user/${currentUser.login}/queue/private`;
+            console.log(`CHAT: Abonnement à la destination : ${subscriptionPath}`);
+            
+            client.subscribe(subscriptionPath, (payload) => {
+                console.log("--- CHAT: MESSAGE REÇU EN TEMPS RÉEL ---");
                 const receivedMessage = JSON.parse(payload.body);
                 console.log(receivedMessage);
-                // Add any new message to the screen instantly.
-                setMessages(prev => [...prev, receivedMessage]);
+
+                // Mettre à jour l'état en ajoutant le nouveau message à la liste existante.
+                // C'est la manière la plus sûre de mettre à jour un état basé sur sa valeur précédente.
+                setMessages(prevMessages => [...prevMessages, receivedMessage]);
             });
         };
 
         const onError = (error) => {
-            console.error('WebSocket Connection Error:', error);
-            setConnectionStatus("Connection Failed");
+            console.error('CHAT: Erreur de connexion WebSocket:', error);
+            setConnectionStatus("Échec de la connexion");
         };
 
-        // Connect with authentication headers
+        // On lance la connexion en passant le token dans les headers
         client.connect({ 'Authorization': `Bearer ${TOKEN}` }, onConnected, onError);
 
-        // Cleanup function to disconnect when the component is unmounted
+        // Fonction de nettoyage : sera appelée lorsque le composant est démonté
         return () => {
-            if (client.connected) {
-                client.disconnect();
+            if (stompClientRef.current && stompClientRef.current.connected) {
+                console.log("CHAT: Déconnexion du client STOMP.");
+                stompClientRef.current.disconnect();
             }
         };
-    }, [TOKEN]); // Run only when the token is available
+    }, [TOKEN, currentUser.id, currentUser.login, partnerUser.id]); // L'effet se relance si un de ces props change
+
+    // Effet pour faire défiler la zone de message vers le bas quand un nouveau message arrive
+    useEffect(() => {
+        if (messageAreaRef.current) {
+            messageAreaRef.current.scrollTop = messageAreaRef.current.scrollHeight;
+        }
+    }, [messages]);
 
     const handleSendMessage = () => {
         const client = stompClientRef.current;
         if (newMessage.trim() && client?.connected) {
             const chatMessage = {
-                sender: CURRENT_USER_ID,
-                receiver: PARTNER_USER_ID,
+                sender: currentUser.id, 
+                receiver: partnerUser.id,
                 content: newMessage,
-                type: 'CHAT',
+                type: 'CHAT', // Type de message, peut être utile
             };
+            
+            // Envoyer le message à la destination du backend
             client.send("/app/chat.sendPrivate", {}, JSON.stringify(chatMessage));
+            
+            // On vide le champ de saisie
             setNewMessage('');
         }
     };
 
     return (
-        <div style={{ border: '2px solid blue', padding: '1rem', margin: '1rem', fontFamily: 'sans-serif' }}>
-            <h2>Simplified Chat with User {PARTNER_USER_ID}</h2>
-            <p>Status: <b style={{ color: connectionStatus === 'Connected' ? 'green' : 'red' }}>{connectionStatus}</b></p>
-            <hr />
-            <div id="message-area" style={{ height: '400px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px', marginBottom: '10px' }}>
-                {messages.map((msg, index) => (
-                    <div key={msg.id || index} style={{ textAlign: msg.sender === CURRENT_USER_ID ? 'right' : 'left', margin: '5px' }}>
+        <div style={{ border: '2px solid #3498db', borderRadius: '8px', padding: '1rem', margin: '1rem', fontFamily: 'sans-serif', display: 'flex', flexDirection: 'column', height: '80vh' }}>
+            <h2 style={{ borderBottom: '1px solid #ccc', paddingBottom: '0.5rem', marginTop: '0' }}>
+                Chat avec {partnerUser.login}
+            </h2>
+            <p>Status: <b style={{ color: connectionStatus === 'Connecté' ? 'green' : 'red' }}>{connectionStatus}</b></p>
+            <div ref={messageAreaRef} style={{ flexGrow: 1, overflowY: 'auto', border: '1px solid #eee', padding: '10px', marginBottom: '10px' }}>
+                {messages.map((msg) => (
+                    <div key={msg.id} style={{ textAlign: msg.sender === currentUser.id ? 'right' : 'left', margin: '5px' }}>
                         <div style={{
                             display: 'inline-block',
                             padding: '8px 12px',
-                            borderRadius: '10px',
-                            backgroundColor: msg.sender === CURRENT_USER_ID ? '#dcf8c6' : '#f1f0f0'
+                            borderRadius: '15px',
+                            backgroundColor: msg.sender === currentUser.id ? '#dcf8c6' : '#fff'
                         }}>
-                            <strong>User {msg.sender}:</strong> {msg.content}
+                            {msg.content}
                         </div>
                     </div>
                 ))}
             </div>
-            <div id="input-area" style={{ display: 'flex' }}>
+            <div style={{ display: 'flex' }}>
                 <input
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                    style={{ flex: 1, padding: '8px' }}
-                    placeholder="Type a message..."
+                    style={{ flex: 1, padding: '10px', borderRadius: '20px', border: '1px solid #ccc' }}
+                    placeholder="Tapez un message..."
                 />
-                <button onClick={handleSendMessage} style={{ padding: '8px 12px' }}>
-                    Send
+                <button onClick={handleSendMessage} style={{ padding: '10px 15px', marginLeft: '10px', borderRadius: '20px', border: 'none', background: '#3498db', color: 'white', cursor: 'pointer' }}>
+                    Envoyer
                 </button>
             </div>
         </div>
