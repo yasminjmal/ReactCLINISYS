@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import utilisateurService from '../../services/utilisateurService';
 import aiSearchService from '../../services/aiSearchService';
 import ChatInterface from './../chat/ChatInterface';
-import SimplifiedChat from '../chat/SimplifiedChat';
+import SimplifiedChat from '../chat/NewChatModal';
 // Component Imports
 import NavbarAdmin from './NavbarAdmin';
 import SidebarAdmin from './SidebarAdmin';

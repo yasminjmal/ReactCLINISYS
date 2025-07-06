@@ -7,4 +7,8 @@ export default defineConfig({
    define: {
     global: 'window',
   },
+  server: {
+    host: true,
+    allowedHosts: ['a28f-102-159-159-66.ngrok-free.app'],
+  },
 })
