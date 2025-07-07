@@ -1,5 +1,6 @@
 // src/services/api.js
 import axios from 'axios';
+export const API_BASE_URL = 'http://localhost:9010/template-core/api';
 
 // Crée une instance axios pré-configurée.
 const api = axios.create({

@@ -1,3 +1,5 @@
+// src/components/chat/ChatInterface.jsx
+
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Search, Send, Paperclip, MoreHorizontal, Video, Phone, Plus, Smile, MessageSquarePlus } from 'lucide-react';
 
@@ -5,15 +7,17 @@ import { Search, Send, Paperclip, MoreHorizontal, Video, Phone, Plus, Smile, Mes
 import { useChat } from '../hooks/useChat';
 import chatService from '../../services/chatService';
 import NewChatModal from './NewChatModal'; 
+// On importe la constante de l'URL de base pour construire les liens des fichiers
+import { API_BASE_URL } from '../../services/api';
 
 // =================================================================================
-//  STYLIZED SUB-COMPONENTS (Self-contained and unchanged)
+//  STYLIZED SUB-COMPONENTS
 // =================================================================================
 
 const Avatar = ({ user, showStatus = false }) => {
     if (!user) return <div className="w-12 h-12 rounded-full bg-slate-700 animate-pulse"></div>;
     const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-indigo-500', 'bg-rose-500'];
-    const color = colors[user.id % colors.length];
+    const color = user.id ? colors[user.id % colors.length] : colors[0];
     const initial = user.prenom?.[0]?.toUpperCase() || 'U';
 
     return (
@@ -39,44 +43,110 @@ const ChatListItem = ({ chat, onClick, isActive }) => (
             <Avatar user={chat.partner} showStatus={true} />
             <div className="flex-1 truncate">
                 <p className="font-semibold text-slate-200 text-sm">{chat.partner.prenom} {chat.partner.nom}</p>
-                <p className="text-sm text-slate-400 truncate mt-1">{chat.lastMessage.content}</p>
+                <p className="text-sm text-slate-400 truncate mt-1">
+                    {chat.lastMessage.type === 'IMAGE' && '🖼️ Image'}
+                    {chat.lastMessage.type === 'FILE' && `📎 ${chat.lastMessage.fileName}`}
+                    {chat.lastMessage.type === 'CHAT' && chat.lastMessage.content}
+                </p>
             </div>
         </button>
     </li>
 );
 
-const MessageBubble = ({ message, isCurrentUser, senderDetails }) => (
-     <div className={`flex items-end gap-3 ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'}`}>
-        {!isCurrentUser && <Avatar user={senderDetails} />}
-        <div className={`px-4 py-3 rounded-2xl max-w-lg shadow ${isCurrentUser ? 'bg-blue-600 text-white rounded-br-none' : 'bg-slate-700 text-slate-200 rounded-bl-none'}`}>
-            <p className="text-sm break-words">{message.content}</p>
-            <p className={`text-xs mt-2 opacity-50 text-right ${isCurrentUser ? 'text-blue-200' : 'text-slate-400'}`}>
-                {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </p>
+const MessageBubble = ({ message, isCurrentUser, senderDetails }) => {
+    const renderContent = () => {
+        const fileUrl = `${API_BASE_URL}/chat/messages/${message.id}/file`;
+
+        switch (message.type) {
+            case 'IMAGE':
+                return (
+                    <a href={fileUrl} target="_blank" rel="noopener noreferrer">
+                        <img 
+                            src={fileUrl} 
+                            alt={message.fileName} 
+                            className="rounded-lg max-w-xs cursor-pointer object-cover" 
+                        />
+                    </a>
+                );
+            case 'FILE':
+                return (
+                    <a href={fileUrl} download={message.fileName} className="flex items-center gap-3 bg-slate-600/50 p-3 rounded-lg hover:bg-slate-600 transition-colors">
+                        <Paperclip className="text-slate-300 flex-shrink-0" size={24} />
+                        <span className="text-sm text-white font-medium truncate">{message.fileName}</span>
+                    </a>
+                );
+            case 'UPLOADING':
+                return <div className="text-sm italic opacity-75">Envoi de "{message.fileName}"...</div>;
+            default: // 'CHAT' ou autre
+                return <p className="text-sm break-words">{message.content}</p>;
+        }
+    };
+
+    return (
+        <div className={`flex items-end gap-3 ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'}`}>
+            {!isCurrentUser && <Avatar user={senderDetails} />}
+            <div className={`px-4 py-3 rounded-2xl max-w-lg shadow ${isCurrentUser ? 'bg-blue-600 text-white rounded-br-none' : 'bg-slate-700 text-slate-200 rounded-bl-none'}`}>
+                {renderContent()}
+                <p className={`text-xs mt-2 opacity-50 text-right ${isCurrentUser ? 'text-blue-200' : 'text-slate-400'}`}>
+                    {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </p>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 const ChatWindow = ({ currentUser, partnerUser, onNewMessageSent }) => {
     const { messages, sendMessage, chatStatus } = useChat(currentUser, partnerUser);
+    const [localMessages, setLocalMessages] = useState([]);
     const [inputValue, setInputValue] = useState('');
     const messageAreaRef = useRef(null);
+    const fileInputRef = useRef(null); 
+
+    useEffect(() => {
+        setLocalMessages(messages);
+    }, [messages]);
 
     useEffect(() => {
         if (messageAreaRef.current) {
             messageAreaRef.current.scrollTop = messageAreaRef.current.scrollHeight;
         }
-    }, [messages]);
+    }, [localMessages]);
 
     const handleSendClick = () => {
         if (inputValue.trim()) {
-            const isFirstMessage = messages.length === 0;
-            sendMessage(inputValue);
+            sendMessage(inputValue, 'CHAT');
             setInputValue('');
-            if (isFirstMessage) {
+            if (messages.length === 0) {
                 setTimeout(onNewMessageSent, 500);
             }
         }
+    };
+    
+    const handleFileChange = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const tempId = `uploading-${Date.now()}`;
+        const optimisticMessage = {
+            id: tempId,
+            type: 'UPLOADING',
+            fileName: file.name,
+            sender: currentUser.id,
+            timestamp: new Date().toISOString()
+        };
+        setLocalMessages(prev => [...prev, optimisticMessage]);
+
+        try {
+            await chatService.sendFile(file, currentUser.id, partnerUser.id);
+            // La confirmation WebSocket mettra à jour la liste principale `messages`,
+            // ce qui déclenchera la mise à jour de `localMessages` et retirera l'indicateur.
+        } catch (error) {
+            console.error("Erreur lors de l'envoi du fichier:", error);
+            alert("L'envoi du fichier a échoué. Veuillez réessayer.");
+            setLocalMessages(prev => prev.filter(msg => msg.id !== tempId));
+        }
+        
+        event.target.value = null;
     };
     
     if (chatStatus === 'loading') return <div className="flex-1 flex items-center justify-center text-slate-400">Chargement de la conversation...</div>;
@@ -102,14 +172,19 @@ const ChatWindow = ({ currentUser, partnerUser, onNewMessageSent }) => {
                 ref={messageAreaRef}
                 className="flex-1 min-h-0 p-6 space-y-6 overflow-y-auto"
             >
-                {messages.map(msg => ( <MessageBubble key={msg.id} message={msg} isCurrentUser={msg.sender === currentUser.id} senderDetails={msg.senderDetails} /> ))}
+                {localMessages.map(msg => ( <MessageBubble key={msg.id} message={msg} isCurrentUser={msg.sender === currentUser.id} senderDetails={msg.senderDetails} /> ))}
             </div>
             
              <footer className="flex-shrink-0 p-4 border-t border-slate-700">
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
                 <div className="relative">
                     <div className="absolute top-0 left-0 h-full flex items-center pl-3 space-x-2">
-                         <button className="p-2 rounded-full text-slate-400 hover:bg-slate-700"><Plus size={22} /></button>
-                         <button className="p-2 rounded-full text-slate-400 hover:bg-slate-700"><Smile size={20} /></button>
+                         <button onClick={() => fileInputRef.current.click()} className="p-2 rounded-full text-slate-400 hover:bg-slate-700" title="Joindre un fichier">
+                            <Plus size={22} />
+                         </button>
+                         <button className="p-2 rounded-full text-slate-400 hover:bg-slate-700" title="Insérer un emoji">
+                            <Smile size={20} />
+                         </button>
                     </div>
                     <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSendClick()} placeholder="Tapez un message..." className="w-full bg-slate-900/70 rounded-lg py-3 px-[7rem] pr-14 border border-slate-700 focus:border-blue-500 focus:ring-blue-500 transition" />
                     <div className="absolute top-0 right-0 h-full flex items-center pr-3">
@@ -122,7 +197,6 @@ const ChatWindow = ({ currentUser, partnerUser, onNewMessageSent }) => {
         </div>
     );
 };
-
 
 // =================================================================================
 //  MAIN COMPONENT: ChatInterface
@@ -233,8 +307,6 @@ const ChatInterface = ({ currentUser }) => {
                              <div className="grid grid-cols-2 gap-2">
                                 <div className="aspect-square bg-slate-700 rounded-lg cursor-pointer hover:opacity-80 transition-opacity"></div>
                                 <div className="aspect-square bg-slate-700 rounded-lg cursor-pointer hover:opacity-80 transition-opacity"></div>
-                                <div className="aspect-square bg-slate-700 rounded-lg cursor-pointer hover:opacity-80 transition-opacity"></div>
-                                <div className="aspect-square bg-slate-700 rounded-lg cursor-pointer hover:opacity-80 transition-opacity"></div>
                              </div>
                         </div>
                         <div className="mt-6">
@@ -243,14 +315,6 @@ const ChatInterface = ({ currentUser }) => {
                                  <li className="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700/50 cursor-pointer">
                                      <div className="p-2 bg-blue-500/20 text-blue-400 rounded-md"><Paperclip size={16}/></div>
                                      <span className="truncate">design_system.pdf</span>
-                                 </li>
-                                 <li className="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700/50 cursor-pointer">
-                                     <div className="p-2 bg-rose-500/20 text-rose-400 rounded-md"><Paperclip size={16}/></div>
-                                     <span className="truncate">project_briefing_final_v2.docx</span>
-                                 </li>
-                                 <li className="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-700/50 cursor-pointer">
-                                     <div className="p-2 bg-emerald-500/20 text-emerald-400 rounded-md"><Paperclip size={16}/></div>
-                                     <span className="truncate">onboarding_flow.fig</span>
                                  </li>
                              </ul>
                         </div>
