@@ -1014,6 +1014,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
         const cleanedPayload = cleanTicketPayload(payloadToSend);
 
         try {
+            console.log(cleanedPayload)
             await ticketService.updateTicket(ticketId, cleanedPayload);
             setToast({ type: 'success', message: 'Ticket mis à jour avec succès !' });
             setDirtyFields({}); // Réinitialise les champs modifiés

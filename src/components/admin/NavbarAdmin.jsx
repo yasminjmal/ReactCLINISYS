@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { ChevronDown, User, LogOut, Sun, Moon, UserCircle, Bell } from 'lucide-react'; 
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import notificationService from '../../services/notificationService';
 
 // Simulez un service si vous ne l'avez pas
 // import { getUnreadNotifications } from '../../services/notificationService';
@@ -16,7 +17,25 @@ const NavbarAdmin = ({ toggleSidebar, user, onLogout, onSearch, isSidebarOpen, o
     const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
 
     // J'utilise des données statiques pour que l'exemple soit visible immédiatement
-    const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            try {
+                const response = await notificationService.getUnreadNotifications();
+                setNotifications(response.data);
+                console.log("Notifications récupérées :", response.data);
+            } catch (error) {
+                console.error("Erreur lors de la récupération des notifications :", error);
+            }
+        };
+
+        fetchNotifications();
+    }, []); // <= Important : tableau de dépendances vide
+
+
+
+
     const [loading, setLoading] = useState(false); // Mis à false pour la démo
 
     const userId = localStorage.getItem('userId');

@@ -23,7 +23,7 @@ const notificationService = {
       throw new Error('token is required');
     }
 
-    return axios.get('http://localhost:9010/template-core/api/notifications/unread', {
+    return api.get('/notifications', {
       params: { userId: user.id },
       headers: { Authorization: `Bearer ${token}` }
     });
