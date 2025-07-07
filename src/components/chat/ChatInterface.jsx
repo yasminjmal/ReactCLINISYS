@@ -3,9 +3,8 @@ import { Search, Send, Paperclip, MoreHorizontal, Video, Phone, Plus, Smile, Mes
 
 // --- Hooks, Services, and Child Components ---
 import { useChat } from '../hooks/useChat';
-import { useAuth } from '../../context/AuthContext';
 import chatService from '../../services/chatService';
-import NewChatModal from './NewChatModal'; // Assurez-vous que le chemin vers ce fichier est correct
+import NewChatModal from './NewChatModal'; 
 
 // =================================================================================
 //  STYLIZED SUB-COMPONENTS (Self-contained and unchanged)
@@ -58,9 +57,6 @@ const MessageBubble = ({ message, isCurrentUser, senderDetails }) => (
     </div>
 );
 
-/**
- * ChatWindow Component - Corrected for perfect scrolling.
- */
 const ChatWindow = ({ currentUser, partnerUser, onNewMessageSent }) => {
     const { messages, sendMessage, chatStatus } = useChat(currentUser, partnerUser);
     const [inputValue, setInputValue] = useState('');
@@ -86,9 +82,7 @@ const ChatWindow = ({ currentUser, partnerUser, onNewMessageSent }) => {
     if (chatStatus === 'loading') return <div className="flex-1 flex items-center justify-center text-slate-400">Chargement de la conversation...</div>;
 
     return (
-        // This container now takes full height and arranges its children in a column.
         <div className="flex flex-col h-full bg-slate-800">
-            {/* Header: Fixed height, does not grow or shrink */}
             <header className="flex-shrink-0 flex items-center justify-between p-4 border-b border-slate-700">
                  <div className="flex items-center space-x-4">
                     <Avatar user={partnerUser} />
@@ -104,18 +98,13 @@ const ChatWindow = ({ currentUser, partnerUser, onNewMessageSent }) => {
                 </div>
             </header>
 
-            {/* Message Area: This is the corrected, scrollable area */}
             <div
                 ref={messageAreaRef}
-                // `flex-1`: Takes up all available vertical space.
-                // `min-h-0`: THE CRITICAL FIX. Allows the container to shrink, enabling overflow.
-                // `overflow-y-auto`: Adds the scrollbar only when needed.
                 className="flex-1 min-h-0 p-6 space-y-6 overflow-y-auto"
             >
                 {messages.map(msg => ( <MessageBubble key={msg.id} message={msg} isCurrentUser={msg.sender === currentUser.id} senderDetails={msg.senderDetails} /> ))}
             </div>
             
-            {/* Footer: Fixed height, does not grow or shrink */}
              <footer className="flex-shrink-0 p-4 border-t border-slate-700">
                 <div className="relative">
                     <div className="absolute top-0 left-0 h-full flex items-center pl-3 space-x-2">
@@ -138,8 +127,9 @@ const ChatWindow = ({ currentUser, partnerUser, onNewMessageSent }) => {
 // =================================================================================
 //  MAIN COMPONENT: ChatInterface
 // =================================================================================
-const ChatInterface = () => {
-    const { currentUser: fullCurrentUser } = useAuth();
+const ChatInterface = ({ currentUser }) => {
+    const fullCurrentUser = currentUser;
+    
     const [chatList, setChatList] = useState([]);
     const [activeChatPartner, setActiveChatPartner] = useState(null);
     const [isLoadingList, setIsLoadingList] = useState(true);
@@ -180,9 +170,7 @@ const ChatInterface = () => {
                 <NewChatModal existingPartnersIds={existingPartnersIds} onUserSelect={handleUserSelect} onClose={() => setIsNewChatModalOpen(false)} />
             )}
             
-            {/* The main grid now also has h-full to take all the height from its parent in InterfaceAdmin */}
             <div className="grid grid-cols-12 h-full font-sans bg-slate-800 text-slate-300">
-                {/* --- Column 1: Conversation Sidebar (Corrected for scrolling) --- */}
                 <aside className="col-span-3 bg-slate-900/70 p-4 flex flex-col h-full">
                     <header className="flex-shrink-0 mb-4">
                         <div className="flex justify-between items-center mb-4">
@@ -225,7 +213,6 @@ const ChatInterface = () => {
                     </div>
                 </aside>
 
-                {/* --- Column 2: Active Chat Window --- */}
                 <main className="col-span-6 bg-slate-800/70 p-4 flex flex-col overflow-auto ::-webkit-scrollbar-thumb:hover"> 
                     {activeChatPartner ? (
                         <ChatWindow key={activeChatPartner.id} currentUser={fullCurrentUser} partnerUser={activeChatPartner} onNewMessageSent={fetchChatList} />
@@ -238,7 +225,6 @@ const ChatInterface = () => {
                     )}
                 </main>
 
-                {/* --- Column 3: Information Panel --- */}
                 <aside className="col-span-3 bg-slate-900/70 p-4 flex flex-col">
                      <h3 className="text-xl font-bold text-slate-100 mb-4">Fichiers Partagés</h3>
                      <div className="flex-1 overflow-y-auto">

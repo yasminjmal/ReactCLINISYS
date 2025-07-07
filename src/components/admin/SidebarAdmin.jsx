@@ -1,3 +1,4 @@
+// src/components/admin/SidebarAdmin.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Home,
@@ -32,8 +33,8 @@ const menuItems = [
   { id: 'modules_consulter_modules', label: 'MODULES', icon: Package },
   { id: 'postes_consulter_postes', label: 'POSTES', icon: Briefcase },
   { id: 'clients_consulter_clients', label: 'CLIENTS', icon: Users },
-  { id: 'discussions', icon: MessageSquare }, // <--- AJOUTEZ CETTE LIGNE
-
+  // NOTE: 'discussions' is handled by the icon at the bottom, but we can add it here
+  // for state management if needed, or handle it separately. We'll handle it separately.
 ];
 
 
@@ -66,10 +67,6 @@ const SidebarAdmin = ({
     }
   };
 
-  const handleSubMenuClick = (subItem) => {
-    setActivePage(subItem.id);
-  };
-
   const isActive = useCallback((item, subItem = null) => {
     const pageId = typeof activePage === 'object' ? activePage.id : activePage;
     if (subItem) {
@@ -81,21 +78,11 @@ const SidebarAdmin = ({
     return pageId === item.id;
   }, [activePage]);
 
-  const userName = currentUser ? `${currentUser.prenom || ''} ${currentUser.nom || ''}`.trim() : 'Utilisateur';
-  const userRole = currentUser?.role || 'Administrateur';
-  const userProfilePic = currentUser?.photo ? `data:image/jpeg;base64,${currentUser.photo}` : defaultUserProfileImage;
-
-  const getBadgeColor = (color) => {
-    switch (color) {
-      case 'blue': return 'bg-blue-500 text-white';
-      case 'green': return 'bg-green-500 text-white';
-      default: return 'bg-slate-500 text-white';
-    }
-  }
+  // Define if the chat icon is active
+  const isChatActive = activePage === 'discussions';
 
   return (
     <aside
-      // Z-index de 40 pour être au-dessus de la navbar (z-20) et du bouton de bascule (z-30)
       className={`fixed top-0 left-0 h-full w-64 transition-transform transform ease-in-out duration-300 z-40 flex flex-col shadow-lg
         bg-gradient-to-b from-sky-100 to-blue-200
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
@@ -106,7 +93,7 @@ const SidebarAdmin = ({
           <img
             src={logoClinisys}
             alt="Logo CliniSYS"
-            className="h-15 w-auto object-contain" // Ajustez la hauteur (h-X) et la largeur (w-auto) selon votre logo
+            className="h-15 w-auto object-contain"
           />
         </div>
       </div>
@@ -137,47 +124,19 @@ const SidebarAdmin = ({
                   <item.icon size={20} className={isItemActive ? 'text-blue-600' : ''} />
                   <span>{item.label}</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  {item.badge && (
-                    <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${getBadgeColor(item.badge.color)}`}>
-                      {item.badge.text}
-                    </span>
-                  )}
-                  {item.subItems && (
-                    openDropdownKey === item.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />
-                  )}
-                </div>
               </button>
-              {/* Sous-menu */}
-              {item.subItems && openDropdownKey === item.id && (
-                <div className="mt-1 pl-8 space-y-1">
-                  {item.subItems.map((subItem) => {
-                    const isSubItemActive = isActive(item, subItem);
-                    return (
-                      <a
-                        key={subItem.id}
-                        href="#"
-                        onClick={(e) => { e.preventDefault(); handleSubMenuClick(subItem); }}
-                        className={`group flex items-center space-x-3 py-2 px-3 rounded-md text-xs font-medium transition-colors duration-150 ${isSubItemActive
-                            ? 'text-blue-600 font-semibold'
-                            : 'text-slate-500 hover:text-slate-800'
-                          }`}
-                      >
-                        <div className={`w-1.5 h-1.5 rounded-full transition-colors ${isSubItemActive ? 'bg-blue-500' : 'bg-slate-400 group-hover:bg-slate-500'}`}></div>
-                        <span>{subItem.label}</span>
-                      </a>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           );
         })}
       </nav>
 
+      {/* MODIFICATION HERE: The buttons at the bottom */}
       <div className="flex-shrink-0 p-2 border-t border-black/10">
         <div className="flex items-center justify-around">
-          <button className="p-2 rounded-md text-slate-500 hover:bg-blue-500/10 hover:text-blue-700 transition-colors">
+            {/* THIS IS THE BUTTON YOU WANT TO CLICK */}
+          <button 
+                onClick={() => setActivePage('discussions')}
+                className={`p-2 rounded-md transition-colors ${isChatActive ? 'text-blue-700 bg-blue-500/20' : 'text-slate-500 hover:bg-blue-500/10 hover:text-blue-700'}`}>
             <MessageSquare size={20} />
           </button>
           <button className="p-2 rounded-md text-slate-500 hover:bg-blue-500/10 hover:text-blue-700 transition-colors">

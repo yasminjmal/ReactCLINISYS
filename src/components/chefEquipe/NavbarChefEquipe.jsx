@@ -1,7 +1,8 @@
 // src/components/chefEquipe/NavbarChefEquipe.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { AlignJustify, Bell, ChevronDown, User, Settings, LogOut, Sun, Moon } from 'lucide-react';
-
+import { IoNotifications } from "react-icons/io5";
+import MessageAi from '../shared/messageAI';
 const getProfileImageUrl = (user) => user?.photo ? `data:image/jpeg;base64,${user.photo}` : `https://i.pravatar.cc/150?u=${user?.id || 'default'}`;
 
 const NavbarChefEquipe = ({ user, onLogout, toggleSidebar, toggleTheme, isDarkMode, setActivePage }) => {
@@ -23,17 +24,29 @@ const NavbarChefEquipe = ({ user, onLogout, toggleSidebar, toggleTheme, isDarkMo
 
     return (
         <nav className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between shadow-sm sticky top-0 z-40">
+                <MessageAi/>
+            {/* Left: Sidebar Toggle */}
             <div className="flex items-center">
                 <button onClick={toggleSidebar} className="text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-500 focus:outline-none lg:hidden">
                     <AlignJustify size={24} />
                 </button>
             </div>
 
-            <div className="flex items-center gap-4 md:gap-6">
+            {/* Right: Notification + Theme + Profile */}
+            <div className="flex items-center gap-4 md:gap-6 ml-auto">
+                {/* Notification Icon */}
+                <div className="text-slate-600 dark:text-white pt-1 mt-1">
+                    <button>
+                        <IoNotifications size={24} />
+                    </button>
+                </div>
+
+                {/* Theme Toggle */}
                 <button onClick={toggleTheme} className="text-slate-500 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-500">
                     {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
                 </button>
 
+                {/* Profile Dropdown */}
                 <div className="relative" ref={dropdownRef}>
                     <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-3">
                         <img src={userProfilePic} alt="Profil" className="w-9 h-9 rounded-full object-cover" />
@@ -56,6 +69,7 @@ const NavbarChefEquipe = ({ user, onLogout, toggleSidebar, toggleTheme, isDarkMo
                 </div>
             </div>
         </nav>
+
     );
 };
 

@@ -9,6 +9,7 @@ import moduleService from '../../services/moduleService';
 import userService from '../../services/userService';
 import commentService from '../../services/commentService';
 import documentService from '../../services/documentService';
+import ChatInterface from '../chat/ChatInterface';
 
 // --- Composants de l'interface ---
 import SidebarChefEquipe from './SidebarChefEquipe';
@@ -167,7 +168,6 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
       case 'profile': return <ProfilChefEquipe currentUser={currentUserState} refetchData={refetchDataAndProfile} showTemporaryMessage={showTemporaryMessage} />;
       case 'teams': return <MesEquipesChefPage equipesChef={equipesDuChefConnecte} allModules={allModules} refetchData={refetchAllData} />;
       
-      // --- CORRECTION ICI ---
       case 'tickets-to-do': return <TicketsATraiterChefPage 
                                         ticketsNonAssignes={ticketsPourChefATraiter} 
                                         equipesDuChef={equipesDuChefConnecte}
@@ -184,7 +184,8 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
                                         tousLesMembresDesEquipes={tousLesMembresDesEquipes} 
                                         {...commonTicketHandlers} 
                                     />;
-                                    
+      case 'chat':return <ChatInterface currentUser={currentUserState} />;
+                                   
       case 'tickets-refused': return <TicketsRefuse ticketRefuse={ticketsRefuseParChefPourSuivi} {...commonTicketHandlers} />;
       default: return <TableauDeBordChef user={currentUserState} tickets={ticketsVisiblesPourChef} equipes={equipesDuChefConnecte} />;
     }
