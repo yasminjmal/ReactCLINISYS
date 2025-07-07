@@ -42,6 +42,8 @@ const DiffractionForm = ({ parentTicket, onClose, onSuccess, setToast }) => {
     const [subTickets, setSubTickets] = useState([{ titre: '', description: '', priorite: 'Moyenne' }]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const priorities = ["Basse", "Moyenne", "Haute"];
+    console.log(parentTicket)
+
 
     const handleAddSubTicket = () => {
         setSubTickets([...subTickets, { titre: '', description: '', priorite: 'Moyenne' }]);
@@ -81,9 +83,9 @@ const DiffractionForm = ({ parentTicket, onClose, onSuccess, setToast }) => {
                 ...subTicket,
                 // Assurez-vous que les valeurs correspondent à ce que le backend attend (ex: 'EN_ATTENTE')
                 priorite: subTicket.priorite,
-                statue: 'En_attente',
+                statue: 'Accepte',
                 idParentTicket: parentTicket.id,
-                idClient: parentTicket.idClient?.id,
+                idClient: parentTicket.idClient.id,
                 actif: true,
             };
             console.log(payload)

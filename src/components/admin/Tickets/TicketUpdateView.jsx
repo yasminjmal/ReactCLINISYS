@@ -950,6 +950,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                 date_echeance: ticketData.date_echeance,
                 idModule: ticketData.idModule || null, // Garde l'objet module ou null
                 idUtilisateur: ticketData.idUtilisateur || null, // Garde l'objet utilisateur ou null
+                parentTicket: ticketData.parentTicket || null,
             });
             setAllModules(modulesData.data || []);
             setAllUsers(usersData.data || []);
@@ -973,6 +974,8 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
         if (cleanedPayload.idModule && typeof cleanedPayload.idModule === 'object') cleanedPayload.idModule = cleanedPayload.idModule.id;
         if (cleanedPayload.idUtilisateur && typeof cleanedPayload.idUtilisateur === 'object') cleanedPayload.idUtilisateur = cleanedPayload.idUtilisateur.id;
         if (cleanedPayload.parentTicket && typeof cleanedPayload.parentTicket === 'object') cleanedPayload.idParentTicket = cleanedPayload.parentTicket.id;
+        if (cleanedPayload.idParentTicket && typeof cleanedPayload.idParentTicket === 'object') cleanedPayload.idParentTicket = cleanedPayload.idParentTicket.id;
+
 
         // Assure que date_echeance est au format tableau [année, mois, jour, 0, 0, 0] ou null
         cleanedPayload.date_echeance = formatForBackend(cleanedPayload.date_echeance);
@@ -988,6 +991,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
         delete cleanedPayload.client;
         delete cleanedPayload.id;
         delete cleanedPayload.dateCreation;
+        delete cleanedPayload.parentTicket
 
         return cleanedPayload;
     };
@@ -1036,6 +1040,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
             date_echeance: ticket.date_echeance,
             idModule: ticket.idModule || null,
             idUtilisateur: ticket.idUtilisateur || null,
+            parentTicket: ticket.parentTicket || null,
         });
         setDirtyFields({}); // Réinitialise les champs modifiés
         setToast({ type: 'info', message: 'Modifications annulées.' });
@@ -1181,7 +1186,8 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                             </button>
                         </>
                     )}
-                    {!editableData.idModule && !editableData.idUtilisateur && (
+                    {console.log(editableData)}
+                    {!editableData.idModule && !editableData.idUtilisateur && editableData.parentTicket===null &&(
                         <button onClick={handleDiffractTicket} className="btn btn-secondary" disabled={isSavingMainTicket}>
                             <GitFork size={16} className="mr-1" /> Diffracter
                         </button>
