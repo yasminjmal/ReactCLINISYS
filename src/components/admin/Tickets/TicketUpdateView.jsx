@@ -945,11 +945,11 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                 titre: ticketData.titre || '',
                 description: ticketData.description || '',
                 priorite: ticketData.priorite || 'Moyenne', // Valeur par défaut
-                statue: ticketData.statue || 'En_attente', // Valeur par défaut
+                statue: ticketData.idUtilisateur? 'En_cours' : 'Accepte',
                 actif: ticketData.actif,
                 date_echeance: ticketData.date_echeance,
                 idModule: ticketData.idModule || null, // Garde l'objet module ou null
-                idUtilisateur: ticketData.idUtilisateur || null, // Garde l'objet utilisateur ou null
+                idUtilisateur: ticketData.idUtilisateur || 0, // Garde l'objet utilisateur ou null
                 parentTicket: ticketData.parentTicket || null,
             });
             setAllModules(modulesData.data || []);
@@ -1036,11 +1036,11 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
             titre: ticket.titre || '',
             description: ticket.description || '',
             priorite: ticket.priorite || 'Moyenne',
-            statue: ticket.statue || 'En_attente',
+            statue: ticket.idUtilisateur ? 'En_cours' : 'Accepte',
             actif: ticket.actif,
             date_echeance: ticket.date_echeance,
             idModule: ticket.idModule || null,
-            idUtilisateur: ticket.idUtilisateur || null,
+            idUtilisateur: ticket.idUtilisateur || 0,
             parentTicket: ticket.parentTicket || null,
         });
         setDirtyFields({}); // Réinitialise les champs modifiés
@@ -1188,7 +1188,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                         </>
                     )}
                     {console.log(editableData)}
-                    {!editableData.idModule && !editableData.idUtilisateur && editableData.parentTicket===null &&(
+                    {editableData.idModule===null && editableData.idUtilisateur===0 &&editableData.statue === "Accepte" && editableData.parentTicket === null  && (
                         <button onClick={handleDiffractTicket} className="btn btn-secondary" disabled={isSavingMainTicket}>
                             <GitFork size={16} className="mr-1" /> Diffracter
                         </button>
@@ -1237,7 +1237,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
                             {/* Module affecté */}
-                            <EditableStyledField
+                            {!hasSubTickets && <><EditableStyledField
                                 icon={<ModuleIcon size={14} className="mr-2" />}
                                 label="Module affecté"
                                 value={editableData.idModule}
@@ -1250,23 +1250,24 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                                 isDirty={!!dirtyFields.idModule}
                             />
 
-                            {/* Affecté à */}
-                            <EditableStyledField
-                                icon={<UserCheck size={14} className="mr-2" />}
-                                label="Affecté à"
-                                value={editableData.idUtilisateur}
-                                isEditable={true}
-                                onUpdate={(userId) => handleEditableDataChange('idUtilisateur', allUsers.find(u => u.id === parseInt(userId)) || null)}
-                                type="select"
-                                options={allEquipes
-                                    .filter(equipe =>
-                                        equipe.moduleList?.some(module => module.designation === editableData.idModule?.designation) && equipe.utilisateurs.length > 0
-                                    )
-                                    .flatMap(equipe => equipe.utilisateurs)}
-                                disabled={isTicketLocked}
-                                // MODIFIÉ: Ajout de la prop isDirty
-                                isDirty={!!dirtyFields.idUtilisateur}
-                            />
+                                {/* Affecté à */}
+                                <EditableStyledField
+                                    icon={<UserCheck size={14} className="mr-2" />}
+                                    label="Affecté à"
+                                    value={editableData.idUtilisateur}
+                                    isEditable={true}
+                                    onUpdate={(userId) => handleEditableDataChange('idUtilisateur', allUsers.find(u => u.id === parseInt(userId)) || 0)}
+                                    type="select"
+                                    options={allEquipes
+                                        .filter(equipe =>
+                                            equipe.moduleList?.some(module => module.designation === editableData.idModule?.designation) && equipe.utilisateurs.length > 0
+                                        )
+                                        .flatMap(equipe => equipe.utilisateurs)}
+                                    disabled={isTicketLocked}
+                                    // MODIFIÉ: Ajout de la prop isDirty
+                                    isDirty={!!dirtyFields.idUtilisateur}
+                                /></>
+                            }
 
                             {/* Date d'échéance */}
                             <EditableStyledField
@@ -1436,7 +1437,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                 )}
 
                 {/* Modale de diffraction */}
-                {isDiffractionModalOpen && (
+                {isDiffractionModalOpen &&  (
                     <DiffractionForm
                         parentTicket={ticket}
                         onClose={() => setIsDiffractionModalOpen(false)}
