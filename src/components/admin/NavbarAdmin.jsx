@@ -55,9 +55,7 @@ const NavbarAdmin = ({ toggleSidebar, user, onLogout, onSearch, isSidebarOpen, o
     return (
         <nav className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between shadow-sm sticky top-0 z-40">
             <div className="flex items-center">
-                <button onClick={toggleSidebar} className="text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-500 focus:outline-none">
-                    <AlignJustify size={24} />
-                </button>
+              
             </div>
             <MessageAi/>
 
