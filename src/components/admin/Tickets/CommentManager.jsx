@@ -5,8 +5,36 @@ import commentService from '../../../services/commentService';
 import { formatDateFromArray } from '../../../utils/dateFormatterTicket';
 import userService from '../../../services/userService'; // Assurez-vous que cette fonction existe et est correcte
 
+
 // Composant utilitaire pour le spinner
 const Spinner = () => <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>; // Couleur ajustée
+const formatDate = (dateInput) => {
+    if (!dateInput) return 'N/A';
+
+    let date;
+
+    if (Array.isArray(dateInput) && dateInput.length >= 3) {
+        const [year, month, day, hours = 0, minutes = 0, seconds = 0] = dateInput;
+        date = new Date(year, month - 1, day, hours, minutes, seconds);
+    } else {
+        // ISO 8601 string like "2025-07-04T00:00:00"
+        date = new Date(dateInput);
+    }
+
+    if (isNaN(date.getTime())) {
+        console.error('Invalid date input:', dateInput);
+        return 'Date invalide';
+    }
+
+    return date.toLocaleString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    });
+};
 
 // Composant de message de notification (Toast) - Réutilisé pour être cohérent
 const ToastMessage = ({ message, type, onClose }) => {
@@ -221,7 +249,7 @@ const CommentManager = ({ ticketId, comments: initialComments, onCommentChange, 
                                             {comment.utilisateur?.prenom} {comment.utilisateur?.nom}
                                         </td>
                                         <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
-                                            {formatDateFromArray(comment.dateCommentaire)}
+                                            {formatDate(comment.dateCommentaire)}
                                         </td>
                                         <td className="px-3 py-2">
                                             <div className="flex items-center justify-center space-x-1">

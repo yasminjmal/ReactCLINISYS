@@ -67,16 +67,9 @@ const SidebarEmploye = ({ activePage, setActivePage, currentUser, onLogout, isSi
         </div>
 
         {isSidebarOpen && currentUser && (
-          <div className="p-4 flex items-center space-x-3 border-b border-black/10">
-            <img
-              src={userProfilePic}
-              alt="User Profile"
-              className="w-12 h-12 rounded-full object-cover border-2 border-blue-400"
-            />
-            <div className="flex flex-col">
-              <span className="text-slate-700 font-semibold truncate">{userName}</span>
-              <span className="text-sm text-slate-500">Employé</span>
-            </div>
+          <div >
+            
+            
           </div>
         )}
       </div>

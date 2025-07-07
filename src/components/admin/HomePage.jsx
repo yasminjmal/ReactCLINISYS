@@ -1,5 +1,5 @@
 // src/components/admin/HomePage.jsx
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -10,16 +10,26 @@ import {
   Box,
   Clock,
   MessageSquare,
-  BarChart2,
-  PieChart,
+  BarChart2, // Keep BarChart2 for both charts
   Target,
   List,
   Zap,
-  Mail // Ensure Mail icon is imported for OverdueTicketsList
+  Mail,
+  Activity,
+  CheckCircle, // For Accepted Tickets KPI
+  XCircle // For Refused Tickets KPI
 } from 'lucide-react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from 'recharts';
 import EventsCalendar from './Dashboards/EventsCalendar';
-import OverdueTicketsList from './Dashboards/OverdueTicketsList'; 
+import OverdueTicketsList from './Dashboards/OverdueTicketsList';
+import dashboardService from '../../services/dashboardService'; // Ensure this service is correctly imported
 
+// --- Reusable Loading Indicator ---
+const LoadingIndicator = () => <div className="flex justify-center items-center h-full min-h-[100px]"><p className="text-slate-500 dark:text-slate-400">Chargement...</p></div>;
+
+// --- KpiCard Component (Updated for smaller text) ---
 // --- KpiCard Component (Updated for smaller text) ---
 const KpiCard = ({ title, value, icon: Icon, color, link, badgeText, badgeColor }) => (
   <div className={`bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md flex items-center justify-between transition-transform transform hover:scale-105 ${color || ''} relative overflow-hidden`}>
@@ -43,13 +53,14 @@ const KpiCard = ({ title, value, icon: Icon, color, link, badgeText, badgeColor 
   </div>
 );
 
+
 // --- Pending Assignments List Component (Updated for smaller format) ---
 const PendingAssignmentsList = () => {
-  const [pendingTickets, setPendingTickets] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState(null);
+  const [pendingTickets, setPendingTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchPendingAssignments = async () => {
       try {
         setLoading(true);
@@ -94,7 +105,7 @@ const PendingAssignmentsList = () => {
     return null;
   };
 
-  if (loading) return <div className="text-center py-3 text-slate-600 dark:text-slate-400 text-sm">Chargement...</div>;
+  if (loading) return <LoadingIndicator />;
   if (error) return <div className="text-center py-3 text-red-500 text-sm">{error}</div>;
 
   return (
@@ -103,7 +114,7 @@ const PendingAssignmentsList = () => {
         <ClipboardList size={20} className="text-blue-500 mr-2" /> Affectations en Attente ({pendingTickets.length})
       </h3>
       {pendingTickets.length > 0 ? (
-        <div className="overflow-y-auto max-h-60 custom-scrollbar space-y-2"> {/* Adjusted max-height and added custom-scrollbar */}
+        <div className="overflow-y-auto max-h-60 custom-scrollbar space-y-2">
           {pendingTickets
             .sort((a, b) => {
               const priorityOrder = { 'HAUTE': 3, 'MOYENNE': 2, 'BASSE': 1 };
@@ -124,7 +135,7 @@ const PendingAssignmentsList = () => {
                     <Clock size={12} className="mr-1 opacity-70" /> {formatDate(ticket.dateCreation)}
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button
                     onClick={() => handleAssignTicket(ticket.id)}
@@ -144,52 +155,158 @@ const PendingAssignmentsList = () => {
 };
 
 
-// --- Mini Dashboard Widgets (Updated for smaller format) ---
-const TicketsByModuleChart = () => {
-  const data = [
-    { name: 'Réseaux', value: 30 }, { name: 'Matériel', value: 20 },
-    { name: 'Logiciel', value: 25 }, { name: 'Sécurité', value: 15 },
-    { name: 'BDD', value: 10 },
-  ];
+// --- MODIFIED: Tickets By Status Bar Chart Component ---
+const TicketsByStatusBarChart = () => {
+    const [data, setData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const ticketStatusConfig = {
+        accepte: { name: 'Accepté', color: '#84cc16' },
+        en_attente: { name: 'En Attente', color: '#f97316' },
+        en_cours: { name: 'En Cours', color: '#eab308' },
+        termine: { name: 'Terminé', color: '#22c55e' },
+        refuse: { name: 'Refusé', color: '#ef4444' },
+    };
+
+    const mapApiStatusToKey = (apiStatus) => {
+        const lowerCaseStatus = String(apiStatus).toLowerCase().replace('_', '-');
+        for (const key in ticketStatusConfig) { if (lowerCaseStatus === key.replace('_', '-')) return key; }
+        return null;
+    };
+
+    useEffect(() => {
+        const fetchTicketStats = async () => {
+            try {
+                setLoading(true);
+                const rawData = await dashboardService.getTicketCountsByStatus(); // Assume this returns [{status: 'en_attente', count: 10}, ...]
+
+                // Process data for bar chart
+                const processedData = Object.keys(ticketStatusConfig).map(key => {
+                    const found = rawData.find(item => mapApiStatusToKey(item.status) === key);
+                    return {
+                        name: ticketStatusConfig[key].name,
+                        count: found ? found.count : 0,
+                        color: ticketStatusConfig[key].color
+                    };
+                });
+                setData(processedData);
+
+            } catch (err) {
+                console.error("Erreur lors de la récupération des stats de tickets par statut:", err);
+                setError("Impossible de charger les statistiques de tickets par statut.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTicketStats();
+    }, []);
+
+    if (loading) return <LoadingIndicator />;
+    if (error) return <div className="text-center py-4 text-red-500">{error}</div>;
+    if (data.length === 0 || data.every(d => d.count === 0)) return <div className="text-center py-4 text-slate-500 dark:text-slate-400">Aucune donnée de tickets par statut disponible.</div>;
+
+    return (
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md">
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3 flex items-center">
+                <BarChart2 size={20} className="text-purple-500 mr-2" /> Répartition par Statut
+            </h3>
+            <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                        data={data}
+                        margin={{
+                            top: 5, right: 10, left: -15, bottom: 5,
+                        }}
+                    >
+                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
+                        <XAxis dataKey="name" stroke="rgb(100 116 139)" fontSize={11} />
+                        <YAxis stroke="rgb(100 116 139)" fontSize={11} />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="count" name="Nombre de Tickets" fill="#8884d8" barSize={25} >
+                            {
+                                data.map((entry, index) => (
+                                    <Bar key={`bar-${index}`} fill={entry.color} />
+                                ))
+                            }
+                        </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+        </div>
+    );
+};
+
+
+// --- Active Tickets By Category Bar Chart Component (already a Bar Chart) ---
+const ActiveTicketsByCategoryBarChart = () => {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [groupBy, setGroupBy] = useState('employee'); // 'employee' ou 'module'
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        // Appel à la nouvelle fonction du service avec le paramètre groupBy
+        const rawData = await dashboardService.getActiveTicketsByCategory(groupBy);
+        setData(rawData);
+      } catch (err) {
+        console.error("Erreur lors de la récupération des tickets actifs par catégorie:", err);
+        setError("Impossible de charger les statistiques des tickets actifs.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [groupBy]); // Re-exécuter l'effet quand groupBy change
+
+  if (loading) return <LoadingIndicator />;
+  if (error) return <div className="text-center py-4 text-red-500">{error}</div>;
+  if (data.length === 0) return <div className="text-center py-4 text-slate-500 dark:text-slate-400">Aucune donnée de tickets actifs disponible pour cette catégorie.</div>;
+
   return (
     <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md">
-      <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3 flex items-center">
-        <BarChart2 size={20} className="text-green-500 mr-2" /> Répartition par Module
-      </h3>
-      <div className="h-40 flex items-center justify-center text-slate-500 dark:text-slate-400 text-sm"> {/* Adjusted height and text size */}
-        <p>Graphique ici (ex: barres)</p>
-        <ul className="text-xs ml-4 space-y-1">
-          {data.map((item, index) => (
-            <li key={index}>{item.name}: {item.value}</li>
-          ))}
-        </ul>
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 flex items-center">
+          <BarChart2 size={20} className="text-green-500 mr-2" />
+          Tickets Actifs par {groupBy === 'employee' ? 'Employé' : 'Module'}
+        </h3>
+        {/* Sélecteur pour changer le regroupement */}
+        <select
+          value={groupBy}
+          onChange={(e) => setGroupBy(e.target.value)}
+          className="form-select text-xs p-1.5 rounded-md border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+        >
+          <option value="employee">Employé</option>
+          <option value="module">Module</option>
+        </select>
+      </div>
+      <div className="h-48">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={data}
+            margin={{
+              top: 5, right: 10, left: -15, bottom: 5,
+            }}
+            layout="vertical"
+          >
+            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
+            <XAxis type="number" stroke="rgb(100 116 139)" fontSize={11} />
+            <YAxis type="category" dataKey="category" stroke="rgb(100 116 139)" fontSize={11} width={80} />
+            <Tooltip />
+            <Bar dataKey="activeTickets" fill="#8884d8" name="Tickets Actifs" barSize={15} />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
 };
 
-const TicketsByStatusChart = () => {
-  const data = [
-    { name: 'Attente', value: 40, color: '#f97316' }, // orange-500
-    { name: 'Résolu', value: 120, color: '#22c55e' }, // green-500
-    { name: 'En cours', value: 60, color: '#3b82f6' }, // blue-500
-  ];
-  return (
-    <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md">
-      <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3 flex items-center">
-        <PieChart size={20} className="text-purple-500 mr-2" /> Répartition par Statut
-      </h3>
-      <div className="h-40 flex items-center justify-center text-slate-500 dark:text-slate-400 text-sm"> {/* Adjusted height and text size */}
-        <p>Graphique ici (ex: camembert)</p>
-        <ul className="text-xs ml-4 space-y-1">
-          {data.map((item, index) => (
-            <li key={index} style={{ color: item.color }}>{item.name}: {item.value}</li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-};
 
 // --- Contextual Widgets (Updated for smaller format) ---
 const LatestTicketsWidget = () => {
@@ -207,7 +324,7 @@ const LatestTicketsWidget = () => {
         {tickets.map(ticket => (
           <li key={ticket.id} className="flex justify-between items-center text-xs">
             <span className="truncate mr-2">{ticket.title}</span>
-            <span className="text-[0.6rem] text-slate-500 dark:text-slate-400 flex-shrink-0">{ticket.date}</span> {/* Adjusted text size */}
+            <span className="text-[0.6rem] text-slate-500 dark:text-slate-400 flex-shrink-0">{ticket.date}</span>
           </li>
         ))}
       </ul>
@@ -229,7 +346,7 @@ const LatestCommentsWidget = () => {
         {comments.map(comment => (
           <li key={comment.id} className="text-xs">
             <p className="font-medium truncate">{comment.text}</p>
-            <span className="text-[0.6rem] text-slate-500 dark:text-slate-400">par {comment.user}, {comment.date}</span> {/* Adjusted text size */}
+            <span className="text-[0.6rem] text-slate-500 dark:text-slate-400">par {comment.user}, {comment.date}</span>
           </li>
         ))}
       </ul>
@@ -252,7 +369,7 @@ const MostImpactedModulesWidget = () => {
         {modules.map((module, index) => (
           <li key={index} className="flex justify-between items-center text-xs">
             <span>{module.name}</span>
-            <span className="font-semibold text-[0.6rem]">{module.tickets} tickets</span> {/* Adjusted text size */}
+            <span className="font-semibold text-[0.6rem]">{module.tickets} tickets</span>
           </li>
         ))}
       </ul>
@@ -266,7 +383,7 @@ const ShortcutsWidget = () => {
       <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3 flex items-center">
         <Zap size={20} className="text-rose-500 mr-2" /> Raccourcis
       </h3>
-      <div className="grid grid-cols-1 gap-2 text-xs"> 
+      <div className="grid grid-cols-1 gap-2 text-xs">
         <Link to="/admin/utilisateurs" className="flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
           <Users size={14} className="mr-1" /> Gérer les users
         </Link>
@@ -286,91 +403,81 @@ const ShortcutsWidget = () => {
 
 // --- Main HomePage Component (Updated overall layout and padding) ---
 const HomePage = () => {
-  const [kpiData, setKpiData] = React.useState({
-    openTickets: '...',
-    overdueTickets: '...',
-    ticketsToday: { created: '...', closed: '...' },
-    activeTeams: '...',
-    activeClients: '...',
-    topModules: '...',
+  const [kpiData, setKpiData] = useState({
+    totalTickets: '...',
+    ticketsEnAttente: '...',
+    ticketsEnCours: '...',
+    ticketsAcceptes: '...',
+    ticketsTerminesToday: '...',
+    ticketsTerminesThisWeek: '...',
+    ticketsRefuses: '...',
   });
-  const [loadingKpis, setLoadingKpis] = React.useState(true);
+  const [loadingKpis, setLoadingKpis] = useState(true);
 
-  React.useEffect(() => {
-    const fetchKpis = async () => {
+  // Fetch global ticket stats for KPI cards
+  useEffect(() => {
+    const fetchGlobalTicketStats = async () => {
       setLoadingKpis(true);
       try {
-        const openTicketsCount = 75; 
-        const overdueTicketsCount = 12; 
-        const createdToday = 15; 
-        const closedToday = 8; 
-        const activeTeamsCount = 5; 
-        const clientsData = [
-          { nom: 'Clinique Alpha', ticketsEnCours: 7 },
-          { nom: 'Hôpital Beta', ticketsEnCours: 4 },
-        ];
-        const activeClientsSummary = clientsData.map(c => `${c.nom} (${c.ticketsEnCours})`).join(', ');
-        const topModulesData = [
-          { nom: 'Logiciel', tickets: 30 }, { nom: 'Réseaux', tickets: 25 }, { nom: 'Matériel', tickets: 20 },
-        ];
-        const topModulesSummary = topModulesData.map(m => `${m.nom} (${m.tickets})`).join(', ');
-
-        setKpiData({
-          openTickets: openTicketsCount,
-          overdueTickets: overdueTicketsCount,
-          ticketsToday: { created: createdToday, closed: closedToday },
-          activeTeams: activeTeamsCount,
-          activeClients: activeClientsSummary || 'N/A',
-          topModules: topModulesSummary || 'N/A',
-        });
+        const data = await dashboardService.getGlobalTicketCounts(); //
+        setKpiData(data);
       } catch (err) {
         console.error("Erreur lors de la récupération des KPIs:", err);
         setKpiData({
-          openTickets: 'N/A', overdueTickets: 'N/A', ticketsToday: { created: 'N/A', closed: 'N/A' },
-          activeTeams: 'N/A', activeClients: 'N/A', topModules: 'N/A',
+          totalTickets: 'N/A',
+          ticketsEnAttente: 'N/A',
+          ticketsEnCours: 'N/A',
+          ticketsAcceptes: 'N/A',
+          ticketsTerminesToday: 'N/A',
+          ticketsTerminesThisWeek: 'N/A',
+          ticketsRefuses: 'N/A',
         });
       } finally {
         setLoadingKpis(false);
       }
     };
-    fetchKpis();
+    fetchGlobalTicketStats();
   }, []);
+
 
   return (
     <div className="p-4 md:p-5 bg-slate-50 dark:bg-slate-900 min-h-screen">
-      <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">Tableau de Bord Administrateur</h1> {/* Adjusted title size and margin */}
+      <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">Tableau de Bord Administrateur</h1>
 
       {/* 1. Résumé global / KPIs - Compact format */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4"> {/* Adjusted cols and gap */}
-        <KpiCard title="Tickets ouverts" value={loadingKpis ? '...' : kpiData.openTickets} icon={ClipboardList} link="/admin/tickets?status=en_cours" color="bg-blue-50 dark:bg-blue-900/20" />
-        <KpiCard title="Tickets en retard" value={loadingKpis ? '...' : kpiData.overdueTickets} icon={AlertTriangle} color="bg-red-50 dark:bg-red-900/20" badgeText="Urgent" badgeColor="bg-red-100 text-red-800" />
-        <KpiCard title="Tickets aujourd'hui" value={loadingKpis ? '...' : `${kpiData.ticketsToday.created}/${kpiData.ticketsToday.closed}`} icon={CalendarDays} color="bg-emerald-50 dark:bg-emerald-900/20" badgeText="Cr./Cl." badgeColor="bg-emerald-100 text-emerald-800" />
-        <KpiCard title="Équipes actives" value={loadingKpis ? '...' : kpiData.activeTeams} icon={Users} color="bg-indigo-50 dark:bg-indigo-900/20" />
-        <KpiCard title="Clients actifs" value={loadingKpis ? '...' : kpiData.activeClients} icon={Building} color="bg-purple-50 dark:bg-purple-900/20" />
-        <KpiCard title="Top Modules" value={loadingKpis ? '...' : kpiData.topModules} icon={Box} color="bg-teal-50 dark:bg-teal-900/20" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3 mb-4">
+        <KpiCard title="Tickets Totaux" value={loadingKpis ? '...' : kpiData.totalTickets} icon={ClipboardList} color="bg-blue-50 dark:bg-blue-900/20" />
+        <KpiCard title="En Attente" value={loadingKpis ? '...' : kpiData.ticketsEnAttente} icon={AlertTriangle} color="bg-yellow-50 dark:bg-yellow-900/20" />
+        <KpiCard title="En Cours" value={loadingKpis ? '...' : kpiData.ticketsEnCours} icon={Clock} color="bg-orange-50 dark:bg-orange-900/20" />
+        <KpiCard title="Acceptés" value={loadingKpis ? '...' : kpiData.ticketsAcceptes} icon={CheckCircle} color="bg-green-50 dark:bg-green-900/20" />
+        <KpiCard title="Terminés Aujourd'hui" value={loadingKpis ? '...' : kpiData.ticketsTerminesToday} icon={CalendarDays} color="bg-purple-50 dark:bg-purple-900/20" />
+        <KpiCard title="Terminés cette semaine" value={loadingKpis ? '...' : kpiData.ticketsTerminesThisWeek} icon={CalendarDays} color="bg-indigo-50 dark:bg-indigo-900/20" />
+        <KpiCard title="Refusés" value={loadingKpis ? '...' : kpiData.ticketsRefuses} icon={XCircle} color="bg-red-50 dark:bg-red-900/20" />
       </div>
 
-      {/* 2. Mon Calendrier, 3. Tickets en retard, 4. Affectations en attente - Compact format */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4"> {/* Adjusted gap */}
-        <TicketsByModuleChart />
+      {/* 2. Graphiques de répartition */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <TicketsByStatusBarChart /> {/* Now a Bar Chart */}
+        <PendingAssignmentsList/>
+
+        
+      </div>
+
+      {/* 3. Autres widgets */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <ActiveTicketsByCategoryBarChart /> {/* Remains a Bar Chart */}
         <OverdueTicketsList />
- 
       </div>
 
-      {/* 5. Mini Dashboard interactif (vue rapide) - Compact format */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"> {/* Adjusted gap */}
-        <TicketsByModuleChart />
-        <PendingAssignmentsList />
- 
-      </div>
-      <div className="flex justify-center mb-4"> {/* Adjusted margin */}
-        <Link to="/admin/dashboard" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 text-sm rounded-lg shadow-md transition-colors duration-200"> {/* Smaller button */}
+      {/* 4. Bouton pour accéder au Dashboard complet */}
+      <div className="flex justify-center mb-4">
+        <Link to="/admin/dashboards" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 text-sm rounded-lg shadow-md transition-colors duration-200">
           Accéder au Dashboard complet
         </Link>
       </div>
 
-      {/* 6. Widgets contextuels - Compact format */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4"> {/* Adjusted gap */}
+      {/* 5. Widgets contextuels - Compact format */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <LatestTicketsWidget />
         <LatestCommentsWidget />
         <MostImpactedModulesWidget />
@@ -380,4 +487,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage;  
+export default HomePage;

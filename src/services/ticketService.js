@@ -58,6 +58,7 @@ const ticketService = {
             throw error;
         }
     },
+    
 };
 
 export default ticketService;

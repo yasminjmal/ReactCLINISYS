@@ -1391,11 +1391,14 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                         </div>
                     </>
                 ) : (
-                    <div className="mt-6 space-y-4">
-                        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg">
+                    <div className="mt-6 flex gap-4">
+                        {/* Bloc Documents - 1/3 */}
+                        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg basis-1/3">
                             <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-3 flex items-center">
                                 <FileText size={18} className="mr-2" /> Documents
-                                <span className="ml-2 text-slate-400 dark:text-slate-500">({ticket.documentJointesList?.length || 0})</span>
+                                <span className="ml-2 text-slate-400 dark:text-slate-500">
+                                    ({ticket.documentJointesList?.length || 0})
+                                </span>
                             </h2>
                             <DocumentManager
                                 ticketId={ticket.id}
@@ -1405,10 +1408,13 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                             />
                         </div>
 
-                        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg">
+                        {/* Bloc Commentaires - 2/3 */}
+                        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg basis-2/3">
                             <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-3 flex items-center">
                                 <MessageSquare size={18} className="mr-2" /> Commentaires
-                                <span className="ml-2 text-slate-400 dark:text-slate-500">({ticket.commentaireList?.length || 0})</span>
+                                <span className="ml-2 text-slate-400 dark:text-slate-500">
+                                    ({ticket.commentaireList?.length || 0})
+                                </span>
                             </h2>
                             <CommentManager
                                 ticketId={ticket.id}
@@ -1419,6 +1425,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                             />
                         </div>
                     </div>
+
                 )}
 
                 {/* Modale de diffraction */}

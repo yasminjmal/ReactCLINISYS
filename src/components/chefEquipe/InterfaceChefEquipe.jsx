@@ -89,17 +89,37 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
     (equipesDuChefConnecte || []).forEach(e => e.utilisateurs?.forEach(u => u.actif && membresMap.set(u.id, u)));
     return Array.from(membresMap.values());
   }, [equipesDuChefConnecte]);
+
   const idsModulesGeresParLeChef = useMemo(() => {
     const idsEquipes = new Set(equipesDuChefConnecte.map(e => e.id));
     return (allModules || []).filter(m => m.equipe && idsEquipes.has(m.equipe.id)).map(m => m.id);
   }, [equipesDuChefConnecte, allModules]);
+
   const ticketsVisiblesPourChef = useMemo(() => (allTickets || []).filter(t => t.idModule && idsModulesGeresParLeChef.includes(t.idModule.id)), [allTickets, idsModulesGeresParLeChef]);
-  const ticketsPourChefATraiter = useMemo(() => ticketsVisiblesPourChef.filter(t => t.statue === 'En_attente'), [ticketsVisiblesPourChef]);
+  
+  const ticketsPourChefATraiter = useMemo(() => {
+    return ticketsVisiblesPourChef.filter(t => 
+      t.statue === 'Accepte' && (!t.idUtilisateur || t.idUtilisateur === 0)
+    );
+  }, [ticketsVisiblesPourChef]);
+  
   const ticketsAssignesParChefPourSuivi = useMemo(() => ticketsVisiblesPourChef.filter(t => t.idUtilisateur && t.idUtilisateur !== 0), [ticketsVisiblesPourChef]);
+  
+  const ticketsTraites = useMemo(() => 
+    ticketsAssignesParChefPourSuivi.filter(t => t.dateDebutTraitement), 
+    [ticketsAssignesParChefPourSuivi]
+  );
+  
+  const ticketsNonTraites = useMemo(() => 
+    ticketsAssignesParChefPourSuivi.filter(t => !t.dateDebutTraitement), 
+    [ticketsAssignesParChefPourSuivi]
+  );
+  
   const ticketsRefuseParChefPourSuivi = useMemo(() => ticketsVisiblesPourChef.filter(t => t.statue === "Refuse"), [ticketsVisiblesPourChef]);
 
   // --- Fonctions de gestion des actions ---
   const showTemporaryMessage = (type, text) => console.log(`Notification (${type}): ${text}`);
+  
   const refetchDataAndProfile = useCallback(() => {
     queryClient.invalidateQueries(['chefDashboardData', currentUserState?.id]);
     queryClient.invalidateQueries(['currentUserProfile', user?.login]);
@@ -118,6 +138,7 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
   const handleAssignerTicketAEmploye = (ticketId, employe) => handleTicketAction(() => ticketService.updateTicket(ticketId, { idUtilisateur: employe.id, statue: 'En_cours' }), `Ticket assigné à ${employe.prenom}.`, "Erreur d'assignation");
   const handleReassignTicket = (ticketId, newUser) => handleTicketAction(() => ticketService.updateTicket(ticketId, { idUtilisateur: newUser ? newUser.id : 0, statue: newUser ? 'En_cours' : 'En_attente' }), newUser ? `Ticket réassigné.` : 'Affectation retirée.', 'Erreur de réassignation');
   const handleRefuserTicketParChef = (ticketId, motif) => handleTicketAction(() => ticketService.updateTicket(ticketId, { statue: 'Refuse', description: motif }), `Ticket refusé.`, 'Erreur lors du refus');
+  const handleSetDueDate = (ticketId, date) => handleTicketAction(() => ticketService.updateTicket(ticketId, { dateEcheance: date }), 'Date d\'échéance mise à jour.', 'Erreur de mise à jour');
   const handleAddComment = (commentData) => handleTicketAction(() => commentService.addComment(commentData), 'Commentaire ajouté.', 'Erreur d\'ajout');
   const handleDeleteComment = (commentId) => window.confirm('Supprimer ce commentaire ?') && handleTicketAction(() => commentService.deleteComment(commentId), 'Commentaire supprimé.', 'Erreur de suppression');
   const handleUploadFile = (file, ticketId) => handleTicketAction(() => documentService.uploadDocument(file, ticketId), 'Fichier ajouté.', 'Erreur d\'envoi');
@@ -144,10 +165,26 @@ const InterfaceChefEquipe = ({ user, onLogout: appLogoutHandler }) => {
     switch (activePage) {
       case 'dashboard': return <TableauDeBordChef user={currentUserState} tickets={ticketsVisiblesPourChef} equipes={equipesDuChefConnecte} />;
       case 'profile': return <ProfilChefEquipe currentUser={currentUserState} refetchData={refetchDataAndProfile} showTemporaryMessage={showTemporaryMessage} />;
-      // --- MODIFICATION ICI : Ajout de la prop `allModules` ---
       case 'teams': return <MesEquipesChefPage equipesChef={equipesDuChefConnecte} allModules={allModules} refetchData={refetchAllData} />;
-      case 'tickets-to-do': return <TicketsATraiterChefPage ticketsNonAssignes={ticketsPourChefATraiter} equipesDuChef={equipesDuChefConnecte} onAssignerTicketAEmploye={handleAssignerTicketAEmploye} onRefuserTicketParChef={handleRefuserTicketParChef} {...commonTicketHandlers} />;
-      case 'tickets-follow-up': return <SuiviAffectationsChefPage ticketsAssignesParChef={ticketsAssignesParChefPourSuivi} onReassignTicket={handleReassignTicket} tousLesMembresDesEquipes={tousLesMembresDesEquipes} {...commonTicketHandlers} />;
+      
+      // --- CORRECTION ICI ---
+      case 'tickets-to-do': return <TicketsATraiterChefPage 
+                                        ticketsNonAssignes={ticketsPourChefATraiter} 
+                                        equipesDuChef={equipesDuChefConnecte}
+                                        onAssignerTicketAEmploye={handleAssignerTicketAEmploye} 
+                                        onRefuserTicketParChef={handleRefuserTicketParChef} 
+                                        onSetDueDate={handleSetDueDate} 
+                                        {...commonTicketHandlers} 
+                                    />;
+      
+      case 'tickets-follow-up': return <SuiviAffectationsChefPage 
+                                        ticketsTraites={ticketsTraites}
+                                        ticketsNonTraites={ticketsNonTraites}
+                                        onReassignTicket={handleReassignTicket} 
+                                        tousLesMembresDesEquipes={tousLesMembresDesEquipes} 
+                                        {...commonTicketHandlers} 
+                                    />;
+                                    
       case 'tickets-refused': return <TicketsRefuse ticketRefuse={ticketsRefuseParChefPourSuivi} {...commonTicketHandlers} />;
       default: return <TableauDeBordChef user={currentUserState} tickets={ticketsVisiblesPourChef} equipes={equipesDuChefConnecte} />;
     }

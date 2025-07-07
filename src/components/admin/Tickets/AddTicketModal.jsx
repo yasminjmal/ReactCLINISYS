@@ -73,7 +73,7 @@ const AddTicketModal = ({ onAddTicket, onCancel, availableClients, availableUser
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Titre */}
                     <div>
-                        <label htmlFor="titre" className="form-label">Titre <span className="text-red-500">*</span></label>
+                        <label htmlFor="titre" className="form-label text-sm">Titre <span className="text-red-500">*</span></label>
                         <input
                             type="text"
                             id="titre"
@@ -83,27 +83,28 @@ const AddTicketModal = ({ onAddTicket, onCancel, availableClients, availableUser
                             className={`form-input ${errors.titre ? 'border-red-500' : ''}`}
                             placeholder="Ex: Demande d'accès au serveur"
                         />
-                        {errors.titre && <p className="form-error-text">{errors.titre}</p>}
+                        {errors.titre && <p className="form-error-text text-xs">{errors.titre}</p>}
                     </div>
 
                     {/* Description */}
                     <div>
-                        <label htmlFor="description" className="form-label">Description</label>
+                        <label htmlFor="description" className="form-label text-sm">Description</label>
                         <textarea
                             id="description"
                             name="description"
                             value={formData.description}
                             onChange={handleInputChange}
-                            className="form-textarea"
+                            className="form-textarea text-sm"
                             rows="3"
                             placeholder="Détaillez la nature du ticket..."
+                            style={{ width: '100%' }}
                         ></textarea>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* Client */}
                         <div>
-                            <label htmlFor="idClient" className="form-label">Client <span className="text-red-500">*</span></label>
+                            <label htmlFor="idClient" className="form-label text-sm">Client <span className="text-red-500">*</span></label>
                             <select
                                 id="idClient"
                                 name="idClient"
@@ -121,7 +122,7 @@ const AddTicketModal = ({ onAddTicket, onCancel, availableClients, availableUser
 
                         {/* Module */}
                         <div>
-                            <label htmlFor="idModule" className="form-label">Module</label>
+                            <label htmlFor="idModule" className="form-label text-sm">Module</label>
                             <select
                                 id="idModule"
                                 name="idModule"
@@ -136,9 +137,9 @@ const AddTicketModal = ({ onAddTicket, onCancel, availableClients, availableUser
                             </select>
                         </div>
 
-                        {/* Employé affecté */}
+                        {/* Employé affecté
                         <div>
-                            <label htmlFor="idUtilisateur" className="form-label">Employé Affecté</label>
+                            <label htmlFor="idUtilisateur" className="form-label text-sm">Employé Affecté</label>
                             <select
                                 id="idUtilisateur"
                                 name="idUtilisateur"
@@ -151,11 +152,11 @@ const AddTicketModal = ({ onAddTicket, onCancel, availableClients, availableUser
                                     <option key={user.id} value={user.id}>{user.prenom} {user.nom}</option>
                                 ))}
                             </select>
-                        </div>
+                        </div> */}
 
                         {/* Priorité */}
                         <div>
-                            <label htmlFor="priorite" className="form-label">Priorité</label>
+                            <label htmlFor="priorite" className="form-label text-sm">Priorité</label>
                             <select
                                 id="priorite"
                                 name="priorite"
@@ -168,20 +169,21 @@ const AddTicketModal = ({ onAddTicket, onCancel, availableClients, availableUser
                                 <option value="Haute">Haute</option>
                             </select>
                         </div>
+                        {/* Date d'échéance */}
+                        <div>
+                            <label htmlFor="date_echeance" className="form-label text-sm">Date d'échéance (optionnel)</label>
+                            <input
+                                type="date"
+                                id="date_echeance"
+                                name="date_echeance"
+                                value={formData.date_echeance}
+                                onChange={handleInputChange}
+                                className="form-input"
+                            />
+                        </div>
                     </div>
 
-                    {/* Date d'échéance */}
-                    <div>
-                        <label htmlFor="date_echeance" className="form-label">Date d'échéance (optionnel)</label>
-                        <input
-                            type="date"
-                            id="date_echeance"
-                            name="date_echeance"
-                            value={formData.date_echeance}
-                            onChange={handleInputChange}
-                            className="form-input"
-                        />
-                    </div>
+                    
 
                     {/* Actif Checkbox */}
                     <div className="flex items-center pt-2">
