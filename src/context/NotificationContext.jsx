@@ -1,120 +1,80 @@
+// src/context/NotificationContext.jsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { useStompClient, useSubscription } from 'react-stomp-hooks';
-import { useAuth } from './AuthContext'; // Assurez-vous que le chemin est correct
-import notificationService from '../services/notificationService'; // Assurez-vous que ce service gère les appels REST pour les notifications
+import { useWebSocket } from './WebSocketContext'; // On utilise notre propre contexte WebSocket
+import { useAuth } from './AuthContext';
+import notificationService from '../services/notificationService';
 
 const NotificationContext = createContext();
 
+export const useNotifications = () => {
+    return useContext(NotificationContext);
+};
+
 export const NotificationProvider = ({ children }) => {
+    const { stompClient, connectionStatus } = useWebSocket();
+    const { currentUser } = useAuth();
     const [notifications, setNotifications] = useState([]);
-    const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(true);
-    const { currentUser } = useAuth(); // Récupère l'utilisateur connecté
-    const stompClient = useStompClient(); // Hook de react-stomp-hooks pour obtenir le client STOMP
 
-    // 1. Charger les notifications non lues existantes au montage du composant
+    // Étape 1: Charger les notifications initiales depuis le serveur
     useEffect(() => {
-        const fetchInitialNotifications = async () => {
-            try {
-                const response = await notificationService.getUnreadNotifications();
-                console.log("Notifications reçues (brutes) :", response.data);
-
-                const data = response.data;
-
-                if (Array.isArray(data)) {
-                    const formatted = data.map((notif) => ({ ...notif }));
-                    setNotifications(formatted);
-                } else {
-                    console.error("Les données reçues ne sont pas un tableau :", data);
-                }
-
-            } catch (error) {
-                console.error("Échec du chargement des notifications initiales:", error);
-            }
-        };
-
-
-        fetchInitialNotifications();
-    }, [currentUser?.id]); // Déclenche le rechargement si l'ID de l'utilisateur change
-
-    // 2. Écouter les nouvelles notifications via WebSocket
-    // On s'abonne au topic spécifique de l'utilisateur
-    useSubscription(currentUser ? `/user/${currentUser.login}/queue/notifications` : null, (message) => {
-        try {
-            const newNotification = JSON.parse(message.body);
-            console.log('Notification reçue via WebSocket:', newNotification);
-
-            // Vérifiez si la notification existe déjà (peut arriver si rechargement et WebSocket rapide)
-            setNotifications(prev => {
-                if (prev.some(n => n.id === newNotification.id)) {
-                    return prev; // Notification déjà présente, ignorez
-                }
-                // Ajoute la nouvelle notification en haut de la liste
-                return [{
-                    ...newNotification,
-                    id: newNotification.id || new Date().toISOString() + Math.random(), // Assurez un ID
-                    timestamp: new Date(newNotification.timestamp).toISOString() // Assurez un format de date ISO
-                }, ...prev];
-            });
-            setUnreadCount(prev => prev + 1); // Incrémente le compteur de non-lus
-        } catch (error) {
-            console.error("Erreur lors de l'analyse de la notification WebSocket:", error, message.body);
-            // Fallback pour les messages malformés ou sans ID
-            setNotifications(prev => [{
-                id: Date.now() + Math.random(), // Génère un ID local pour cette notification d'erreur
-                message: message.body,
-                timestamp: new Date().toISOString(),
-                type: 'ERROR'
-            }, ...prev]);
-            setUnreadCount(prev => prev + 1);
+        if (currentUser) {
+            setLoading(true);
+            notificationService.getNotifications()
+                .then(response => {
+                    setNotifications(response.data);
+                    console.log("✅ Notifications initiales chargées:", response.data);
+                })
+                .catch(error => console.error("❌ Erreur lors du chargement des notifications:", error))
+                .finally(() => setLoading(false));
         }
-    });
+    }, [currentUser]); // Se déclenche quand l'utilisateur se connecte
 
-    // Fonction pour marquer une notification comme lue (via API REST)
-    const markNotificationAsRead = async (notificationId) => {
+    // Étape 2: S'abonner aux notifications en temps réel quand la connexion WebSocket est prête
+    useEffect(() => {
+        if (connectionStatus === 'CONNECTED' && stompClient && currentUser) {
+            console.log(`🎧 NotificationContext: Abonnement à /user/queue/notifications pour ${currentUser.login}`);
+            
+            const subscription = stompClient.subscribe(`/user/queue/notifications`, (message) => {
+                try {
+                    const newNotification = JSON.parse(message.body);
+                    console.log('📨 Nouvelle notification reçue via WebSocket:', newNotification);
+                    // Ajoute la nouvelle notification en haut de la liste pour un affichage immédiat
+                    setNotifications(prev => [newNotification, ...prev]);
+                } catch (e) {
+                    console.error("Erreur de parsing de la notification JSON", e);
+                }
+            });
+
+            // Fonction de nettoyage pour se désabonner proprement
+            return () => {
+                console.log("🔌 NotificationContext: Désabonnement du canal de notifications.");
+                subscription.unsubscribe();
+            };
+        }
+    }, [connectionStatus, stompClient, currentUser]); // Se déclenche quand la connexion est établie
+
+    // Fonction pour marquer une notification comme lue
+    const markAsRead = async (notificationId) => {
+        setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
         try {
             await notificationService.markAsRead(notificationId);
-            setNotifications(prev => prev.filter(notif => notif.id !== notificationId)); // Retire de la liste
-            setUnreadCount(prev => Math.max(0, prev - 1)); // Décrémente le compteur, pas moins de 0
         } catch (error) {
-            console.error("Échec du marquage de la notification comme lue:", error);
-            // Gérer l'erreur ou afficher un message à l'utilisateur
+            console.error("❌ Échec du marquage de la notification comme lue:", error);
+            // On pourrait vouloir remettre la notification dans la liste en cas d'échec
         }
     };
 
-    // Fonction pour marquer TOUTES les notifications comme lues (localement)
-    const markAllNotificationsAsReadLocally = () => {
-        setUnreadCount(0); // Réinitialise le compteur local
-        // Optionnel : Envoyez un appel à l'API pour informer le backend que toutes ont été lues
-        // notificationService.markAllAsRead(currentUser.id);
-    };
-
-    // Fonction pour effacer toutes les notifications affichées
-    const clearAllNotifications = () => {
-        setNotifications([]);
-        setUnreadCount(0);
-        // Optionnel : Appel API pour effacer toutes les notifications côté backend
-        // notificationService.deleteAllNotifications(currentUser.id);
+    const value = {
+        notifications,
+        unreadCount: notifications.filter(n => !n.read).length, // Calcule dynamiquement le nombre de non-lus
+        loading,
+        markAsRead
     };
 
     return (
-        <NotificationContext.Provider value={{
-            notifications,
-            unreadCount,
-            loading,
-            markNotificationAsRead,
-            markAllNotificationsAsReadLocally,
-            clearAllNotifications
-        }}>
+        <NotificationContext.Provider value={value}>
             {children}
         </NotificationContext.Provider>
     );
-};
-
-export const useNotifications = () => {
-    const context = useContext(NotificationContext);
-    if (context === undefined) {
-        throw new Error('useNotifications must be used within a NotificationProvider');
-    }
-    return context;
 };
