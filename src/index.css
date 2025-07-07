@@ -492,3 +492,30 @@
 .animate-ping-red {
   animation: ping-red 1s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
+
+
+/* ========================================================================== */
+/* STYLES PERSONNALISÉS POUR LA BARRE DE DÉFILEMENT (SCROLLBAR)
+/* Ajoutez ceci à la fin de votre fichier src/index.css
+/* ========================================================================== */
+
+/* Pour les navigateurs basés sur WebKit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 8px; /* Rend la barre de défilement plus fine et discrète */
+}
+
+/* Le fond de la barre de défilement (la "piste") */
+::-webkit-scrollbar-track {
+  background: #1e293b; /* Couleur de fond sombre (slate-800) qui correspond à votre design */
+}
+
+/* La poignée de défilement elle-même */
+::-webkit-scrollbar-thumb {
+  background: #475569; /* Une couleur de gris moyen (slate-600) pour la poignée */
+  border-radius: 10px; /* Des bords arrondis pour un look moderne */
+}
+
+/* La poignée de défilement au survol de la souris */
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b; /* La poignée s'éclaircit légèrement (slate-500) */
+}
