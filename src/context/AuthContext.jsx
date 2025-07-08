@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import authService from '../services/authService';
+import userService from '../services/userService';
 import api from '../services/api';
 
 const AuthContext = createContext(null);
@@ -16,7 +17,7 @@ export const AuthProvider = ({ children, navigate }) => {
         setIsLoading(true);
         try {
             const storedUser = localStorage.getItem('currentUser');
-            const storedToken = localStorage.getItem('authToken'); 
+            const storedToken = localStorage.getItem('authToken');
             if (storedUser && storedToken) {
                 const parsedUser = JSON.parse(storedUser);
                 setCurrentUser(parsedUser);
@@ -49,22 +50,27 @@ export const AuthProvider = ({ children, navigate }) => {
     const login = useCallback(async (credentials) => {
         try {
             const { token: newToken, user: userData } = await authService.login(credentials);
-            
+
             localStorage.setItem('currentUser', JSON.stringify(userData));
             localStorage.setItem('authToken', newToken);
             setCurrentUser(userData);
             setToken(newToken);
             setIsAuthenticated(true);
-            
+
             api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-            
+
             return userData;
         } catch (error) {
-            // En cas d'erreur de login, assurez-vous que tout est propre
-            logout();
+            console.error("Erreur de login :", error);
+            localStorage.clear();
+            setCurrentUser(null);
+            setToken(null);
+            setIsAuthenticated(false);
+            delete api.defaults.headers.common['Authorization'];
             throw error;
         }
     }, []);
+
 
     const logout = useCallback(() => {
         localStorage.clear();
@@ -103,4 +109,15 @@ export const useAuth = () => {
         throw new Error('useAuth must be used within an AuthProvider');
     }
     return context;
+};
+
+export const getFullUserName = async (currentUser) => {
+    if (!currentUser || !currentUser.id) return null;
+    try {
+        const response = await userService.getUserById(currentUser.id);
+        return response.data;
+    } catch (error) {
+        console.error("Erreur lors de la récupération du nom complet :", error);
+        return null;
+    }
 };

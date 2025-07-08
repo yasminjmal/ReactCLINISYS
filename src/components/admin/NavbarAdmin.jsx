@@ -1,14 +1,17 @@
 // src/components/admin/NavbarAdmin.jsx
 import { useState, useEffect, useRef } from 'react';
-import { ChevronDown, User, LogOut, Sun, Moon, UserCircle, Bell } from 'lucide-react'; 
+import { ChevronDown, User, LogOut, Sun, Moon, UserCircle, Bell } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 // ✅ On importe notre nouveau hook pour consommer le contexte
 import { useNotifications } from '../../context/NotificationContext';
+import userService from '../../services/userService';
+import { toast } from 'react-toastify';
 
 const NavbarAdmin = ({ onNavigate }) => {
     const { currentUser, logout } = useAuth();
-    const { theme, toggleTheme } = useTheme(); 
+    const { theme, toggleTheme } = useTheme();
+
     // ✅ On récupère l'état et les fonctions depuis le contexte
     const { notifications, unreadCount, markAsRead, loading } = useNotifications();
 
@@ -17,7 +20,22 @@ const NavbarAdmin = ({ onNavigate }) => {
 
     const dropdownRef = useRef(null);
     const notificationDropdownRef = useRef(null);
-    
+    const [fulluser, setFullUser] = useState({});
+    useEffect(() => {
+        const fetchFullUser = async () => {
+            try {
+                const response = await userService.getUserById(currentUser.id);
+                setFullUser(response);
+                // toast.success("Bonjour "+fulluser.nom+" " +fulluser.prenom+" !")
+            } catch (error) {
+                toast.error("Erreur de chargement des données")
+            }
+        };
+
+        if (currentUser && currentUser.id) {
+            fetchFullUser();
+        }
+    }, [currentUser]);
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -41,20 +59,22 @@ const NavbarAdmin = ({ onNavigate }) => {
         }
     };
 
+
+
     return (
         <nav className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between shadow-sm sticky top-0 z-40">
             <div className="flex items-center">
-                {/* ... */}
+                {/* ... */},,
             </div>
-            
+
             <div className="flex items-center gap-4 md:gap-6">
                 <button onClick={toggleTheme} className="text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-500">
                     {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
                 </button>
 
                 <div className="relative" ref={notificationDropdownRef}>
-                    <button 
-                        onClick={() => setNotificationDropdownOpen(!notificationDropdownOpen)} 
+                    <button
+                        onClick={() => setNotificationDropdownOpen(!notificationDropdownOpen)}
                         className="relative pt-2 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-500"
                     >
                         <Bell size={20} />
@@ -93,7 +113,16 @@ const NavbarAdmin = ({ onNavigate }) => {
 
                 <div className="relative" ref={dropdownRef}>
                     <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-2">
-                        <User size={24} className="text-slate-600 dark:text-slate-300" />
+                        <img
+                            src={
+                                fulluser.photo
+                                    ? `data:image/jpeg;base64,${fulluser.photo}`
+                                    : `https://i.pravatar.cc/150?u=${fulluser?.id || 'default'}`
+                            }
+                            alt="Profil"
+                            className="w-9 h-9 rounded-full object-cover"
+                        />
+
                         <ChevronDown size={16} className="text-slate-500 dark:text-slate-400" />
                     </button>
                     {dropdownOpen && (
