@@ -8,13 +8,10 @@ import {
   Users,
   Package,
   Briefcase,
-  ChevronDown,
-  ChevronUp,
-  LogOut,
+  History, // ✅ Ajout de l'icône pour la traçabilité
   MessageSquare,
   HelpCircle,
   Phone,
-  Aperture,
 } from 'lucide-react';
 import logoClinisys from '../../assets/images/logoTRANSPARENT.png';
 
@@ -24,29 +21,20 @@ const menuItems = [
   { id: 'home', label: 'HOME', icon: Home },
   { id: 'dashboards', label: 'DASHBOARDS', icon: LayoutDashboard },
   { id: 'tickets_management', label: 'TICKETS', icon: Ticket },
-  {
-    id: 'equipes_consulter_equipes',
-    label: 'EQUIPES',
-    icon: Users,
-  },
+  { id: 'equipes_consulter_equipes', label: 'EQUIPES', icon: Users },
   { id: 'utilisateurs_consulter_utilisateurs', label: 'UTILISATEURS', icon: UserCircle },
   { id: 'modules_consulter_modules', label: 'MODULES', icon: Package },
   { id: 'postes_consulter_postes', label: 'POSTES', icon: Briefcase },
   { id: 'clients_consulter_clients', label: 'CLIENTS', icon: Users },
-  // NOTE: 'discussions' is handled by the icon at the bottom, but we can add it here
-  // for state management if needed, or handle it separately. We'll handle it separately.
+  // ✅ NOUVEL ÉLÉMENT DE MENU AJOUTÉ
+  { id: 'tracabilite', label: 'TRAÇABILITÉ', icon: History },
 ];
-
-
-const defaultUserProfileImage = 'https://placehold.co/100x100/E2E8F0/4A5568?text=User';
-const profileBackgroundImage = 'https://images.unsplash.com/photo-1531306728370-e2ebd9d7bb91?q=80&w=2574&auto=format&fit=crop';
 
 
 const SidebarAdmin = ({
   activePage,
   setActivePage,
   isSidebarOpen,
-  isSidebarPinned,
   currentUser,
 }) => {
   const [openDropdownKey, setOpenDropdownKey] = useState(null);
@@ -67,18 +55,14 @@ const SidebarAdmin = ({
     }
   };
 
-  const isActive = useCallback((item, subItem = null) => {
+  const isActive = useCallback((item) => {
     const pageId = typeof activePage === 'object' ? activePage.id : activePage;
-    if (subItem) {
-      return pageId === subItem.id;
-    }
     if (item.subItems) {
       return item.subItems.some(sub => sub.id === pageId);
     }
     return pageId === item.id;
   }, [activePage]);
 
-  // Define if the chat icon is active
   const isChatActive = activePage === 'discussions';
 
   return (
@@ -130,10 +114,8 @@ const SidebarAdmin = ({
         })}
       </nav>
 
-      {/* MODIFICATION HERE: The buttons at the bottom */}
       <div className="flex-shrink-0 p-2 border-t border-black/10">
         <div className="flex items-center justify-around">
-            {/* THIS IS THE BUTTON YOU WANT TO CLICK */}
           <button 
                 onClick={() => setActivePage('discussions')}
                 className={`p-2 rounded-md transition-colors ${isChatActive ? 'text-blue-700 bg-blue-500/20' : 'text-slate-500 hover:bg-blue-500/10 hover:text-blue-700'}`}>

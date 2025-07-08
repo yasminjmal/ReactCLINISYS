@@ -2,6 +2,8 @@
 import React, { Fragment } from 'react';
 import { Edit, Trash2, Info, ChevronDown, ChevronUp, CheckCircle, XCircle } from 'lucide-react';
 import { formatDateFromArray } from '../../../utils/dateFormatterTicket';
+import ticketService from '../../../services/ticketService';
+import { ToastContainer, toast } from 'react-toastify';
 
 // --- Petits composants pour les badges ---
 const PriorityBadge = ({ priority }) => {
@@ -62,6 +64,8 @@ const formatDate = (dateInput) => {
         hour12: false,
     });
 };
+
+
 
 const StatusBadge = ({ status }) => {
   const normalizedStatus = status?.toUpperCase();
@@ -128,6 +132,23 @@ const TicketTableRow = ({
     
     // Détermine si la ligne doit être surlignée
     const isHighlighted = highlightedTicketId === ticket.id;
+
+   const handleDeleteTicket = async (ticket) => {
+    if (ticket.idUtilisateur == null && ticket.idModule == null && !hasSubTickets) {
+        try {
+            await ticketService.deleteTicket(ticket.id);
+            toast.success("Ticket deleted successfully");
+        } catch (error) {
+            console.error("Failed to delete ticket:", error);
+            toast.error("Error while deleting ticket");
+        }
+    } else {
+        toast.error("❌ Cannot delete a ticket that is assigned to a user or module");
+    }
+
+    
+}
+
 
     const clientNom = ticket.idClient?.nomComplet || ticket.client || 'N/A';
     const demandeurNom = ticket.userCreation || (ticket.demandeur ? `${ticket.demandeur.prenom} ${ticket.demandeur.nom}`.trim() : 'N/A');
@@ -204,7 +225,7 @@ const TicketTableRow = ({
                 <div className="flex items-center space-x-1">
                     {/* Les actions de la ligne */}
                     <button onClick={() => onNavigateToUpdate(ticket.id)} className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-100 dark:hover:bg-slate-700 rounded-full" title="Modifier/Gérer"><Edit size={16}/></button>
-                    <button onClick={() => alert("Logique de suppression à implémenter")} className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-slate-700 rounded-full" title="Supprimer"><Trash2 size={16}/></button>
+                    <button onClick={() => handleDeleteTicket(ticket)} className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-slate-700 rounded-full" title="Supprimer"><Trash2 size={16}/></button>
                     <button onClick={() => onNavigateToDetails(ticket.id)} className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-100 dark:hover:bg-slate-700 rounded-full" title="Détails"><Info size={16}/></button>
                 </div>
             </td>

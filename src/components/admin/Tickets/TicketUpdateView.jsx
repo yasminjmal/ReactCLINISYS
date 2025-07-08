@@ -1285,7 +1285,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                     </div>
 
                     <div className="flex-shrink-0 lg:w-1/3 space-y-3 pt-3 lg:pt-0 lg:pl-4 lg:border-l lg:border-slate-200 lg:dark:border-slate-700">
-                        <div className="grid grid-cols-1 gap-3">
+                        <div className="grid grid-cols-3 gap-1">
                             <DetailItem
                                 icon={<Tag size={14} className="mr-2" />}
                                 label="Priorité"
@@ -1327,7 +1327,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                             </DetailItem>
                         </div>
 
-                        <div className="pt-3 space-y-3 border-t border-slate-200 dark:border-slate-700">
+                        <div className="pt-3 grid  grid-cols-3 border-t border-slate-200 dark:border-slate-700">
                             <DetailItem icon={<User size={14} className="mr-2" />} label="Client" value={ticket.idClient?.nomComplet} />
                             <DetailItem icon={<User size={14} className="mr-2" />} label="Créé par" value={ticket.userCreation} />
                             <DetailItem icon={<Calendar size={14} className="mr-2" />} label="Date de création" value={formatDate(ticket.dateCreation)} />

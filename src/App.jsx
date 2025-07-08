@@ -14,6 +14,8 @@ import ChefEquipeInterface from './components/chefEquipe/InterfaceChefEquipe';
 import EmployeInterface from './components/employe/InterfaceEmploye';
 import { NotificationProvider } from './context/NotificationContext';
 import { StompSessionProvider } from 'react-stomp-hooks';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 
 
@@ -169,6 +171,8 @@ function App() {
                             <ThemeProvider>
                                 <BrowserRouter>
                                     <AppContent />
+                                                                        <ToastContainer position="top-right" autoClose={3000} />
+
                                 </BrowserRouter>
                             </ThemeProvider>
                         </NotificationProvider>

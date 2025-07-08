@@ -69,7 +69,7 @@ const dashboardService = {
             throw error;
         }
     },
-    getPerformanceStats: async (groupBy = 'employee', period = 'current_month') => {
+    getPerformanceStats: async (groupBy = 'employee', period = 'this') => {
         try {
             const response = await api.get(`tickets/stats/performance?groupBy=${groupBy}&period=${period}`);
             return response.data; // Attendu: [{"category": "Nom Employé/Équipe", "completedTickets": X}, ...]
