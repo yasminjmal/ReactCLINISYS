@@ -213,7 +213,7 @@ const ChatInterface = ({ currentUser }) => {
         <>
             {isNewChatModalOpen && <NewChatModal existingPartnersIds={existingPartnersIds} onUserSelect={handleUserSelect} onClose={() => setIsNewChatModalOpen(false)} />}
             {/* ✅ STYLE: Main grid and container updated for light theme */}
-            <div className="grid grid-cols-12 h-screen w-full bg-gray-100 font-sans text-gray-900">
+            <div className="grid grid-cols-12 h-[626px] w-full bg-gray-100 font-sans text-gray-900">
                 
                 {/* Left Sidebar: Chat List */}
                 <aside className="col-span-3 bg-white p-4 flex flex-col h-full border-r border-gray-200">
@@ -235,7 +235,7 @@ const ChatInterface = ({ currentUser }) => {
                             />
                         </div>
                     </header>
-                    <div className="flex-1 min-h-0 overflow-y-auto -mr-4 pr-3">
+                    <div className="flex-1 min-h-0 overflow-y-1 -mr-4 pr-3">
                         <ul className="space-y-1">
                             {isLoadingList ? (
                                 <p className="text-center p-4 text-sm text-gray-500">Chargement...</p>
@@ -258,7 +258,7 @@ const ChatInterface = ({ currentUser }) => {
                 </aside>
 
                 {/* Main Content: Chat Window */}
-                <main className="col-span-6 bg-gray-50 flex flex-col">
+                <main className="col-span-6 bg-gray-50 flex flex-col overflow-auto">
                     {activeChatPartner ? (
                         <ChatWindow
                             key={activeChatPartner.id}
