@@ -68,7 +68,7 @@ const TeamDetailDashboard = ({ team, allUsers, allPostes, allModules, refetchDat
 
     return (
         <div className="animate-fade-in space-y-6">
-            {/* Header équipe */}
+            {/* Header équipe
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md flex flex-col sm:flex-row items-center justify-between">
                 <div className="flex items-center mb-4 sm:mb-0">
                     <UsersIcon size={36} className="mr-4 text-violet-600 dark:text-violet-400" />
@@ -80,7 +80,7 @@ const TeamDetailDashboard = ({ team, allUsers, allPostes, allModules, refetchDat
                     </div>
                 </div>
                 <span className="text-sm text-slate-500 dark:text-slate-400">Créé le {formatDate(team.dateCreation)}</span>
-            </div>
+            </div> */}
 
             {/* Section 1 : Membres */}
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
