@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-   darkMode: 'class', 
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -9,6 +9,10 @@ export default {
   theme: {
     extend: {
       keyframes: {
+        'animate-gradient': {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        },
         // This is the spin animation from before
         spin: {
           'from': { transform: 'rotate(0deg)' },
@@ -29,6 +33,8 @@ export default {
         'spin-slow': 'spin 3s linear infinite',
         // --- ADD THIS NEW ANIMATION ---
         'pulse-glow': 'pulse-glow 4s ease-in-out infinite',
+        'gradient': 'animate-gradient 3s linear infinite',
+
       }
     },
   },

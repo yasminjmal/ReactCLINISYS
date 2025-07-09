@@ -945,7 +945,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                 titre: ticketData.titre || '',
                 description: ticketData.description || '',
                 priorite: ticketData.priorite || 'Moyenne', // Valeur par défaut
-                statue: ticketData.idUtilisateur? 'En_cours' : 'Accepte',
+                statue: ticketData.statue || '',
                 actif: ticketData.actif,
                 date_echeance: ticketData.date_echeance,
                 idModule: ticketData.idModule || null, // Garde l'objet module ou null
@@ -1036,7 +1036,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
             titre: ticket.titre || '',
             description: ticket.description || '',
             priorite: ticket.priorite || 'Moyenne',
-            statue: ticket.idUtilisateur ? 'En_cours' : 'Accepte',
+            statue: ticket.statue || '',
             actif: ticket.actif,
             date_echeance: ticket.date_echeance,
             idModule: ticket.idModule || null,

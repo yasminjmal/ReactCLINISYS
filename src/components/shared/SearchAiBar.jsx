@@ -1,8 +1,28 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Search, X, Loader } from 'lucide-react'; // Importe Loader pour un état de chargement
-import PropTypes from 'prop-types'; // Pour la validation des props
+import React, { useState, useRef } from 'react';
+import { X, Loader } from 'lucide-react';
+import PropTypes from 'prop-types';
 
-const SearchAiBar = ({ onSearch, placeholder = "Rechercher avec l'IA...", className }) => {
+/**
+ * Icône circulaire avec un anneau en dégradé animé.
+ * L'animation est définie dans tailwind.config.js.
+ */
+const GradientIcon = () => (
+    <div 
+        className="
+            w-7 h-7 rounded-full p-1 
+            bg-gradient-to-br from-purple-900 via-blue-500 to-teal-400 
+            bg-[length:200%_200%]
+            animate-gradient
+        "
+    >
+        <div className="w-full  h-full rounded-full bg-slate-100" />
+    </div>
+);
+
+/**
+ * Barre de recherche avec une icône animée et une gestion de l'état de recherche.
+ */
+const SearchAiBar = ({ onSearch, placeholder = "Ask Meta AI or Search...", className }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const inputRef = useRef(null);
@@ -11,12 +31,11 @@ const SearchAiBar = ({ onSearch, placeholder = "Rechercher avec l'IA...", classN
         if (searchTerm.trim() === '') return; // Ne rien faire si la recherche est vide
 
         setIsSearching(true);
-        // Simuler un appel API ou une logique de recherche AI
         try {
-            await onSearch(searchTerm); // Appelle la fonction onSearch passée par le parent
+            // Appelle la fonction onSearch passée par le composant parent
+            await onSearch(searchTerm); 
         } catch (error) {
             console.error("Erreur lors de la recherche AI:", error);
-            // Gérer l'erreur, peut-être avec un MessageAi de type 'error'
         } finally {
             setIsSearching(false);
         }
@@ -36,7 +55,13 @@ const SearchAiBar = ({ onSearch, placeholder = "Rechercher avec l'IA...", classN
     };
 
     return (
-        <div className={`relative flex items-center ${className}`}>
+        <div className={`relative flex items-center w-full max-w-md p-1 rounded-full bg-slate-200 shadow-lg ${className}`}>
+            
+            {/* Affiche le loader ou l'icône animée */}
+            <div className="absolute left-3 flex items-center justify-center h-full ">
+                {isSearching ? <Loader size={20} className="text-slate-400 animate-spin" /> : <GradientIcon />}
+            </div>
+
             <input
                 type="text"
                 ref={inputRef}
@@ -44,24 +69,18 @@ const SearchAiBar = ({ onSearch, placeholder = "Rechercher avec l'IA...", classN
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={placeholder}
-                className="w-full pl-10 pr-4 py-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ease-in-out"
+                className="w-full pl-10 pr-10 py-2 rounded-full bg-transparent text-slate-900 placeholder-slate-500 focus:outline-none transition-colors duration-200 ease-in-out"
                 disabled={isSearching}
             />
-            <button
-                onClick={handleSearch}
-                className="absolute left-3 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-500"
-                aria-label="Rechercher"
-                disabled={isSearching}
-            >
-                {isSearching ? <Loader size={18} className="animate-spin" /> : <Search size={18} />}
-            </button>
+
+            {/* Affiche le bouton pour effacer uniquement si du texte est présent */}
             {searchTerm && !isSearching && (
                 <button
                     onClick={clearSearch}
-                    className="absolute right-3 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500"
+                    className="absolute right-3 text-slate-500 hover:text-slate-300 transition-colors"
                     aria-label="Effacer la recherche"
                 >
-                    <X size={16} />
+                    <X size={18} />
                 </button>
             )}
         </div>
