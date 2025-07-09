@@ -4,6 +4,7 @@ import { MessageSquare, PlusCircle, Edit, Trash2, Check, X, ChevronDown, Chevron
 import commentService from '../../../services/commentService';
 import { formatDateFromArray } from '../../../utils/dateFormatterTicket';
 import userService from '../../../services/userService'; // Assurez-vous que cette fonction existe et est correcte
+import { toast } from 'react-toastify';
 
 
 // Composant utilitaire pour le spinner
@@ -138,13 +139,13 @@ const CommentManager = ({ ticketId, comments: initialComments, onCommentChange, 
         setIsAdding(true);
         try {
             await commentService.addComment({ commentaire: newCommentText, idTicket: ticketId, idUtilisateur: userId }); // Utilisation de userId
-            setToast({ type: 'success', message: 'Commentaire ajouté avec succès.' }); // Utilisation de setToast
+            toast.success("Commentaire ajouté avec succés") // Utilisation de setToast
             setNewCommentText('');
             onCommentChange();
         } catch (error) {
             console.error("Erreur lors de l'ajout du commentaire:", error);
             const errorMessage = error.response?.data?.message || "Erreur lors de l'ajout du commentaire.";
-            setToast({ type: 'error', message: errorMessage }); // Utilisation de setToast
+            toast.error("erreur")
         } finally {
             setIsAdding(false);
         }

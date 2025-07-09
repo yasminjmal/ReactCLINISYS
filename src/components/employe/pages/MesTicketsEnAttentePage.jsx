@@ -333,7 +333,7 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
     <>
       <div className="space-y-6">
         {/* Barre de recherche globale */}
-        <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
+        {/* <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-slate-400 dark:text-slate-500" />
@@ -346,7 +346,7 @@ const MesTicketsEnAttentePage = ({ onStartTreatmentCallback }) => {
               className="form-input-icon w-full py-2.5 text-sm bg-slate-50 dark:bg-slate-900/50"
             />
           </div>
-        </div>
+        </div> */}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Section Tickets sans échéance */}
