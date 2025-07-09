@@ -218,7 +218,7 @@ const AdminInterface = ({ user, onLogout }) => {
                                 onLogout={onLogout}
                                 onSearch={handleAiSearch}
                                 isSidebarOpen={isSidebarOpen}
-                                onNavigateToProfile={() => setActivePage('consulter_profil_admin')}
+                                onNavigate={() => setActivePage('consulter_profil_admin')}
                             />
                         </div>
                     </div>

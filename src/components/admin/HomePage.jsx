@@ -24,7 +24,9 @@ import {
 } from 'recharts';
 import EventsCalendar from './Dashboards/EventsCalendar';
 import OverdueTicketsList from './Dashboards/OverdueTicketsList';
+import ticketService from '../../services/ticketService'; // Ensure this service is correctly imported
 import dashboardService from '../../services/dashboardService'; // Ensure this service is correctly imported
+import { formatDateFromArray } from '../../utils/dateFormatter';
 
 // --- Reusable Loading Indicator ---
 const LoadingIndicator = () => <div className="flex justify-center items-center h-full min-h-[100px]"><p className="text-slate-500 dark:text-slate-400">Chargement...</p></div>;
@@ -59,21 +61,15 @@ const PendingAssignmentsList = () => {
   const [pendingTickets, setPendingTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [tickets,setTickets]=useState(null)
 
   useEffect(() => {
     const fetchPendingAssignments = async () => {
       try {
         setLoading(true);
-        // For now, using static data. Replace with actual API call:
-        // const data = await ticketService.getTicketsByStatus('en_attente');
-        const data = [
-          { id: 'pa1', titre: 'Connexion WiFi 3ème étage', priorite: 'HAUTE', dateCreation: [2025, 7, 5, 10, 30] },
-          { id: 'pa2', titre: 'Installation logiciel Adobe', priorite: 'MOYENNE', dateCreation: [2025, 7, 4, 14, 0] },
-          { id: 'pa3', titre: 'Maintenance serveur A', priorite: 'BASSE', dateCreation: [2025, 7, 3, 9, 0] },
-          { id: 'pa4', titre: 'Problème email client Z', priorite: 'HAUTE', dateCreation: [2025, 7, 6, 11, 0] },
-          { id: 'pa5', titre: 'Demande accès VPN', priorite: 'MOYENNE', dateCreation: [2025, 7, 5, 16, 0] },
-        ];
+        const data =await ticketService.getTickets();
         setPendingTickets(data);
+        setTickets(data)
       } catch (err) {
         console.error("Erreur lors de la récupération des affectations en attente:", err);
         setError("Impossible de charger les affectations en attente.");
@@ -89,14 +85,7 @@ const PendingAssignmentsList = () => {
   };
 
   const formatDate = (dateArray) => {
-    if (!dateArray) return 'N/A';
-    try {
-      const [year, month, day, hour = 0, minute = 0] = dateArray;
-      const date = new Date(year, month - 1, day, hour, minute);
-      return date.toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    } catch (e) {
-      return 'Date invalide';
-    }
+    return formatDateFromArray(dateArray);
   };
 
   const PriorityIcon = ({ priority }) => {
@@ -310,11 +299,7 @@ const ActiveTicketsByCategoryBarChart = () => {
 
 // --- Contextual Widgets (Updated for smaller format) ---
 const LatestTicketsWidget = () => {
-  const tickets = [
-    { id: 'lt1', title: 'Install imprimante bureau 3', date: '5 min' },
-    { id: 'lt2', title: 'Réinit. mdp client Y', date: '30 min' },
-    { id: 'lt3', title: 'Pb messagerie client X', date: '2h' },
-  ];
+ 
   return (
     <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md">
       <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3 flex items-center">

@@ -1173,27 +1173,27 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                         <ArrowLeft size={16} className="mr-1" /> Retour
                     </button>
                     <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                        {isSubTicket ? "Modifier un Sous-Ticket" : "Modifier un Ticket"}
+                        {editableData.parentTicket != null ? "Modifier un Sous-Ticket" : "Modifier un Ticket"}
                     </h1>
                 </div>
                 <div className="flex space-x-2">
                     {editableData.statue == "En_attente" && (
                         <>
-                            <button onClick={handleAcceptTicket} className="btn btn-primary bg-green-600 hover:bg-green-700" disabled={isSavingMainTicket}>
+                            <button onClick={handleAcceptTicket} className="btn btn-primary bg-green-600 hover:bg-green-700" >
                                 <Check size={16} className="mr-1" /> Accepter
                             </button>
-                            <button onClick={handleRefuseTicket} className="btn btn-danger" disabled={isSavingMainTicket}>
+                            <button onClick={handleRefuseTicket} className="btn btn-danger" >
                                 <X size={16} className="mr-1" /> Refuser
                             </button>
                         </>
                     )}
                     {console.log(editableData)}
-                    {editableData.idModule===null && editableData.idUtilisateur===0 &&editableData.statue === "Accepte" && editableData.parentTicket === null  && (
-                        <button onClick={handleDiffractTicket} className="btn btn-secondary" disabled={isSavingMainTicket}>
+                    {editableData.idModule === null && editableData.idUtilisateur === 0 && editableData.statue === "Accepte" && editableData.parentTicket === null && (
+                        <button onClick={handleDiffractTicket} className="btn btn-secondary" >
                             <GitFork size={16} className="mr-1" /> Diffracter
                         </button>
                     )}
-                    {editableData.statue != "En_attente" && (<><button onClick={handleCancelMainTicketEdit} className="btn btn-secondary" disabled={isSavingMainTicket || isTicketLocked}>
+                    {editableData.statue != "En_attente" && (<><button onClick={handleCancelMainTicketEdit} className="btn btn-secondary" >
                         <X size={16} className="mr-1" /> Annuler
                     </button>
                         <button onClick={handleSaveMainTicket} className="btn btn-primary" disabled={isSavingMainTicket || isTicketLocked}>
@@ -1203,39 +1203,38 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
             </div>
 
             {/* Zone de contenu principal */}
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg mb-4">
+            <div className="bg-white space-x-15 space-y-15 dark:bg-slate-800 p-4 rounded-lg shadow-lg mb-4">
                 <div className="flex flex-col lg:flex-row gap-6">
                     <div className="flex-grow lg:w-2/3 space-y-4">
                         {/* Titre */}
-                        <div>
-                            <label htmlFor="ticket-titre" className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">Titre</label>
-                            <input
-                                id="ticket-titre"
-                                type="text"
-                                value={editableData.titre}
-                                onChange={(e) => handleEditableDataChange('titre', e.target.value)}
-                                // MODIFIÉ: Ajout de la classe conditionnelle
-                                className={`form-input w-full ${dirtyFields.titre ? 'highlight-dirty' : ''}`}
-                                disabled={isTicketLocked}
-                            />
-                        </div>
+                        <div className='grid grid-cols-2 gap-2'>
+                            <div>
+                                <label htmlFor="ticket-titre" className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">Titre</label>
+                                <input
+                                    id="ticket-titre"
+                                    type="text"
+                                    value={editableData.titre}
+                                    onChange={(e) => handleEditableDataChange('titre', e.target.value)}
+                                    // MODIFIÉ: Ajout de la classe conditionnelle
+                                    className={`form-input w-full ${dirtyFields.titre ? 'highlight-dirty' : ''}`}
+                                />
+                            </div>
 
-                        {/* Description */}
-                        <div>
-                            <label htmlFor="ticket-description" className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">Description</label>
-                            <textarea
-                                id="ticket-description"
-                                ref={descriptionTextAreaRef}
-                                value={editableData.description}
-                                onChange={(e) => handleEditableDataChange('description', e.target.value)}
-                                // MODIFIÉ: Ajout de la classe conditionnelle
-                                className={`form-textarea w-full resize-none overflow-hidden ${dirtyFields.description ? 'highlight-dirty' : ''}`}
-                                rows="3"
-                                disabled={isTicketLocked}
-                            ></textarea>
+                            {/* Description */}
+                            <div  className=''  >
+                                <label htmlFor="ticket-description" className="text-sm  font-semibold text-slate-700 dark:text-slate-200 mb-1">Description</label>
+                                <textarea
+                                    id="ticket-description"
+                                    ref={descriptionTextAreaRef}
+                                    value={editableData.description}
+                                    onChange={(e) => handleEditableDataChange('description', e.target.value)}
+                                    // MODIFIÉ: Ajout de la classe conditionnelle
+                                    className={`form-textarea w-full  bg-slate-50 rounded-xl resize-none overflow-hidden ${dirtyFields.description ? 'highlight-dirty' : ''}`}
+                                    rows="3"
+                                ></textarea>
+                            </div>
                         </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                        <div className="grid grid-cols-3 border-slate-500 dark:border-slate-700">
                             {/* Module affecté */}
                             {!hasSubTickets && <><EditableStyledField
                                 icon={<ModuleIcon size={14} className="mr-2" />}
@@ -1437,7 +1436,7 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                 )}
 
                 {/* Modale de diffraction */}
-                {isDiffractionModalOpen &&  (
+                {isDiffractionModalOpen && (
                     <DiffractionForm
                         parentTicket={ticket}
                         onClose={() => setIsDiffractionModalOpen(false)}
@@ -1445,7 +1444,8 @@ const TicketUpdateView = ({ ticketId, onBack, toast, setToast, onNavigateToParen
                         setToast={setToast}
                     />
                 )}
-            </div></div>
+            </div>
+        </div>
     );
 };
 
