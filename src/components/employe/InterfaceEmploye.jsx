@@ -38,7 +38,7 @@ const InterfaceEmploye = () => {
       case 'home_employe':
         return <HomePageEmploye />;
       case 'dashboard_employe':
-        return <h2 className="text-2xl font-semibold text-slate-800 dark:text-white mb-4">Tableau de Bord Employé</h2>;
+        return <HomePageEmploye/>;
       case 'tickets_en_attente_employe':
         return <MesTicketsEnAttentePage onStartTreatmentCallback={handleStartTreatmentSuccess} />;
       case 'travail_en_cours_employe':
