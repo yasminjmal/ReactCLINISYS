@@ -113,9 +113,9 @@ const DiffractionForm = ({ parentTicket, onClose, onSuccess, setToast }) => {
                 </div>
                 
                 {/* L'ID ici permet de lier le bouton de soumission externe au formulaire */}
-                <form id="diffraction-form" onSubmit={handleSubmit} className="flex-grow overflow-y-auto space-y-4 pr-2">
+                <form id="diffraction-form" onSubmit={handleSubmit} className="flex-grow overflow-y-auto space-y-1 pr-2">
                     {subTickets.map((st, index) => (
-                        <div key={index} className="p-4 border border-slate-200 dark:border-slate-700 rounded-md space-y-3 bg-slate-50 dark:bg-slate-800/50 relative">
+                        <div key={index} className="p-2 border border-slate-200 dark:border-slate-700 rounded-md space-y-1 bg-slate-50 dark:bg-slate-800/50 relative">
                             {subTickets.length > 1 && (
                                 <button type="button" onClick={() => handleRemoveSubTicket(index)} className="absolute top-2 right-2 p-1 text-red-500 hover:text-red-700 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30" title="Supprimer ce sous-ticket">
                                     <Trash2 size={16} />
@@ -126,9 +126,9 @@ const DiffractionForm = ({ parentTicket, onClose, onSuccess, setToast }) => {
                                 <label className="form-label">Titre *</label>
                                 <input type="text" value={st.titre} onChange={(e) => handleSubTicketChange(index, 'titre', e.target.value)} className="form-input" placeholder="Titre du sous-ticket" required />
                             </div>
-                            <div>
-                                <label className="form-label">Description</label>
-                                <textarea value={st.description} onChange={(e) => handleSubTicketChange(index, 'description', e.target.value)} className="form-textarea" rows="2" placeholder="Description (optionnel)"></textarea>
+                            <div className='form-textarea text-xs'>
+                                <label className="form-label text-xs ">Description</label>
+                                <textarea value={st.description} onChange={(e) => handleSubTicketChange(index, 'description', e.target.value)} className="form-textarea text-sm" rows="2" placeholder="Description (optionnel)" style={{ width: '100%' }}></textarea>
                             </div>
                             <div>
                                 <label className="form-label">Priorité</label>
