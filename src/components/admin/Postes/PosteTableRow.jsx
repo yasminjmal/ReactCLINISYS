@@ -1,15 +1,14 @@
 import React from 'react';
 import { Edit, Trash2 } from 'lucide-react';
+import { formatDateFromArray } from '../../../utils/dateFormatter';
 
 // Ajout de highlightedPostId aux props
 const PosteTableRow = ({ poste, onEdit, onDelete, visibleColumns, highlightedPostId }) => {
 
-    const formatDate = (dateArray) => {
-        if (!Array.isArray(dateArray) || dateArray.length < 3) return 'N/A';
-        return new Date(dateArray[0], dateArray[1] - 1, dateArray[2]).toLocaleDateString('fr-FR', {
-            day: 'numeric', month: 'long', year: 'numeric'
-        });
-    };
+   const formatDate = (isoString) => {
+    return formatDateFromArray(isoString)
+};
+
 
     const StatusBadge = ({ isActive }) => (
         <span className={`px-2.5 py-1 text-xs font-medium rounded-md inline-flex items-center gap-2 border ${

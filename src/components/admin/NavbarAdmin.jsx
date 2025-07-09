@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import userService from '../../services/userService';
 import { toast } from 'react-toastify';
+import SearchAiBar from '../shared/SearchAiBar';
 
 const NavbarAdmin = ({ onNavigate }) => {
     const { currentUser, logout } = useAuth();
@@ -59,7 +60,8 @@ const NavbarAdmin = ({ onNavigate }) => {
     return (
         <nav className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between shadow-sm sticky top-0 z-40">
             {/* Espace réservé à gauche, peut contenir un bouton pour la sidebar mobile ou un titre */}
-            <div></div>
+           
+
 
             <div className="flex items-center gap-4 md:gap-6 ml-auto">
                 <button onClick={toggleTheme} className="text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-500">

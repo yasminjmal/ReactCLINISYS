@@ -21,6 +21,7 @@ import { ExportProvider } from '../../context/ExportContext';
 import DashboardPage from './Dashboards/DashboardPage';
 import HomePage from './HomePage';
 import TracabilitePage from './Tracability/TracabilitePage';
+import SearchAiBar from '../shared/SearchAiBar';
 
 // ✅ CORRIGÉ : Le composant LoadingIndicator est maintenant complet.
 const LoadingIndicator = () => (
@@ -35,8 +36,8 @@ const LoadingIndicator = () => (
                 </defs>
                 <circle className="stroke-current text-slate-200 dark:text-slate-700" strokeWidth="8" cx="50" cy="50" r="40" fill="transparent" />
                 <circle className="stroke-current text-blue-500 transform -rotate-90 origin-center" strokeWidth="8" cx="50" cy="50" r="40" fill="transparent" strokeDasharray="251.2" strokeDashoffset="188.4" strokeLinecap="round">
-                     <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="1.5s" repeatCount="indefinite" />
-                     <animate attributeName="stroke-dashoffset" values="251.2;62.8;251.2" dur="1.5s" repeatCount="indefinite" />
+                    <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="1.5s" repeatCount="indefinite" />
+                    <animate attributeName="stroke-dashoffset" values="251.2;62.8;251.2" dur="1.5s" repeatCount="indefinite" />
                 </circle>
             </svg>
             <h2 className="mt-4 text-lg font-semibold text-slate-600 dark:text-slate-300">Chargement...</h2>
@@ -94,6 +95,7 @@ const AdminInterface = ({ user, onLogout }) => {
             } else if (results?.entityType && Array.isArray(results.data)) {
                 setSearchResults(results.data);
                 setSearchEntityType(results.entityType);
+                console.log(results);
                 if (results.entityType === "disconnect") {
                     setDisconnect(true);
                     return;
@@ -130,7 +132,7 @@ const AdminInterface = ({ user, onLogout }) => {
     useEffect(() => { if (isDarkMode) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); }, [isDarkMode]);
 
     const handleActualLogout = () => { if (onLogout) { onLogout(); } else { localStorage.clear(); window.location.reload(); } };
-    
+
     const handleNavigateToUserProfile = useCallback(() => setActivePage('consulter_profil_admin'), []);
     const handleNavigateToHome = useCallback(() => setActivePage('home'), []);
 
@@ -160,45 +162,59 @@ const AdminInterface = ({ user, onLogout }) => {
             case 'utilisateurs_consulter_utilisateurs': return <ConsulterUsersPage initialUsers={searchEntityType === 'utilisateur' ? searchResults : null} />;
             case 'equipes_consulter_equipes': return <ConsulterEquipesPage users={usersData} initialEquipes={searchEntityType === 'equipe' ? searchResults : null} />;
             case 'modules_consulter_modules': return <ConsulterModulesPage initialModules={searchEntityType === 'module' ? searchResults : null} />;
-            case 'clients_consulter_clients': return <ConsulterClientPage />;   
+            case 'clients_consulter_clients': return <ConsulterClientPage />;
             case 'postes_consulter_postes': return <ConsulterPostesPage initialPostes={searchEntityType === 'poste' ? searchResults : null} />;
             case 'tickets_management': return <TicketsManagementPage showTemporaryMessage={showNotification} initialFilterStatus={filter} initialTickets={searchEntityType === 'ticket' ? searchResults : null} />;
             case 'consulter_profil_admin': return user ? <ConsultProfilPage user={user} onUpdateProfile={handleUpdateUserProfile} onNavigateHome={handleNavigateToHome} /> : <div className="p-6 text-center">Utilisateur non trouvé.</div>;
-            case 'discussions': return <ChatInterface currentUser={user}/>;
+            case 'discussions': return <ChatInterface currentUser={user} />;
             case 'tracabilite': return <TracabilitePage />;
             default: return <div className="p-6 text-xl font-bold">Page "{pageId}" non trouvée</div>;
         }
     };
 
-    return ( 
+    return (
         <WebSocketProvider>
+
             <div className={`flex h-screen bg-slate-50 dark:bg-slate-950 ${isDarkMode ? 'dark' : ''}`}>
-                <SidebarAdmin 
-                    activePage={activePage} 
-                    setActivePage={handleSetActivePage} 
-                    isSidebarOpen={isSidebarOpen} 
-                    currentUser={user} 
+                <SidebarAdmin
+                    activePage={activePage}
+                    setActivePage={handleSetActivePage}
+                    isSidebarOpen={isSidebarOpen}
+                    currentUser={user}
                 />
-                
+
                 {isSidebarOpen && <div onClick={toggleSidebar} className="fixed inset-0 bg-black/50 z-30 md:hidden"></div>}
-                
-                <button 
+
+
+                {/* <button 
                     onClick={toggleSidebar} 
                     className={`fixed top-4 p-2 rounded-md shadow text-slate-600 dark:text-slate-300 transition-all duration-300 ease-in-out z-50 ${isSidebarOpen ? 'left-[calc(16rem+1rem)]' : 'left-4'} ${isSidebarOpen ? 'bg-white dark:bg-slate-800' : 'bg-transparent'}`}
                     title={isSidebarOpen ? "Masquer la sidebar" : "Afficher la sidebar"}
                 >
                     {isSidebarOpen ? <CloseIcon size={24} /> : <MenuIconLucide size={24} />}
-                </button>
+                </button> */}
 
                 <div className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${isSidebarOpen ? 'md:ml-64' : 'md:ml-0'} md:w-full`}>
-                    <NavbarAdmin 
-                        user={user} 
-                        onLogout={handleActualLogout} 
-                        onSearch={handleAiSearch} 
-                        isSidebarOpen={isSidebarOpen} 
-                        onNavigate={handleNavigateToUserProfile}
-                    />
-                    
+                    <div className="sticky top-0 z-50 bg-white dark:bg-slate-900 shadow">
+                        <div className="flex flex-col  md:flex-row md:items-center md:justify-between">
+
+                            {/* 👇 LEFT SIDE: Search Bar */}
+                            <div className="ml-10 w-full md:w-1/3">
+                                <SearchAiBar onSearch={handleAiSearch} placeholder="Rechercher avec l'IA..." />
+                            </div>
+
+                            <NavbarAdmin
+                                user={user}
+                                onLogout={handleActualLogout}
+                                onSearch={handleAiSearch}
+                                isSidebarOpen={isSidebarOpen}
+                                onNavigate={handleNavigateToUserProfile}
+                            />
+
+                        </div>
+                    </div>
+
+
                     <main className="flex-1 overflow-x-hidden overflow-y-auto pt-0 relative">
                         {notification && (
                             <MessageAi
