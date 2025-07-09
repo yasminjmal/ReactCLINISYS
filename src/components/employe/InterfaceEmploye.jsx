@@ -17,6 +17,8 @@ const InterfaceEmploye = () => {
   // `allUserTickets` et `fetchAllUserTickets` sont supprimés d'ici
   // Chaque page enfant gérera son propre chargement de données.
 
+
+
   const toggleSidebar = useCallback(() => {
     setIsSidebarOpen(prev => !prev);
   }, []);
@@ -65,7 +67,7 @@ const InterfaceEmploye = () => {
         <HeaderEmploye
           toggleSidebar={toggleSidebar}
           isSidebarOpen={isSidebarOpen}
-          currentUser={currentUser}
+          USER={currentUser}
         />
         <main className="flex-1 p-6 overflow-auto">
           {renderPage()}

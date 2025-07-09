@@ -3,24 +3,17 @@ import React from 'react';
 import {
   LayoutDashboard,
   Users,
-  LogOut,
   ListChecks,
   ClipboardList,
   BadgeX,
-  MessageSquare, // Icône pour les discussions
-  HelpCircle,    // Icône pour l'aide
-  Phone,         // Icône pour le contact
-  Home,
-  UserCircle,
-  Package,
-  Briefcase,
-  ChevronDown,
-  ChevronUp,
+  MessageSquare,
+  HelpCircle,
+  Phone,
 } from 'lucide-react';
 
 import logoClinisys from '../../assets/images/logoTRANSPARENT.png';
 
-const NavItem = ({ icon: IconComponent, label, isActive, onClick }) => (
+const NavItem = ({ icon: Icon, label, isActive, onClick }) => (
     <button
         onClick={onClick}
         className={`group w-full flex items-center space-x-3 px-3 py-2.5 rounded-md text-sm transition-colors duration-200
@@ -31,13 +24,12 @@ const NavItem = ({ icon: IconComponent, label, isActive, onClick }) => (
         }
         style={isActive ? { paddingLeft: '8px' } : {}}
     >
-        {IconComponent && <IconComponent size={20} className={isActive ? 'text-blue-600' : ''} />}
+        {Icon && <Icon size={20} className={isActive ? 'text-blue-600' : ''} />}
         <span>{label}</span>
     </button>
 );
 
-const SidebarChefEquipe = ({ activePage, setActivePage, isSidebarOpen, onLogout }) => {
-    // Le menu principal contient toujours le lien "Discussions"
+const SidebarChefEquipe = ({ activePage, setActivePage, isSidebarOpen }) => {
     const menuItems = [
         { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
         { id: 'teams', label: 'Mes Équipes', icon: Users },
@@ -48,6 +40,8 @@ const SidebarChefEquipe = ({ activePage, setActivePage, isSidebarOpen, onLogout 
         { id: 'tickets-follow-up', label: 'Suivi Affectations', icon: ClipboardList },
         { id: 'tickets-refused', label: 'Tickets Refusés', icon: BadgeX },
     ];
+    
+    const isChatActive = activePage === 'chat';
 
     return (
         <aside
@@ -57,11 +51,7 @@ const SidebarChefEquipe = ({ activePage, setActivePage, isSidebarOpen, onLogout 
             `}
         >
             <div className="h-16 flex items-center px-4 space-x-3 border-b border-black/10 flex-shrink-0">
-                <img
-                    src={logoClinisys}
-                    alt="Logo de l'entreprise"
-                    className="h-15 w-auto object-contain"
-                />
+                <img src={logoClinisys} alt="Logo de l'entreprise" className="h-15 w-auto object-contain" />
             </div>
 
             <nav className="flex-grow p-2 space-y-1 overflow-y-auto">
@@ -80,17 +70,12 @@ const SidebarChefEquipe = ({ activePage, setActivePage, isSidebarOpen, onLogout 
                 ))}
             </nav>
 
-            {/* --- RÉ-AJOUT : Le bloc d'icônes utilitaires en bas de la sidebar --- */}
             <div className="p-2 border-t border-black/10 flex-shrink-0">
                 <div className="flex items-center justify-around mt-2">
-                    <button 
+                    <button
                         onClick={() => setActivePage('chat')}
-                        className={`p-2 rounded-md transition-colors 
-                            ${activePage === 'chat' 
-                                ? 'text-blue-700 bg-blue-500/20' // Style actif
-                                : 'text-slate-500 hover:bg-blue-500/10 hover:text-blue-700' // Style inactif
-                            }`
-                        }>
+                        className={`p-2 rounded-md transition-colors ${isChatActive ? 'text-blue-700 bg-blue-500/20' : 'text-slate-500 hover:bg-blue-500/10 hover:text-blue-700'}`}
+                    >
                         <MessageSquare size={20} />
                     </button>
                     <button className="p-2 rounded-md text-slate-500 hover:bg-blue-500/10 hover:text-blue-700 transition-colors">
