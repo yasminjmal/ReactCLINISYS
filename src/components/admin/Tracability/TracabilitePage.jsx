@@ -307,9 +307,9 @@ const TracabilitePage = () => {
                     <div className="p-4 text-center text-red-500">{errorHistory}</div>
                 ) : (
                     <>
-                        {/*                         <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">
+                                                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">
                             Tableau de Bord pour : <span className="text-blue-600">{selectedEntity.name}</span>
-                        </h2> */}
+                        </h2>
                         <div className="grid grid-cols-2  gap-6 items-start">
 
                             <div><HistoryDashboard history={history} /></div>
