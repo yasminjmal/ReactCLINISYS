@@ -209,7 +209,7 @@ const EditClientModal = ({ client, onUpdate, onCancel }) => {
                     </div>
 
                     <div>
-                        <label htmlFor="adress" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Adresse</label>
+                        <label htmlFor="adress" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-4">Adresse</label>
                         <textarea id="adress" name="adress" value={formData.adress} onChange={handleInputChange} className="form-textarea" rows="2"></textarea>
                     </div>
 

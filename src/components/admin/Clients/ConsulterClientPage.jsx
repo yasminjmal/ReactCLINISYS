@@ -262,7 +262,7 @@ const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => {
                 {/* On itère sur les clés de columnNames pour garder un ordre défini */}
                 {Object.keys(columnNames).map((key) =>
                     visibleColumns[key] && ( // On utilise la clé pour vérifier la visibilité
-                        <th key={key} scope="col" className="px-6 py-1 font-sans text-left separateur-colonne-leger">
+                        <th key={key} scope="col" className="px-2 py-1 font-sans text-left separateur-colonne-leger">
                             {key === 'dateCreation' ? (
                                 <button onClick={() => handleSort('dateCreation')} className="flex items-center justify-between w-full hover:text-blue-200">
                                     <span>{columnNames[key]}</span>
@@ -274,7 +274,7 @@ const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => {
                         </th>
                     )
                 )}
-                <th scope="col" className="px-6 py-3 font-sans text-center">Actions</th>
+                <th scope="col" className="px-2 py-1 font-sans text-center">Actions</th>
             </tr>
         </thead>
     );

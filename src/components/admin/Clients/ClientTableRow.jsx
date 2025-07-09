@@ -29,32 +29,32 @@ const ClientTableRow = ({ client, onEdit, onDelete, visibleColumns, highlightedC
                 </td>
             )}
             {visibleColumns.regionName && (
-                <td className="px-6 py-1 text-slate-600 dark:text-slate-300 separateur-colonne-leger">
+                <td className="px-2 py-1 text-slate-600 dark:text-slate-300 separateur-colonne-leger">
                     {client.regionName || 'N/A'}
                 </td>
             )}
             {visibleColumns.email && (
-                 <td className="px-6 py-1 text-slate-600 dark:text-slate-300 separateur-colonne-leger">
+                 <td className="px-3 py-1 text-slate-600 dark:text-slate-300 separateur-colonne-leger">
                     {client.email || 'N/A'}
                 </td>
             )}
             {visibleColumns.adress && (
-                <td className="px-6 py-1 text-slate-600 dark:text-slate-300 separateur-colonne-leger truncate" title={client.adress}>
+                <td className="px-2 py-1 text-slate-600 dark:text-slate-300 separateur-colonne-leger truncate" title={client.adress}>
                     {client.adress || 'N/A'}
                 </td>
             )}
             {visibleColumns.creePar && (
-                <td className="px-6 py-1 text-slate-600 dark:text-slate-300 separateur-colonne-leger"> {/* Colonne "Créé par" */}
+                <td className="px-2 py-1 text-slate-600 dark:text-slate-300 separateur-colonne-leger"> {/* Colonne "Créé par" */}
                     {client.userCreation || 'N/A'}
                 </td>
             )}
             {visibleColumns.dateCreation && (
-                <td className="px-6 py-1 text-slate-600 dark:text-slate-300 separateur-colonne-leger"> {/* Colonne "Date de création" */}
+                <td className="px-4 py-1 text-slate-600 dark:text-slate-300 separateur-colonne-leger"> {/* Colonne "Date de création" */}
                     {formatDateFromArray(client.dateCreation)}
                 </td>
             )}
             {visibleColumns.statut && (
-                <td className="px-6 py-1 separateur-colonne-leger">
+                <td className="px-1 py-1 separateur-colonne-leger">
                     <StatusBadge isActive={client.actif} />
                 </td>
             )}
