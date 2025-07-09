@@ -299,7 +299,11 @@ const ActiveTicketsByCategoryBarChart = () => {
 
 // --- Contextual Widgets (Updated for smaller format) ---
 const LatestTicketsWidget = () => {
- 
+  const tickets = [
+    { id: 'lt1', title: 'Install imprimante bureau 3', date: '5 min' },
+    { id: 'lt2', title: 'Réinit. mdp client Y', date: '30 min' },
+    { id: 'lt3', title: 'Pb messagerie client X', date: '2h' },
+  ];
   return (
     <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md">
       <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3 flex items-center">
