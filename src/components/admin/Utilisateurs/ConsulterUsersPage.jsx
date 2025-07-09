@@ -556,14 +556,14 @@ const ConsulterUsersPage = ({ initialUsers = null }) => {
                         <div className="relative">
                             <button onClick={() => toggleDropdownGlobal('filterRole')} className="btn btn-secondary">
                                 <Filter size={16} className="mr-2" />
-                                {filters.role === 'tous' ? 'Filtrer par rôle' : `Rôle: ${filters.role === 'A' ? 'Admin' : filters.role === 'C' ? 'Chef' : 'Utilisateur'}`}
+                                {filters.role === 'tous' ? 'Filtrer par rôle' : `Rôle: ${filters.role === 'A' ? 'Admin' : filters.role === 'C' ? 'Chef' : 'Employé'}`}
                             </button>
                             {openDropdown === 'filterRole' &&
                                 <DropdownMenu>
                                     <DropdownMenuItem isSelected={filters.role === 'tous'} onClick={() => { setFilters(f => ({...f, role: 'tous'})); toggleDropdownGlobal('filterRole'); }}>Tous les rôles</DropdownMenuItem>
                                     <DropdownMenuItem isSelected={filters.role === 'A'} onClick={() => { setFilters(f => ({...f, role: 'A'})); toggleDropdownGlobal('filterRole'); }}>Administrateur</DropdownMenuItem>
                                     <DropdownMenuItem isSelected={filters.role === 'C'} onClick={() => { setFilters(f => ({...f, role: 'C'})); toggleDropdownGlobal('filterRole'); }}>Chef d'équipe</DropdownMenuItem>
-                                    <DropdownMenuItem isSelected={filters.role === 'E'} onClick={() => { setFilters(f => ({...f, role: 'E'})); toggleDropdownGlobal('filterRole'); }}>Utilisateur</DropdownMenuItem>
+                                    <DropdownMenuItem isSelected={filters.role === 'E'} onClick={() => { setFilters(f => ({...f, role: 'E'})); toggleDropdownGlobal('filterRole'); }}>Employé</DropdownMenuItem>
                                 </DropdownMenu>
                             }
                         </div>

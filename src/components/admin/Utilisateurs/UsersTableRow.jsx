@@ -19,7 +19,7 @@ const RoleDisplay = ({ role }) => {
     const roleMap = {
         'A': { text: 'Administrateur', color: 'text-red-600' },
         'C': { text: 'Chef d\'équipe', color: 'text-orange-500' },
-        'E': { text: 'Utilisateur', color: 'text-blue-600' }
+        'E': { text: 'Employé', color: 'text-blue-600' }
     };
     const { text, color } = roleMap[role] || { text: role, color: 'text-slate-500' };
     return <span className={`font-semibold ${color}`}>{text}</span>;
