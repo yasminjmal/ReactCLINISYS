@@ -166,63 +166,63 @@ const TicketTableRow = ({
                     title={hasSubTickets ? "Afficher/Masquer les sous-tickets" : "Aucun sous-ticket"}
                 >
                     <span className={`font-bold text-xs px-1 py-0.5 rounded-sm ${!hasSubTickets ? 'bg-slate-200 dark:bg-slate-700' : 'bg-slate-300 dark:bg-slate-600'}`}>{ticket.childTickets?.length || 0}</span>
-                    {hasSubTickets && (isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+                    {hasSubTickets && (isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
                 </button>
             </td>
             {/* Colonne Client */}
             {visibleColumns.client && ( // Nouvelle colonne client
-                <td className="px-4 py-1 text-sm separateur-colonne-leger">
+                <td className="px-1 py-1 text-xs separateur-colonne-leger">
                     <div className="font-semibold text-slate-800 dark:text-slate-100">{clientNom}</div>
                 </td>
             )}
             {/* Colonne Demandeur */}
             {visibleColumns.demandeur && ( // Nouvelle colonne demandeur
-                <td className="px-3 py-1 text-sm separateur-colonne-leger">
+                <td className="px-1 py-1 text-sm separateur-colonne-leger">
                     <div className="text-xs text-slate-500 dark:text-slate-400">{demandeurNom}</div>
                 </td>
             )}
             {visibleColumns.titre && (
-                <td className="px-4 py-1 text-sm text-slate-600 dark:text-slate-300 max-w-xs truncate separateur-colonne-leger" title={ticket.titre}>
+                <td className="px-1 py-1 text-xs text-slate-600 dark:text-slate-300 max-w-xs truncate separateur-colonne-leger" title={ticket.titre}>
                     {ticket.titre}
                 </td>
             )}
             {visibleColumns.module && (
-                <td className="px-4 py-1 text-sm separateur-colonne-leger">
-                    {ticket.idModule?.designation || 'N/A'}
+                <td className="px-4 py-1 text-xs separateur-colonne-leger ">
+                    {ticket.idModule?.designation || 'Non affecté'}
                 </td>
             )}
             {visibleColumns.affecteA && (
-                <td className="px-4 py-1 text-sm separateur-colonne-leger">
+                <td className="px-4 py-1 text-xs separateur-colonne-leger">
                     {employeNom === 'N/A' ? 'Non assigné' : employeNom}
                 </td>
             )}
             {visibleColumns.dateEcheance && (
-                <td className="px-2 py-1 text-sm text-slate-500 separateur-colonne-leger">
+                <td className="px-2 py-1 text-xs text-slate-500 separateur-colonne-leger">
                     {formatDate(ticket.date_echeance)}
                 </td>
             )}
             {visibleColumns.dateCreation && (
-                <td className="px-2 py-1 text-sm text-slate-500 separateur-colonne-leger">
+                <td className="px-2 py-1 text-sx text-slate-500 separateur-colonne-leger">
                     {formatDate(ticket.dateCreation)}
                 </td>
             )}
             {visibleColumns.priorite &&(
-                <td className="px-2 py-1 text-sm separateur-colonne-leger">
+                <td className="px-1 py-1 text-xs separateur-colonne-leger">
                     <PriorityBadge priority={ticket.priorite} />
                 </td>
             )}
             {visibleColumns.statut && ( 
-                <td className="px-2 py-1 text-sm separateur-colonne-leger">
+                <td className="px-2 py-1 text-xs separateur-colonne-leger">
                     <StatusBadge status={ticket.statue} />
                 </td>
             )}
             {visibleColumns.actif && (
-                <td className="px-2 py-1 separateur-colonne-leger">
+                <td className="px-1 py-1 separateur-colonne-leger">
                     <ActifBadge actif={ticket.actif} />
                 </td>
             )}
-            <td className="px-4 py-1">
-                <div className="flex items-center space-x-1">
+            <td className="px-1 py-1">
+                <div className="flex items-center -space-x-0.5">
                     {/* Les actions de la ligne */}
                     <button onClick={() => onNavigateToUpdate(ticket.id)} className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-100 dark:hover:bg-slate-700 rounded-full" title="Modifier/Gérer"><Edit size={16}/></button>
                     <button onClick={() => handleDeleteTicket(ticket)} className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-slate-700 rounded-full" title="Supprimer"><Trash2 size={16}/></button>

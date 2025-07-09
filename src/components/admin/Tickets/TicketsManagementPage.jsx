@@ -129,17 +129,17 @@ const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => {
                 <th scope="col" className="px-1 py-3 font-sans text-center separateur-colonne-leger" style={{ width: '40px' }}>ST</th>
                 {/* Colonnes conditionnellement visibles basées sur 'visibleColumns' */}
                 {visibleColumns.client && (
-                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '12%' }}>
+                    <th scope="col" className="px-3 py-2 font-sans text-left separateur-colonne-leger" style={{ width: '12%' }}>
                         <span>Client</span>
                     </th>
                 )}
                 {visibleColumns.demandeur && (
-                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '12%' }}>
+                    <th scope="col" className="px-1 py-2 font-sans text-left separateur-colonne-leger" style={{ width: '10%' }}>
                         <span>Demandeur</span>
                     </th>
                 )}
                 {visibleColumns.titre && (
-                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '20%' }}>
+                    <th scope="col" className="px-2 py-2 font-sans text-left separateur-colonne-leger" style={{ width: '20%' }}>
                         {/* Bouton de tri pour la colonne 'Titre' */}
                         <button onClick={() => handleSort('titre')} className="flex items-center justify-between w-full hover:text-blue-200">
                             <span>Titre</span>
@@ -148,7 +148,7 @@ const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => {
                     </th>
                 )}
                 {visibleColumns.module && (
-                    <th scope="col" className="px-4 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '8%' }}>
+                    <th scope="col" className="px-4 py-2 font-sans text-left separateur-colonne-leger" style={{ width: '18%' }}>
                         <span>Module</span>
                     </th>
                 )}
@@ -176,7 +176,7 @@ const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => {
                     </th>
                 )}
                 {visibleColumns.priorite && (
-                    <th scope="col" className="px-2 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '8%' }}>
+                    <th scope="col" className="px-1 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '8%' }}>
                         <span>Priorité</span>
                     </th>
                 )}
@@ -186,7 +186,7 @@ const TableHeader = ({ visibleColumns, handleSort, sortConfig }) => {
                     </th>
                 )}
                 {visibleColumns.actif && (
-                    <th scope="col" className="px-2 py-3 font-sans text-left separateur-colonne-leger" style={{ width: '6%' }}>
+                    <th scope="col" className="px-1 py-1 font-sans text-left separateur-colonne-leger" style={{ width: '6%' }}>
                         <span>Actif</span>
                     </th>
                 )}
@@ -839,7 +839,7 @@ const TicketsManagementPage = () => {
             {isLoading ? <Spinner /> : processedTickets.length === 0 ? (
                 <p className="text-center text-slate-500 dark:text-slate-400 py-10">Aucun ticket trouvé pour la sélection actuelle.</p>
             ) : (
-                <div className="overflow-x-auto shadow-xl rounded-lg border border-slate-200 dark:border-slate-700">
+                <div className="overflow-x-auto shadow-sm rounded-lg border border-slate-200 dark:border-slate-700">
                     <table className="min-w-full text-sm">
                         {/* En-tête du tableau */}
                         <TableHeader
