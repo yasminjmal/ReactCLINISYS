@@ -59,7 +59,7 @@ const TeamDetailDashboard = ({ team, allUsers, allPostes, allModules, refetchDat
     
     // Pour "Top Performers"
     const topPerformerTickets = membersData.length > 0 ? membersData[0].utilisateur.prenom : "N/A"; // Statique pour l'exemple
-    const topPerformerTime = membersData.length > 0 ? membersData[1].utilisateur.prenom : "N/A"; // Statique pour l'exemple
+    const topPerformerTime = membersData.length > 0 ? membersData[1]?.utilisateur?.prenom : "N/A"; // Statique pour l'exemple
 
     // Pour "Top Modules"
     const mostSolicitedModule = modulesManaged.length > 0 ? modulesManaged[0].designation : "N/A";

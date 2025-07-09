@@ -25,7 +25,7 @@ const TeamTabNavigator = ({ teams, activeTab, onTabClick }) => {
                         key={team.id}
                         onClick={() => onTabClick(team.id)}
                         className={`flex-shrink-0 flex items-center space-x-2 px-4 py-2.5 text-sm font-semibold transition-all duration-300 rounded-t-lg border-b-2
-                            ${activeTab === team.id
+                            ${activeTab == team.id
                                 ? 'border-violet-500 text-violet-600 dark:text-violet-400'
                                 : 'border-transparent text-slate-600 dark:text-slate-300 hover:text-violet-500'
                             }`}

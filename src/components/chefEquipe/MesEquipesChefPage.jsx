@@ -146,7 +146,7 @@ const MesEquipesChefPage = ({ equipesChef, allModules, refetchData }) => {
     };
 
     // Determine which team is currently selected for detailed view
-    const selectedTeam = activeTeamTab === 'global' 
+    const selectedTeam = activeTeamTab == 'global' 
         ? null 
         : teamsWithAssignments.find(team => team.id === activeTeamTab);
 
