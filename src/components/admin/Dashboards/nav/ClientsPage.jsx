@@ -156,7 +156,7 @@ const ClientsPage = () => {
 
     return (
         <div className="grid grid-cols-2 gap-2 animate-in fade-in-0 ">
-            <div>
+            <div className='gap-2 grid '>
             <WidgetContainer title="Activité par Client">
                 <div className="flex justify-start gap-2 mb-4 flex-wrap">
                     {periodOptions.map((opt) => (
@@ -188,9 +188,7 @@ const ClientsPage = () => {
                     </ResponsiveContainer>
                 )}
             </WidgetContainer>
-            </div>
-            <div className='gap-2 grid '>
-                <WidgetContainer title="Rechercher un Client">
+            <WidgetContainer title="Rechercher un Client">
                     <input
                         type="text"
                         placeholder="Rechercher par nom..."
@@ -214,6 +212,9 @@ const ClientsPage = () => {
                         )}
                     </div>
                 </WidgetContainer>
+            </div>
+            <div className='gap-2 grid '>
+                
                 <WidgetContainer title="Emplacement des Clients">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         {/* Filtre par pays */}
